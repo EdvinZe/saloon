@@ -1,0 +1,209 @@
+import { useState } from 'react'
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  getDay,
+  isBefore,
+  isToday,
+  startOfDay,
+  addMonths,
+  subMonths,
+} from 'date-fns'
+import { useAvailableSlots } from '../hooks/useAvailableSlots'
+
+interface Props {
+  selectedDate: string | null
+  selectedTime: string | null
+  onSelect: (date: string, time: string) => void
+}
+
+const TODAY = new Date()
+const TODAY_STR = format(TODAY, 'yyyy-MM-dd')
+const NEAREST = {
+  date: TODAY_STR,
+  time: '09:30',
+  label: `Today ${format(TODAY, 'MMM d')} · 09:30`,
+}
+
+const DAY_HEADERS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+
+export default function DateTimePicker({ selectedDate, selectedTime, onSelect }: Props) {
+  const [viewMonth, setViewMonth] = useState(TODAY)
+  // pickedDate drives calendar highlight & slot fetch; commits to store only on slot click
+  const [pickedDate, setPickedDate] = useState<string | null>(selectedDate)
+
+  const { data: slots = [] } = useAvailableSlots(pickedDate)
+
+  const days = eachDayOfInterval({ start: startOfMonth(viewMonth), end: endOfMonth(viewMonth) })
+  // Monday-first offset: getDay returns 0=Sun…6=Sat, remap to 0=Mon…6=Sun
+  const firstDayOffset = (getDay(startOfMonth(viewMonth)) + 6) % 7
+
+  const handleDayClick = (day: Date) => {
+    if (isBefore(startOfDay(day), startOfDay(TODAY))) return
+    setPickedDate(format(day, 'yyyy-MM-dd'))
+  }
+
+  const handleSlotClick = (time: string, taken: boolean) => {
+    if (taken || !pickedDate) return
+    onSelect(pickedDate, time)
+  }
+
+  const handleNearest = () => {
+    setPickedDate(NEAREST.date)
+    setViewMonth(TODAY)
+    onSelect(NEAREST.date, NEAREST.time)
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: '28px' }}>
+        <p style={{ fontSize: '10px', letterSpacing: '4px', color: '#c9a84c', textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '10px' }}>
+          Step 2
+        </p>
+        <h2 style={{ fontSize: '28px', color: '#e8e0d0', fontWeight: 400 }}>Pick a date & time</h2>
+      </div>
+
+      {/* Nearest available banner */}
+      <div
+        onClick={handleNearest}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '14px 20px',
+          border: '1px solid #2a2218',
+          marginBottom: '24px',
+          cursor: 'pointer',
+          transition: 'border-color 0.2s',
+          background: '#141008',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = '#c9a84c')}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = '#2a2218')}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#c9a84c', flexShrink: 0 }} />
+          <span style={{ fontSize: '11px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '1px' }}>
+            Nearest available:
+          </span>
+          <span style={{ fontSize: '13px', color: '#e8e0d0', fontFamily: 'sans-serif' }}>
+            {NEAREST.label}
+          </span>
+        </div>
+        <span style={{ fontSize: '16px', color: '#c9a84c', fontFamily: 'Georgia, serif', flexShrink: 0 }}>→</span>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: '#2a2218' }}>
+        {/* Calendar */}
+        <div style={{ background: '#141008', padding: '28px' }}>
+          {/* Month navigation */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <button
+              onClick={() => setViewMonth(prev => subMonths(prev, 1))}
+              style={{ background: 'none', border: 'none', color: '#c9a84c', cursor: 'pointer', fontSize: '18px', padding: '4px 8px', lineHeight: 1 }}
+            >
+              ←
+            </button>
+            <span style={{ fontSize: '13px', color: '#e8e0d0', fontFamily: 'Georgia, serif', letterSpacing: '2px' }}>
+              {format(viewMonth, 'MMMM yyyy')}
+            </span>
+            <button
+              onClick={() => setViewMonth(prev => addMonths(prev, 1))}
+              style={{ background: 'none', border: 'none', color: '#c9a84c', cursor: 'pointer', fontSize: '18px', padding: '4px 8px', lineHeight: 1 }}
+            >
+              →
+            </button>
+          </div>
+
+          {/* Weekday headers */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '6px' }}>
+            {DAY_HEADERS.map(d => (
+              <div key={d} style={{ textAlign: 'center', fontSize: '10px', color: '#3a3020', fontFamily: 'sans-serif', letterSpacing: '1px', padding: '4px 0' }}>
+                {d}
+              </div>
+            ))}
+          </div>
+
+          {/* Days */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+            {Array.from({ length: firstDayOffset }).map((_, i) => <div key={`pad-${i}`} />)}
+            {days.map(day => {
+              const isPast = isBefore(startOfDay(day), startOfDay(TODAY))
+              const dayStr = format(day, 'yyyy-MM-dd')
+              const sel = pickedDate === dayStr
+              const tod = isToday(day)
+
+              return (
+                <div
+                  key={dayStr}
+                  onClick={() => handleDayClick(day)}
+                  style={{
+                    textAlign: 'center',
+                    padding: '8px 2px',
+                    fontSize: '13px',
+                    fontFamily: 'sans-serif',
+                    color: isPast ? '#2a2218' : sel ? '#c9a84c' : tod ? '#e8e0d0' : '#7a7060',
+                    cursor: isPast ? 'not-allowed' : 'pointer',
+                    border: sel ? '1px solid #c9a84c' : '1px solid transparent',
+                    background: sel ? 'rgba(201,168,76,0.08)' : 'transparent',
+                    transition: 'all 0.15s',
+                    borderRadius: '2px',
+                    userSelect: 'none',
+                  }}
+                  onMouseEnter={e => { if (!isPast && !sel) (e.currentTarget as HTMLDivElement).style.color = '#e8e0d0' }}
+                  onMouseLeave={e => { if (!isPast && !sel) (e.currentTarget as HTMLDivElement).style.color = tod ? '#e8e0d0' : '#7a7060' }}
+                >
+                  {format(day, 'd')}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Time slots */}
+        <div style={{ background: '#141008', padding: '28px' }}>
+          {!pickedDate ? (
+            <div style={{ color: '#3a3020', fontFamily: 'sans-serif', fontSize: '13px', textAlign: 'center', paddingTop: '60px' }}>
+              Select a date first
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize: '10px', color: '#7a7060', fontFamily: 'sans-serif', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '20px' }}>
+                {format(new Date(pickedDate + 'T12:00:00'), 'EEEE, MMM d')}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                {slots.map(slot => {
+                  const selSlot = selectedTime === slot.time && selectedDate === pickedDate
+                  return (
+                    <div
+                      key={slot.time}
+                      onClick={() => handleSlotClick(slot.time, slot.taken)}
+                      style={{
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontFamily: 'sans-serif',
+                        textAlign: 'center',
+                        color: slot.taken ? '#2a2218' : selSlot ? '#c9a84c' : '#7a7060',
+                        textDecoration: slot.taken ? 'line-through' : 'none',
+                        border: selSlot ? '1px solid #c9a84c' : '1px solid #2a2218',
+                        background: selSlot ? 'rgba(201,168,76,0.06)' : 'transparent',
+                        cursor: slot.taken ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.15s',
+                        userSelect: 'none',
+                      }}
+                      onMouseEnter={e => { if (!slot.taken && !selSlot) (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
+                      onMouseLeave={e => { if (!slot.taken && !selSlot) (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}
+                    >
+                      {slot.time}
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
