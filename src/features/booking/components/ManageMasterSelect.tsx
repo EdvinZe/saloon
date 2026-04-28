@@ -1,0 +1,104 @@
+import { useQuery } from '@tanstack/react-query'
+import { getAvailableMastersForReschedule } from '../api'
+import type { Service, Master } from '../../../shared/data/mockData'
+
+interface Props {
+  currentMasterName: string
+  service: Service
+  date: string
+  time: string
+  selected: Master | null
+  onSelect: (m: Master) => void
+}
+
+export default function ManageMasterSelect({ currentMasterName, service, date, time, selected, onSelect }: Props) {
+  const { data: masters = [], isLoading } = useQuery({
+    queryKey: ['manage-masters', date, time, service.id, service.durationMin],
+    queryFn: () => getAvailableMastersForReschedule(date, time, service.durationMin),
+    staleTime: 60_000,
+  })
+
+  return (
+    <div>
+      <p style={{
+        fontSize: '10px', letterSpacing: '3px', color: '#c9a84c',
+        textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '14px',
+      }}>
+        Step 3 — Barber
+      </p>
+
+      {/* Warning banner */}
+      <div style={{
+        padding: '12px 16px',
+        border: '1px solid #3a2a18',
+        background: '#140e08',
+        marginBottom: '16px',
+        fontSize: '12px',
+        color: '#8a6040',
+        fontFamily: 'sans-serif',
+        lineHeight: 1.6,
+      }}>
+        {currentMasterName} is not available at {time}. Please choose another barber.
+      </div>
+
+      {isLoading ? (
+        <div style={{ fontSize: '11px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '2px', padding: '8px 0' }}>
+          Loading available barbers...
+        </div>
+      ) : masters.length === 0 ? (
+        <div style={{ fontSize: '12px', color: '#5a5040', fontFamily: 'sans-serif', lineHeight: 1.6 }}>
+          No barbers available at this time. Please choose a different slot.
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1px', background: '#2a2218' }}>
+          {masters.map(master => {
+            const sel = selected?.id === master.id
+            return (
+              <div
+                key={master.id}
+                onClick={() => onSelect(master)}
+                style={{
+                  background: sel ? 'rgba(201,168,76,0.06)' : '#141008',
+                  padding: '20px 16px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  outline: sel ? '1px solid #c9a84c' : '1px solid transparent',
+                  outlineOffset: '-1px',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = 'rgba(201,168,76,0.03)' }}
+                onMouseLeave={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = '#141008' }}
+              >
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '50%',
+                  border: `1px solid ${sel ? '#c9a84c' : '#3a3020'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '16px', color: '#c9a84c', fontFamily: 'sans-serif',
+                  margin: '0 auto 12px', transition: 'border-color 0.2s',
+                }}>
+                  {master.initials}
+                </div>
+                <div style={{ fontSize: '15px', color: '#e8e0d0', marginBottom: '4px' }}>{master.name}</div>
+                <div style={{ fontSize: '10px', color: '#c9a84c', letterSpacing: '2px', textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '10px' }}>
+                  {master.role}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                  {master.tags.map(tag => (
+                    <span key={tag} style={{ fontSize: '9px', color: '#7a7060', fontFamily: 'sans-serif', border: '1px solid #2a2218', padding: '2px 6px' }}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                {sel && (
+                  <div style={{ marginTop: '10px', fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#c9a84c', fontFamily: 'sans-serif' }}>
+                    ✓ Selected
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}

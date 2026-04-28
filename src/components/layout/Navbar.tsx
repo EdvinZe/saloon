@@ -1,5 +1,24 @@
 import { Link } from 'react-router-dom'
 
+const NAV_ITEMS: { label: string; to: string | null }[] = [
+  { label: 'Services',  to: null },
+  { label: 'Our team',  to: null },
+  { label: 'Works',     to: '/works' },
+  { label: 'About',     to: null },
+  { label: 'Contact',   to: null },
+]
+
+const linkStyle: React.CSSProperties = {
+  color: '#c0b090',
+  fontSize: '11px',
+  letterSpacing: '2px',
+  textDecoration: 'none',
+  textTransform: 'uppercase',
+  fontFamily: 'sans-serif',
+  padding: '6px 0',
+  transition: 'color 0.2s',
+}
+
 export default function Navbar() {
   return (
     <nav style={{
@@ -24,23 +43,29 @@ export default function Navbar() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '40px', marginLeft: '80px' }}>
         <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
-          {['Services', 'Our team', 'About', 'Contact'].map(link => (
-            <a key={link} href="#" style={{
-              color: '#c0b090',
-              fontSize: '11px',
-              letterSpacing: '2px',
-              textDecoration: 'none',
-              textTransform: 'uppercase',
-              fontFamily: 'sans-serif',
-              padding: '6px 0',
-              transition: 'color 0.2s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#c9a84c')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#c0b090')}
-            >
-              {link}
-            </a>
-          ))}
+          {NAV_ITEMS.map(({ label, to }) =>
+            to ? (
+              <Link
+                key={label}
+                to={to}
+                style={linkStyle}
+                onMouseEnter={e => (e.currentTarget.style.color = '#c9a84c')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#c0b090')}
+              >
+                {label}
+              </Link>
+            ) : (
+              <a
+                key={label}
+                href="#"
+                style={linkStyle}
+                onMouseEnter={e => (e.currentTarget.style.color = '#c9a84c')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#c0b090')}
+              >
+                {label}
+              </a>
+            )
+          )}
         </div>
 
         <Link to="/booking">
