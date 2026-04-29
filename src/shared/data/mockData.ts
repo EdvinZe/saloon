@@ -15,6 +15,7 @@ export interface Master {
   role: string
   initials: string
   tags: string[]
+  bio: string
 }
 
 export const SERVICES: Service[] = [
@@ -24,11 +25,11 @@ export const SERVICES: Service[] = [
 ]
 
 export const MOCK_MASTERS: Master[] = [
-  { id: '1', name: 'Alex Kravtsov',  role: 'Senior barber',    initials: 'AK', tags: ['Classic', 'Fade', 'Beard'] },
-  { id: '2', name: 'Michael Dorosh', role: 'Style specialist',  initials: 'MD', tags: ['Texture', 'Modern', 'Colour'] },
-  { id: '3', name: 'Ivan Semenov',   role: 'Shave master',      initials: 'IS', tags: ['Royal shave', 'Hot towel'] },
-  { id: '4', name: 'David Melnyk',   role: 'Colour expert',     initials: 'DM', tags: ['Highlights', 'Grey blend', 'Fade'] },
-  { id: '5', name: 'Paul Kowalski',  role: 'Classic barber',    initials: 'PK', tags: ['Scissor cut', 'Pompadour'] },
+  { id: '1', name: 'Alex Kravtsov',  role: 'Senior barber',    initials: 'AK', tags: ['Classic', 'Fade', 'Beard'],             bio: 'Over 12 years behind the chair. Alex built his craft in St. Petersburg before bringing his precision to Vilnius. Every cut starts with a conversation.' },
+  { id: '2', name: 'Michael Dorosh', role: 'Style specialist',  initials: 'MD', tags: ['Texture', 'Modern', 'Colour'],          bio: 'Michael studied at the Wahl Academy in Berlin and spent years in boutique studios across Europe. He reads a face the way others read a map.' },
+  { id: '3', name: 'Ivan Semenov',   role: 'Shave master',      initials: 'IS', tags: ['Royal shave', 'Hot towel'],             bio: 'A straight-razor specialist with a reverence for ritual. Ivan\'s hot-towel shave is the slowest thing we offer — and the most requested.' },
+  { id: '4', name: 'David Melnyk',   role: 'Colour expert',     initials: 'DM', tags: ['Highlights', 'Grey blend', 'Fade'],     bio: 'David treats colour as a craft, not a formula. From seamless grey blends to bold contrasts, he works in light and shadow.' },
+  { id: '5', name: 'Paul Kowalski',  role: 'Classic barber',    initials: 'PK', tags: ['Scissor cut', 'Pompadour'],             bio: 'Paul grew up in his grandfather\'s Warsaw barbershop. Scissors only. He believes the best cut should look like it happened naturally.' },
 ]
 
 export type AspectRatio = '1:1' | '3:4'

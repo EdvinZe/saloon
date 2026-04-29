@@ -7,6 +7,7 @@ import BookingSuccessPage from './pages/BookingSuccessPage'
 import BookingErrorPage from './pages/BookingErrorPage'
 import BookingManagePage from './pages/BookingManagePage'
 import WorksPage from './pages/WorksPage'
+import AboutPage from './pages/AboutPage'
 
 const queryClient = new QueryClient()
 
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/booking/error" element={<BookingErrorPage />} />
             <Route path="/booking/manage" element={<BookingManagePage />} />
             <Route path="/works" element={<WorksPage />} />
+            <Route path="/about" element={<AboutPage />} />
           </Routes>
         </div>
       </BrowserRouter>

@@ -1,12 +1,6 @@
-import { Link } from 'react-router-dom'
-
-const NAV_ITEMS: { label: string; to: string | null }[] = [
-  { label: 'Services',  to: null },
-  { label: 'Our team',  to: null },
-  { label: 'Works',     to: '/works' },
-  { label: 'About',     to: null },
-  { label: 'Contact',   to: null },
-]
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { NAV_ITEMS } from '../../shared/lib/navItems'
+import { scrollToSection } from '../../shared/lib/scroll'
 
 const linkStyle: React.CSSProperties = {
   color: '#c0b090',
@@ -20,6 +14,9 @@ const linkStyle: React.CSSProperties = {
 }
 
 export default function Navbar() {
+  const location = useLocation()
+  const navigate = useNavigate()
+
   return (
     <nav style={{
       display: 'flex',
@@ -43,27 +40,28 @@ export default function Navbar() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '40px', marginLeft: '80px' }}>
         <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
-          {NAV_ITEMS.map(({ label, to }) =>
-            to ? (
-              <Link
-                key={label}
-                to={to}
-                style={linkStyle}
-                onMouseEnter={e => (e.currentTarget.style.color = '#c9a84c')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#c0b090')}
-              >
-                {label}
-              </Link>
-            ) : (
+          {NAV_ITEMS.map(item =>
+            item.kind === 'section' ? (
               <a
-                key={label}
-                href="#"
+                key={item.label}
+                href={`#${item.sectionId}`}
+                style={linkStyle}
+                onClick={e => { e.preventDefault(); scrollToSection(item.sectionId, location.pathname, navigate) }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#c9a84c')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#c0b090')}
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                key={item.label}
+                to={item.to}
                 style={linkStyle}
                 onMouseEnter={e => (e.currentTarget.style.color = '#c9a84c')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#c0b090')}
               >
-                {label}
-              </a>
+                {item.label}
+              </Link>
             )
           )}
         </div>

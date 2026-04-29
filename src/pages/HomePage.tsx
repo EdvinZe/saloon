@@ -11,8 +11,12 @@ export default function HomePage() {
     <div style={{ background: '#0f0f0f', minHeight: '100vh' }}>
       <Hero />
       <Stats />
-      <MastersCarousel masters={MOCK_MASTERS} />
-      <Services />
+      <div id="team">
+        <MastersCarousel masters={MOCK_MASTERS} />
+      </div>
+      <div id="services">
+        <Services />
+      </div>
       <Cta />
       <Footer />
     </div>
