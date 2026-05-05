@@ -1,18 +1,17 @@
-const STATS = [
-  { num: '8+',   label: 'Years open' },
-  { num: '4.9',  label: 'Google rating' },
-  { num: '2 400',label: 'Happy clients' },
-  { num: '100%', label: 'Satisfaction' },
-]
+import type { HomeStat } from '../utils/homeStats'
 
-export default function Stats() {
+interface Props {
+  stats: HomeStat[]
+}
+
+export default function Stats({ stats }: Props) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: '1px solid #2a2218' }}>
-      {STATS.map((s, i) => (
-        <div key={i} style={{
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${stats.length}, 1fr)`, borderBottom: '1px solid #2a2218' }}>
+      {stats.map((s, i) => (
+        <div key={s.label} style={{
           padding: '36px',
           textAlign: 'center',
-          borderRight: i < 3 ? '1px solid #2a2218' : 'none',
+          borderRight: i < stats.length - 1 ? '1px solid #2a2218' : 'none',
         }}>
           <div style={{ fontSize: '38px', color: '#c9a84c', fontWeight: 400, marginBottom: '6px' }}>
             {s.num}

@@ -11,9 +11,12 @@ import {
   addMonths,
   subMonths,
 } from 'date-fns'
-import { useAvailableSlots } from '../hooks/useAvailableSlots'
+import type { Service } from '../../../shared/data/mockData'
+import { useQuery } from '@tanstack/react-query'
+import { getSlotsForService } from '../api'
 
 interface Props {
+  service: Service
   selectedDate: string | null
   selectedTime: string | null
   onSelect: (date: string, time: string) => void
@@ -29,12 +32,24 @@ const NEAREST = {
 
 const DAY_HEADERS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
-export default function DateTimePicker({ selectedDate, selectedTime, onSelect }: Props) {
+export default function DateTimePicker({ service, selectedDate, selectedTime, onSelect }: Props) {
   const [viewMonth, setViewMonth] = useState(TODAY)
   // pickedDate drives calendar highlight & slot fetch; commits to store only on slot click
   const [pickedDate, setPickedDate] = useState<string | null>(selectedDate)
 
-  const { data: slots = [] } = useAvailableSlots(pickedDate)
+  //  ,isLoading 
+  const { data: slots = []} = useQuery({
+    queryKey: ['booking-slots', pickedDate, service.id],
+    queryFn: () => {
+    if (!pickedDate) {
+      throw new Error('pickedDate is required')
+    }
+    return getSlotsForService(pickedDate, service.id)
+},
+
+    enabled: !!pickedDate,
+    staleTime: 60_000,
+  })
 
   const days = eachDayOfInterval({ start: startOfMonth(viewMonth), end: endOfMonth(viewMonth) })
   // Monday-first offset: getDay returns 0=Sun…6=Sat, remap to 0=Mon…6=Sun
@@ -45,8 +60,11 @@ export default function DateTimePicker({ selectedDate, selectedTime, onSelect }:
     setPickedDate(format(day, 'yyyy-MM-dd'))
   }
 
-  const handleSlotClick = (time: string, taken: boolean) => {
-    if (taken || !pickedDate) return
+  const handleSlotClick = (
+    time: string,
+    status: 'taken' | 'tooShort' | 'free'
+  ) => {
+    if (status !== 'free' || !pickedDate) return
     onSelect(pickedDate, time)
   }
 
@@ -172,28 +190,47 @@ export default function DateTimePicker({ selectedDate, selectedTime, onSelect }:
               <div style={{ fontSize: '10px', color: '#7a7060', fontFamily: 'sans-serif', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '20px' }}>
                 {format(new Date(pickedDate + 'T12:00:00'), 'EEEE, MMM d')}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                 {slots.map(slot => {
+                  const isTaken = slot.status === 'taken'
+                  const isTooShort = slot.status === 'tooShort'
+                  const isFree = slot.status === 'free'
                   const selSlot = selectedTime === slot.time && selectedDate === pickedDate
+
                   return (
                     <div
                       key={slot.time}
-                      onClick={() => handleSlotClick(slot.time, slot.taken)}
+                      onClick={() => handleSlotClick(slot.time, slot.status)}
                       style={{
                         padding: '10px 14px',
                         fontSize: '13px',
                         fontFamily: 'sans-serif',
                         textAlign: 'center',
-                        color: slot.taken ? '#2a2218' : selSlot ? '#c9a84c' : '#7a7060',
-                        textDecoration: slot.taken ? 'line-through' : 'none',
+                        color: isTaken
+                          ? '#2a2218'
+                          : selSlot
+                            ? '#c9a84c'
+                            : isTooShort
+                              ? '#3a3020'
+                              : '#7a7060',
+                        textDecoration: isTaken ? 'line-through' : 'none',
                         border: selSlot ? '1px solid #c9a84c' : '1px solid #2a2218',
                         background: selSlot ? 'rgba(201,168,76,0.06)' : 'transparent',
-                        cursor: slot.taken ? 'not-allowed' : 'pointer',
+                        cursor: isFree ? 'pointer' : 'not-allowed',
+                        opacity: isTooShort ? 0.4 : 1,
                         transition: 'all 0.15s',
                         userSelect: 'none',
                       }}
-                      onMouseEnter={e => { if (!slot.taken && !selSlot) (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
-                      onMouseLeave={e => { if (!slot.taken && !selSlot) (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}
+                      onMouseEnter={e => {
+                        if (isFree && !selSlot) {
+                          ;(e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c'
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (isFree && !selSlot) {
+                          ;(e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218'
+                        }
+                      }}
                     >
                       {slot.time}
                     </div>

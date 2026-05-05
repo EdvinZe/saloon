@@ -64,11 +64,14 @@ export default function BookingPage() {
         {/* Step 2 — reveals after service selected */}
         <div ref={step2Ref} style={revealStyle(step >= 2)}>
           <div style={{ marginBottom: '48px' }}>
-            <DateTimePicker
-              selectedDate={date}
-              selectedTime={time}
-              onSelect={setDateTime}
-            />
+            {service && (
+              <DateTimePicker
+                service={service}
+                selectedDate={date}
+                selectedTime={time}
+                onSelect={setDateTime}
+              />
+            )}
           </div>
         </div>
 

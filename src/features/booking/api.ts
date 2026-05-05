@@ -1,6 +1,11 @@
 import axios from 'axios'
 import type { Master, Service } from '../../shared/data/mockData'
 import { MOCK_MASTERS, SERVICES } from '../../shared/data/mockData'
+import {
+  generateSlotTimes,
+  toMinutes,
+  WORK_END,
+} from './utils/timeSlots'
 
 const BASE_URL = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -14,22 +19,26 @@ export interface SlotStatus {
   taken: boolean
 }
 
-const TAKEN_TIMES = new Set(['09:00', '10:30', '13:00', '15:30', '17:00'])
-
-function allSlotTimes(): string[] {
-  const times: string[] = []
-  for (let h = 9; h <= 18; h++) {
-    for (const m of [0, 30]) {
-      if (h === 18 && m === 30) break
-      times.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
-    }
-  }
-  return times
+interface MockBusyBooking {
+  startTime: string
+  durationMin: number
 }
 
-export function toMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number)
-  return h * 60 + m
+const MOCK_BUSY_BOOKINGS: MockBusyBooking[] = [
+  { startTime: '09:00', durationMin: 60 },
+  { startTime: '10:30', durationMin: 60 },
+  { startTime: '13:00', durationMin: 60 },
+  { startTime: '15:30', durationMin: 60 },
+  { startTime: '17:00', durationMin: 60 },
+]
+
+function hasOverlap(
+  startA: number,
+  endA: number,
+  startB: number,
+  endB: number
+): boolean {
+  return startA < endB && endA > startB
 }
 
 // ─── New-booking API ────────────────────────────────────────────────────────────
@@ -37,7 +46,10 @@ export function toMinutes(time: string): number {
 export async function getAvailableSlots(_date: string): Promise<SlotStatus[]> {
   // Replace with: return _api.get(`/slots?date=${_date}`).then(r => r.data)
   return Promise.resolve(
-    allSlotTimes().map(time => ({ time, taken: TAKEN_TIMES.has(time) }))
+    generateSlotTimes().map(time => ({
+      time,
+      taken: MOCK_BUSY_BOOKINGS.some(booking => booking.startTime === time),
+    }))
   )
 }
 
@@ -121,27 +133,40 @@ export async function getBookingByToken(_token: string): Promise<ManagedBooking>
 
 export async function getSlotsForService(date: string, serviceId: string): Promise<ManagedSlotStatus[]> {
   // Replace with: return _api.get(`/api/v1/bookings/slots?date=${date}&service_id=${serviceId}`).then(r => r.data)
+  void date
+
   const service = SERVICES.find(s => s.id === serviceId)
   if (!service) return Promise.resolve([])
 
   const needed = service.durationMin + service.bufferMin
-  const END_OF_DAY = 18 * 60
-  const times = allSlotTimes()
+  const endOfDay = toMinutes(WORK_END)
+  const times = generateSlotTimes()
 
   return Promise.resolve(
-    times.map((time, i) => {
-      if (TAKEN_TIMES.has(time)) return { time, status: 'taken' as const }
+    times.map(time => {
+      const slotStart = toMinutes(time)
+      const slotEnd = slotStart + needed
 
-      // Available window = minutes until the next taken slot or end of day
-      let windowEnd = END_OF_DAY
-      for (let j = i + 1; j < times.length; j++) {
-        if (TAKEN_TIMES.has(times[j])) {
-          windowEnd = toMinutes(times[j])
-          break
-        }
+      const exactTaken = MOCK_BUSY_BOOKINGS.some(booking => {
+        return toMinutes(booking.startTime) === slotStart
+      })
+
+      const overlaps = MOCK_BUSY_BOOKINGS.some(booking => {
+        const bookingStart = toMinutes(booking.startTime)
+        const bookingEnd = bookingStart + booking.durationMin
+
+        return hasOverlap(slotStart, slotEnd, bookingStart, bookingEnd)
+      })
+
+      if (exactTaken) {
+        return { time, status: 'taken' as const }
       }
-      const available = windowEnd - toMinutes(time)
-      return { time, status: available >= needed ? 'free' as const : 'tooShort' as const }
+
+      if (overlaps || slotEnd > endOfDay) {
+        return { time, status: 'tooShort' as const }
+      }
+
+      return { time, status: 'free' as const }
     })
   )
 }

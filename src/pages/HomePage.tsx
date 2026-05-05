@@ -4,18 +4,25 @@ import MastersCarousel from '../features/home/components/MastersCarousel'
 import Services from '../features/home/components/Services'
 import Cta from '../features/home/components/Cta'
 import Footer from '../components/layout/Footer'
-import { MOCK_MASTERS } from '../shared/data/mockData'
+import { useHomeMasters } from '../features/home/hooks/useHomeMasters'
+import { useHomeStats } from '../features/home/hooks/useHomeStats'
+import { useHomeServices } from '../features/home/hooks/useHomeServices'
+
 
 export default function HomePage() {
+  const { data: stats = [] } = useHomeStats()
+  const { data: masters = [] } = useHomeMasters()
+  const { data: services = [] } = useHomeServices()
+
   return (
     <div style={{ background: '#0f0f0f', minHeight: '100vh' }}>
       <Hero />
-      <Stats />
+      <Stats stats={stats} />
       <div id="team">
-        <MastersCarousel masters={MOCK_MASTERS} />
+        <MastersCarousel masters={masters} />
       </div>
       <div id="services">
-        <Services />
+        <Services services={services}/>
       </div>
       <Cta />
       <Footer />
