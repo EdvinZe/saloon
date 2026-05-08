@@ -25,7 +25,7 @@ export default function Footer() {
       borderTop: '1px solid #2a2218',
     }}>
       <span style={{ fontSize: '11px', color: '#3a3020', fontFamily: 'sans-serif', letterSpacing: '2px' }}>
-        © 2025 Saloon Barbershop · Vilnius
+        © 2026 Saloon Barbershop · Vilnius
       </span>
 
       <div style={{ display: 'flex', gap: '28px', alignItems: 'center' }}>
