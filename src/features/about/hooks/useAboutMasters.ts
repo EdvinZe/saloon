@@ -1,5 +1,5 @@
 import { useMasters } from '../../masters/hooks/useMasters'
 
-export function useHomeMasters() {
+export function useAboutMasters() {
   return useMasters()
 }

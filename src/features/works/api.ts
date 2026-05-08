@@ -1,11 +1,11 @@
-import axios from 'axios'
+// import axios from 'axios'
 import type { WorkPhoto } from '../../shared/data/mockData'
 import { MOCK_WORKS } from '../../shared/data/mockData'
 
-const BASE_URL = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL ?? 'http://localhost:8000'
+// const BASE_URL = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL ?? 'http://localhost:8000'
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _api = axios.create({ baseURL: BASE_URL })
+// // eslint-disable-next-line @typescript-eslint/no-unused-vars
+// const _api = axios.create({ baseURL: BASE_URL })
 
 export interface WorksPage {
   items: WorkPhoto[]

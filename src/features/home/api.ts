@@ -1,5 +1,5 @@
-import type { Master, Service } from '../../shared/data/mockData'
-import { SERVICES, MOCK_MASTERS } from '../../shared/data/mockData'
+import type { Service } from '../../shared/data/mockData'
+import { SERVICES } from '../../shared/data/mockData'
 
 export type HomeMetrics = {
   openedAt: string
@@ -19,16 +19,6 @@ export async function getHomeMetrics(): Promise<HomeMetrics> {
     satisfactionPercent: 100,
   })
 }
-
-export async function getHomeMasters(): Promise<Master[]> {
-  // will be:
-  // return _api.get('/api/v1/home/masters').then(r => r.data)
-
-  return Promise.resolve(
-    MOCK_MASTERS.filter(master => master.isActive !== false)
-  )
-}
-
 
 export async function getHomeServices(): Promise<Service[]> {
   return Promise.resolve(

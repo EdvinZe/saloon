@@ -1,10 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { getHomeServices } from '../api'
+import { useServices } from '../../services/hooks/useServices'
 
 export function useHomeServices() {
-  return useQuery({
-    queryKey: ['home-services'],
-    queryFn: getHomeServices,
-    staleTime: 5 * 60_000,
-  })
+  return useServices()
 }

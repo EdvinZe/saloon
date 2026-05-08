@@ -1,12 +1,5 @@
+import type { Master } from '../../../shared/data/mockData'
 import Carousel from '../../../components/ui/Carousel'
-
-interface Master {
-  id: string
-  name: string
-  role: string
-  initials: string
-  tags: string[]
-}
 
 interface MastersCarouselProps {
   masters: Master[]
@@ -40,6 +33,7 @@ export default function MastersCarousel({ masters }: MastersCarouselProps) {
               background: '#141008',
               padding: '40px 32px',
               textAlign: 'center',
+              height: '100%',
             }}
           >
             <div style={{

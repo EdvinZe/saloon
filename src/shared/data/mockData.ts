@@ -72,3 +72,44 @@ export const MOCK_WORKS: WorkPhoto[] = [
   { id: '26', photo_url: '', aspect_ratio: '3:4', master_id: '1' },
   { id: '27', photo_url: '', aspect_ratio: '1:1', master_id: '2' },
 ]
+
+
+export type ContactType = 'address' | 'phone' | 'instagram' | 'hours'
+
+export interface ContactItem {
+  type: ContactType
+  label: string
+  value: string
+  url?: string
+  isActive: boolean
+}
+
+export const CONTACT_ITEMS: ContactItem[] = [
+  {
+    type: 'address',
+    label: 'Address',
+    value: 'Gedimino pr. 14\nVilnius LT-01103',
+    url: 'https://maps.google.com/?q=Gedimino+pr.+14+Vilnius',
+    isActive: true,
+  },
+  {
+    type: 'phone',
+    label: 'Phone',
+    value: '+370 600 00000',
+    url: 'tel:+37060000000',
+    isActive: true,
+  },
+  {
+    type: 'instagram',
+    label: 'Instagram',
+    value: '@saloon.vilnius',
+    url: 'https://instagram.com/saloon.vilnius',
+    isActive: true,
+  },
+  {
+    type: 'hours',
+    label: 'Hours',
+    value: 'Mon–Fri 10:00–20:00\nSat 10:00–18:00\nSun Closed',
+    isActive: true,
+  },
+]
