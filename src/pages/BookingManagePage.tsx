@@ -10,28 +10,15 @@ import {
   isMasterBusyAt,
 } from '../features/booking/api'
 import { useManageStore } from '../features/booking/hooks/useManageStore'
-import ManageServiceSelect from '../features/booking/components/ManageServiceSelect'
-import ManageTimeSlots from '../features/booking/components/ManageTimeSlots'
-import ManageMasterSelect from '../features/booking/components/ManageMasterSelect'
-import CancelConfirm from '../features/booking/components/CancelConfirm'
+import BookingManageHeader from '../features/bookingmanage/components/BookingManageHeader'
+import BookingManageDetailsCard from '../features/bookingmanage/components/BookingManageDetailsCard'
+import BookingManageActions from '../features/bookingmanage/components/BookingManageActions'
+import BookingManageResult from '../features/bookingmanage/components/BookingManageResult'
+import BookingManageReschedulePanel from '../features/bookingmanage/components/BookingManageReschedulePanel'
+import BookingManageCancelPanel from '../features/bookingmanage/components/BookingManageCancelPanel'
 
 type ActivePanel = 'none' | 'reschedule' | 'cancel'
 type DoneType = 'rescheduled' | 'cancelled'
-
-const revealStyle = (visible: boolean): React.CSSProperties => ({
-  maxHeight: visible ? '2000px' : '0',
-  opacity: visible ? 1 : 0,
-  overflow: 'hidden',
-  transition: 'max-height 0.6s ease, opacity 0.5s ease',
-  scrollMarginTop: '24px',
-})
-
-const ROW: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'baseline',
-  padding: '10px 0',
-}
 
 export default function BookingManagePage() {
   const [params] = useSearchParams()
@@ -162,34 +149,9 @@ export default function BookingManagePage() {
 
   // ── Post-action success screen ────────────────────────────────────────────────
   if (doneType) {
-    const cancelled = doneType === 'cancelled'
     return (
       <div style={{ background: '#0f0f0f', minHeight: '100vh' }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '80px 24px', minHeight: 'calc(100vh - 70px)',
-        }}>
-          <div style={{ width: '100%', maxWidth: '520px', textAlign: 'center' }}>
-            <div style={{
-              width: '72px', height: '72px', borderRadius: '50%',
-              border: `1px solid ${cancelled ? '#c87070' : '#c9a84c'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 32px', fontSize: '26px',
-              color: cancelled ? '#c87070' : '#c9a84c',
-              background: cancelled ? 'rgba(200,112,112,0.05)' : 'rgba(201,168,76,0.05)',
-            }}>
-              {cancelled ? '✕' : '✓'}
-            </div>
-            <h1 style={{ fontSize: '28px', color: '#e8e0d0', fontWeight: 400, fontFamily: 'Georgia, serif', marginBottom: '10px' }}>
-              {cancelled ? 'Booking cancelled' : 'Booking rescheduled'}
-            </h1>
-            <p style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'sans-serif', lineHeight: 1.8 }}>
-              {cancelled
-                ? `Your deposit of €${booking.depositPaid} will be refunded within 3–5 business days.`
-                : 'Your appointment has been updated. A confirmation will be sent shortly.'}
-            </p>
-          </div>
-        </div>
+        <BookingManageResult doneType={doneType} depositPaid={booking.depositPaid} />
         <Footer />
       </div>
     )
@@ -210,171 +172,40 @@ export default function BookingManagePage() {
       <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 24px 80px' }}>
         <div style={{ width: '100%', maxWidth: '520px' }}>
 
-          {/* Page header */}
-          <div style={{ marginBottom: '36px' }}>
-            <p style={{
-              fontSize: '10px', letterSpacing: '4px', color: '#c9a84c',
-              textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '10px',
-            }}>
-              Manage booking
-            </p>
-            <h1 style={{ fontSize: '28px', color: '#e8e0d0', fontWeight: 400, fontFamily: 'Georgia, serif' }}>
-              Your appointment
-            </h1>
-          </div>
+          <BookingManageHeader />
+          <BookingManageDetailsCard rows={bookingRows} />
+          <BookingManageActions activePanel={activePanel} onSelect={handlePanelSelect} />
 
-          {/* Booking details card */}
-          <div style={{ background: '#141008', border: '1px solid #2a2218', padding: '24px 28px', marginBottom: '20px' }}>
-            {bookingRows.map((row, i) => (
-              <div key={row.label} style={{ ...ROW, borderBottom: i < bookingRows.length - 1 ? '1px solid #1a1810' : 'none' }}>
-                <span style={{ fontSize: '11px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '1px' }}>
-                  {row.label}
-                </span>
-                <span style={{ fontSize: '13px', color: row.gold ? '#c9a84c' : '#e8e0d0', fontFamily: 'sans-serif' }}>
-                  {row.value}
-                </span>
-              </div>
-            ))}
-          </div>
+          <BookingManageReschedulePanel
+            visible={activePanel === 'reschedule'}
+            panelRef={rescheduleRef}
+            step2Ref={step2Ref}
+            step3Ref={step3Ref}
+            confirmRef={confirmRef}
+            newService={newService}
+            newSlot={newSlot}
+            newMaster={newMaster}
+            depositPaid={booking.depositPaid}
+            currentMasterName={booking.master.name}
+            needsMasterSelect={needsMasterSelect}
+            canConfirm={canConfirm}
+            onServiceSelect={setNewService}
+            onSlotSelect={setNewSlot}
+            onMasterSelect={setNewMaster}
+            onConfirm={handleReschedule}
+            submitting={rescheduleMutation.isPending}
+            isError={rescheduleMutation.isError}
+          />
 
-          {/* Action selector cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '4px' }}>
-
-            {/* Reschedule */}
-            <div
-              onClick={() => handlePanelSelect('reschedule')}
-              style={{
-                background: activePanel === 'reschedule' ? 'rgba(201,168,76,0.05)' : '#141008',
-                border: activePanel === 'reschedule' ? '1px solid #c9a84c' : '1px solid #2a2218',
-                padding: '20px',
-                cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => { if (activePanel !== 'reschedule') (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
-              onMouseLeave={e => { if (activePanel !== 'reschedule') (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}
-            >
-              <div style={{ fontSize: '22px', color: '#c9a84c', marginBottom: '8px' }}>↺</div>
-              <div style={{ fontSize: '13px', color: '#e8e0d0', fontFamily: 'Georgia, serif', marginBottom: '4px' }}>Reschedule</div>
-              <div style={{ fontSize: '10px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '1px' }}>
-                Change date, time or service
-              </div>
-            </div>
-
-            {/* Cancel */}
-            <div
-              onClick={() => handlePanelSelect('cancel')}
-              style={{
-                background: activePanel === 'cancel' ? 'rgba(200,112,112,0.05)' : '#141008',
-                border: activePanel === 'cancel' ? '1px solid #c87070' : '1px solid #2a2218',
-                padding: '20px',
-                cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => { if (activePanel !== 'cancel') (e.currentTarget as HTMLDivElement).style.borderColor = '#c87070' }}
-              onMouseLeave={e => { if (activePanel !== 'cancel') (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}
-            >
-              <div style={{ fontSize: '22px', color: '#c87070', marginBottom: '8px' }}>✕</div>
-              <div style={{ fontSize: '13px', color: '#c87070', fontFamily: 'Georgia, serif', marginBottom: '4px' }}>Cancel booking</div>
-              <div style={{ fontSize: '10px', color: '#7a5050', fontFamily: 'sans-serif', letterSpacing: '1px' }}>
-                Deposit fully refunded
-              </div>
-            </div>
-          </div>
-
-          {/* ── Reschedule panel ──────────────────────────────────────────────── */}
-          <div style={revealStyle(activePanel === 'reschedule')}>
-            <div
-              ref={rescheduleRef}
-              style={{ background: '#141008', border: '1px solid #2a2218', padding: '24px', marginTop: '12px' }}
-            >
-              {/* Step 1 — Service */}
-              <ManageServiceSelect selected={newService} onSelect={setNewService} />
-
-              {/* Step 2 — Time (reveals after service selected) */}
-              <div ref={step2Ref} style={revealStyle(!!newService)}>
-                {newService && (
-                  <ManageTimeSlots
-                    service={newService}
-                    depositPaid={booking.depositPaid}
-                    selectedDate={newSlot?.date ?? null}
-                    selectedTime={newSlot?.time ?? null}
-                    onSelect={setNewSlot}
-                  />
-                )}
-              </div>
-
-              {/* Step 3 — Master (reveals only if current barber unavailable) */}
-              <div ref={step3Ref} style={revealStyle(needsMasterSelect)}>
-                {needsMasterSelect && newService && newSlot && (
-                  <ManageMasterSelect
-                    currentMasterName={booking.master.name}
-                    service={newService}
-                    date={newSlot.date}
-                    time={newSlot.time}
-                    selected={newMaster}
-                    onSelect={setNewMaster}
-                  />
-                )}
-              </div>
-
-              {/* Confirm reschedule (reveals when all required fields are filled) */}
-              <div ref={confirmRef} style={revealStyle(canConfirm)}>
-                <div style={{ paddingTop: '20px', borderTop: '1px solid #1a1810', marginTop: '4px' }}>
-                  <button
-                    onClick={handleReschedule}
-                    disabled={rescheduleMutation.isPending}
-                    style={{
-                      width: '100%',
-                      padding: '14px',
-                      background: 'transparent',
-                      border: '1px solid #c9a84c',
-                      color: '#c9a84c',
-                      fontSize: '11px',
-                      letterSpacing: '3px',
-                      textTransform: 'uppercase',
-                      fontFamily: 'Georgia, serif',
-                      cursor: rescheduleMutation.isPending ? 'not-allowed' : 'pointer',
-                      opacity: rescheduleMutation.isPending ? 0.5 : 1,
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={e => { if (!rescheduleMutation.isPending) e.currentTarget.style.background = 'rgba(201,168,76,0.08)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                  >
-                    {rescheduleMutation.isPending ? 'Rescheduling...' : 'Confirm reschedule'}
-                  </button>
-
-                  {rescheduleMutation.isError && (
-                    <div style={{ marginTop: '10px', fontSize: '11px', color: '#c87070', fontFamily: 'sans-serif', textAlign: 'center' }}>
-                      Something went wrong. Please try again.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Cancel panel ──────────────────────────────────────────────────── */}
-          <div style={revealStyle(activePanel === 'cancel')}>
-            <div
-              ref={cancelRef}
-              style={{ background: '#141008', border: '1px solid #2a2218', padding: '24px', marginTop: '12px' }}
-            >
-              <CancelConfirm
-                depositPaid={booking.depositPaid}
-                onConfirm={() => cancelMutation.mutate()}
-                onKeep={() => setActivePanel('none')}
-                submitting={cancelMutation.isPending}
-              />
-
-              {cancelMutation.isError && (
-                <div style={{ marginTop: '10px', fontSize: '11px', color: '#c87070', fontFamily: 'sans-serif', textAlign: 'center' }}>
-                  Something went wrong. Please try again.
-                </div>
-              )}
-            </div>
-          </div>
+          <BookingManageCancelPanel
+            visible={activePanel === 'cancel'}
+            panelRef={cancelRef}
+            depositPaid={booking.depositPaid}
+            onConfirm={() => cancelMutation.mutate()}
+            onKeep={() => setActivePanel('none')}
+            submitting={cancelMutation.isPending}
+            isError={cancelMutation.isError}
+          />
 
         </div>
       </div>

@@ -1,0 +1,52 @@
+import type { CSSProperties, RefObject } from 'react'
+import CancelConfirm from '../../booking/components/CancelConfirm'
+
+const revealStyle = (visible: boolean): CSSProperties => ({
+  maxHeight: visible ? '2000px' : '0',
+  opacity: visible ? 1 : 0,
+  overflow: 'hidden',
+  transition: 'max-height 0.6s ease, opacity 0.5s ease',
+  scrollMarginTop: '24px',
+})
+
+interface Props {
+  visible: boolean
+  panelRef: RefObject<HTMLDivElement | null>
+  depositPaid: number
+  onConfirm: () => void
+  onKeep: () => void
+  submitting: boolean
+  isError: boolean
+}
+
+export default function BookingManageCancelPanel({
+  visible,
+  panelRef,
+  depositPaid,
+  onConfirm,
+  onKeep,
+  submitting,
+  isError,
+}: Props) {
+  return (
+    <div style={revealStyle(visible)}>
+      <div
+        ref={panelRef}
+        style={{ background: '#141008', border: '1px solid #2a2218', padding: '24px', marginTop: '12px' }}
+      >
+        <CancelConfirm
+          depositPaid={depositPaid}
+          onConfirm={onConfirm}
+          onKeep={onKeep}
+          submitting={submitting}
+        />
+
+        {isError && (
+          <div style={{ marginTop: '10px', fontSize: '11px', color: '#c87070', fontFamily: 'sans-serif', textAlign: 'center' }}>
+            Something went wrong. Please try again.
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
