@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format, addDays, startOfDay } from 'date-fns'
-import { getSlotsForService } from '../api'
+import { getSlotsForService } from '../../booking/api'
 import type { Service } from '../../../shared/data/mockData'
 
 const SERVICE_DEPOSITS: Record<string, number> = { haircut: 10, beard: 8, combo: 15 }

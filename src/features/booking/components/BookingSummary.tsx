@@ -6,9 +6,9 @@ interface Props {
   date: string | null
   time: string | null
   master: Master | null
+  depositAmount: number
+  currencySymbol: string
 }
-
-const DEPOSIT_RATE = 0.3
 
 const rowStyle: React.CSSProperties = {
   display: 'flex',
@@ -18,9 +18,7 @@ const rowStyle: React.CSSProperties = {
   borderBottom: '1px solid #1a1810',
 }
 
-export default function BookingSummary({ service, date, time, master }: Props) {
-  const deposit = service ? Math.round(service.priceNum * DEPOSIT_RATE) : null
-
+export default function BookingSummary({ service, date, time, master, depositAmount, currencySymbol }: Props) {
   const formattedDate = date
     ? format(new Date(date + 'T12:00:00'), 'EEEE, MMM d')
     : '—'
@@ -54,7 +52,7 @@ export default function BookingSummary({ service, date, time, master }: Props) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: '6px' }}>
         <span style={{ fontSize: '11px', color: '#5a5040', fontFamily: 'sans-serif' }}>Deposit due today</span>
         <span style={{ fontSize: '20px', color: '#c9a84c', fontFamily: 'Georgia, serif' }}>
-          {deposit !== null ? `€${deposit}` : '—'}
+          {service ? `${currencySymbol}${depositAmount}` : '—'}
         </span>
       </div>
     </div>

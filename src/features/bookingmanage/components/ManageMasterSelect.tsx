@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getAvailableMastersForReschedule } from '../api'
+import { getAvailableMastersForReschedule } from '../../booking/api'
 import type { Service, Master } from '../../../shared/data/mockData'
 
 interface Props {

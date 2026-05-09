@@ -1,6 +1,6 @@
-import { SERVICES } from '../../../shared/data/mockData'
 import type { Service } from '../../../shared/data/mockData'
 import Carousel from '../../../components/ui/Carousel'
+import { useBookingServices } from '../hooks/useBookingServices'
 
 interface Props {
   selected: Service | null
@@ -8,6 +8,9 @@ interface Props {
 }
 
 export default function ServiceSelect({ selected, onSelect }: Props) {
+  const { data: services = [], isLoading } = useBookingServices()
+  void isLoading
+
   return (
     <div>
       <div style={{ marginBottom: '28px' }}>
@@ -20,7 +23,7 @@ export default function ServiceSelect({ selected, onSelect }: Props) {
       </div>
 
       <Carousel visible={3}>
-        {SERVICES.map(svc => {
+        {services.map(svc => {
           const sel = selected?.id === svc.id
 
           return (

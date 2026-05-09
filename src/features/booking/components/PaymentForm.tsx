@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Service, Master } from '../../../shared/data/mockData'
 import BookingSummary from './BookingSummary'
 import { useBookingStore } from '../hooks/useBookingStore'
+import { useBookingConfig } from '../../bookingconfig/hooks/useBookingConfig'
 
 interface Props {
   service: Service | null
@@ -46,6 +47,10 @@ const sectionHeadStyle: React.CSSProperties = {
 
 export default function PaymentForm({ service, date, time, master }: Props) {
   const { clientName, clientPhone, setClientName, setClientPhone } = useBookingStore()
+  const { data: bookingConfig } = useBookingConfig()
+  const depositAmount = bookingConfig?.depositAmount ?? 10
+  const currency = bookingConfig?.currency ?? 'EUR'
+  const currencySymbol = currency === 'EUR' ? '€' : currency
   // Tracks which mock card field appears "focused"
   const [cardFocus, setCardFocus] = useState<string | null>(null)
 
@@ -138,7 +143,7 @@ export default function PaymentForm({ service, date, time, master }: Props) {
 
         {/* Right: summary + CTA */}
         <div style={{ background: '#0f0f0f', padding: '36px 28px' }}>
-          <BookingSummary service={service} date={date} time={time} master={master} />
+          <BookingSummary service={service} date={date} time={time} master={master} depositAmount={depositAmount} currencySymbol={currencySymbol} />
 
           <button
             style={{
@@ -165,7 +170,7 @@ export default function PaymentForm({ service, date, time, master }: Props) {
               e.currentTarget.style.boxShadow = 'none'
             }}
           >
-            Confirm & pay deposit →
+            Confirm & pay {currencySymbol}{depositAmount} deposit →
           </button>
 
           <p style={{ fontSize: '11px', color: '#3a3020', fontFamily: 'sans-serif', textAlign: 'center', marginTop: '14px', lineHeight: 1.7 }}>

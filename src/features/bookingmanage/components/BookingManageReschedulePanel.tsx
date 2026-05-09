@@ -1,8 +1,8 @@
 import type { CSSProperties, RefObject } from 'react'
 import type { Service, Master } from '../../../shared/data/mockData'
-import ManageServiceSelect from '../../booking/components/ManageServiceSelect'
-import ManageTimeSlots from '../../booking/components/ManageTimeSlots'
-import ManageMasterSelect from '../../booking/components/ManageMasterSelect'
+import ManageServiceSelect from './ManageServiceSelect'
+import ManageTimeSlots from './ManageTimeSlots'
+import ManageMasterSelect from './ManageMasterSelect'
 
 const revealStyle = (visible: boolean): CSSProperties => ({
   maxHeight: visible ? '2000px' : '0',

@@ -1,8 +1,6 @@
 import type { Service } from '../../../shared/data/mockData'
 import { SERVICES } from '../../../shared/data/mockData'
-
-// Deposits per service as defined in the booking spec
-const SERVICE_DEPOSITS: Record<string, number> = { haircut: 10, beard: 8, combo: 15 }
+import { useBookingConfig } from '../../bookingconfig/hooks/useBookingConfig'
 
 interface Props {
   selected: Service | null
@@ -10,6 +8,11 @@ interface Props {
 }
 
 export default function ManageServiceSelect({ selected, onSelect }: Props) {
+  const { data: bookingConfig } = useBookingConfig()
+  const depositAmount = bookingConfig?.depositAmount ?? 10
+  const currency = bookingConfig?.currency ?? 'EUR'
+  const currencySymbol = currency === 'EUR' ? '€' : currency
+
   return (
     <div>
       <p style={{
@@ -22,7 +25,6 @@ export default function ManageServiceSelect({ selected, onSelect }: Props) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: '#2a2218' }}>
         {SERVICES.map(svc => {
           const sel = selected?.id === svc.id
-          const dep = SERVICE_DEPOSITS[svc.id] ?? 0
           return (
             <div
               key={svc.id}
@@ -42,7 +44,7 @@ export default function ManageServiceSelect({ selected, onSelect }: Props) {
                 {svc.name}
               </div>
               <div style={{ fontSize: '12px', color: '#c9a84c', fontFamily: 'sans-serif', marginBottom: '4px' }}>
-                dep. €{dep}
+                dep. {currencySymbol}{depositAmount}
               </div>
               <div style={{ fontSize: '10px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '1px' }}>
                 {svc.dur}
