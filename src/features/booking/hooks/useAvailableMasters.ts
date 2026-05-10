@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { getAvailableMasters } from '../api'
+import { getAvailableMastersForSlot } from '../../bookingavailability/api'
 import type { Master } from '../../../shared/data/mockData'
 
-export function useAvailableMasters(date: string | null, time: string | null) {
+export function useAvailableMasters(date: string | null, time: string | null, serviceId: string | null) {
   return useQuery<Master[]>({
-    queryKey: ['masters', date, time],
-    queryFn: () => getAvailableMasters(date!, time!),
-    enabled: !!date && !!time,
+    queryKey: ['available-masters', date, time, serviceId],
+    queryFn: () => getAvailableMastersForSlot({ date: date!, time: time!, serviceId: serviceId! }),
+    enabled: !!date && !!time && !!serviceId,
     placeholderData: [],
     staleTime: 60_000,
   })

@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { format, addDays, startOfDay } from 'date-fns'
-import { getSlotsForService } from '../../booking/api'
 import type { Service } from '../../../shared/data/mockData'
-
-const SERVICE_DEPOSITS: Record<string, number> = { haircut: 10, beard: 8, combo: 15 }
+import { useManageAvailableSlots } from '../hooks/useManageAvailableSlots'
 
 interface Props {
   service: Service
@@ -19,11 +16,7 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i))
   const [pickedDate, setPickedDate] = useState(() => format(today, 'yyyy-MM-dd'))
 
-  const { data: slots = [], isLoading } = useQuery({
-    queryKey: ['manage-slots', pickedDate, service.id],
-    queryFn: () => getSlotsForService(pickedDate, service.id),
-    staleTime: 60_000,
-  })
+  const { data: slots = [], isLoading } = useManageAvailableSlots(pickedDate, service.id)
 
   // Scroll slots into view when pickedDate changes and slots load
   const slotsRef = useRef<HTMLDivElement>(null)
@@ -33,8 +26,6 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
     }
   }, [pickedDate, isLoading, slots.length])
 
-  const newDep = SERVICE_DEPOSITS[service.id] ?? 0
-  const depDiff = newDep - depositPaid
   const slotSelected = !!(selectedDate === pickedDate && selectedTime)
 
   return (
@@ -123,22 +114,18 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
         )}
       </div>
 
-      {/* Deposit diff note — only when a slot on the current date is selected */}
+      {/* Deposit note — only when a slot on the current date is selected */}
       {slotSelected && (
         <div style={{
           padding: '10px 14px',
           background: '#141008',
-          border: `1px solid ${depDiff === 0 ? '#2a2218' : depDiff > 0 ? '#3a2a18' : '#1a3020'}`,
+          border: '1px solid #2a2218',
           fontSize: '12px',
           fontFamily: 'sans-serif',
-          color: depDiff === 0 ? '#7a7060' : depDiff > 0 ? '#8a6040' : '#5a8060',
+          color: '#7a7060',
           lineHeight: 1.6,
         }}>
-          {depDiff === 0
-            ? 'Your deposit remains — no extra charge'
-            : depDiff > 0
-              ? `Extra €${depDiff} deposit required — you will be charged the difference`
-              : `€${Math.abs(depDiff)} will be refunded to your card`}
+          Deposit already paid: €{depositPaid}. No extra charge for rescheduling.
         </div>
       )}
     </div>

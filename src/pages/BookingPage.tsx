@@ -43,12 +43,15 @@ export default function BookingPage() {
         {/* Step 3 — reveals after date+time selected */}
         <BookingStepSection ref={step3Ref} visible={step >= 3}>
           <div style={{ marginBottom: '48px' }}>
-            <MasterSelect
-              date={date}
-              time={time}
-              selected={master}
-              onSelect={setMaster}
-            />
+            {service && (
+              <MasterSelect
+                service={service}
+                date={date}
+                time={time}
+                selected={master}
+                onSelect={setMaster}
+              />
+            )}
           </div>
         </BookingStepSection>
 

@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { getAvailableMastersForReschedule } from '../../booking/api'
 import type { Service, Master } from '../../../shared/data/mockData'
+import { useManageAvailableMasters } from '../hooks/useManageAvailableMasters'
 
 interface Props {
   currentMasterName: string
@@ -12,11 +11,7 @@ interface Props {
 }
 
 export default function ManageMasterSelect({ currentMasterName, service, date, time, selected, onSelect }: Props) {
-  const { data: masters = [], isLoading } = useQuery({
-    queryKey: ['manage-masters', date, time, service.id, service.durationMin],
-    queryFn: () => getAvailableMastersForReschedule(date, time, service.durationMin),
-    staleTime: 60_000,
-  })
+  const { data: masters = [], isLoading } = useManageAvailableMasters(date, time, service.durationMin)
 
   return (
     <div>

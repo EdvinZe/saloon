@@ -12,8 +12,8 @@ import {
   subMonths,
 } from 'date-fns'
 import type { Service } from '../../../shared/data/mockData'
-import { useQuery } from '@tanstack/react-query'
-import { getSlotsForService } from '../api'
+import { useAvailableSlots } from '../hooks/useAvailableSlots'
+import { useNearestAvailableSlot } from '../hooks/useNearestAvailableSlot'
 
 interface Props {
   service: Service
@@ -23,12 +23,6 @@ interface Props {
 }
 
 const TODAY = new Date()
-const TODAY_STR = format(TODAY, 'yyyy-MM-dd')
-const NEAREST = {
-  date: TODAY_STR,
-  time: '09:30',
-  label: `Today ${format(TODAY, 'MMM d')} · 09:30`,
-}
 
 const DAY_HEADERS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
@@ -36,20 +30,8 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
   const [viewMonth, setViewMonth] = useState(TODAY)
   // pickedDate drives calendar highlight & slot fetch; commits to store only on slot click
   const [pickedDate, setPickedDate] = useState<string | null>(selectedDate)
-
-  //  ,isLoading 
-  const { data: slots = []} = useQuery({
-    queryKey: ['booking-slots', pickedDate, service.id],
-    queryFn: () => {
-    if (!pickedDate) {
-      throw new Error('pickedDate is required')
-    }
-    return getSlotsForService(pickedDate, service.id)
-},
-
-    enabled: !!pickedDate,
-    staleTime: 60_000,
-  })
+  const { data: nearestSlot = null } = useNearestAvailableSlot(service.id)
+  const { data: slots = [] } = useAvailableSlots(pickedDate, service.id)
 
   const days = eachDayOfInterval({ start: startOfMonth(viewMonth), end: endOfMonth(viewMonth) })
   // Monday-first offset: getDay returns 0=Sun…6=Sat, remap to 0=Mon…6=Sun
@@ -69,9 +51,10 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
   }
 
   const handleNearest = () => {
-    setPickedDate(NEAREST.date)
-    setViewMonth(TODAY)
-    onSelect(NEAREST.date, NEAREST.time)
+    if (!nearestSlot) return
+    setPickedDate(nearestSlot.date)
+    setViewMonth(new Date(nearestSlot.date + 'T12:00:00'))
+    onSelect(nearestSlot.date, nearestSlot.time)
   }
 
   return (
@@ -84,33 +67,35 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
       </div>
 
       {/* Nearest available banner */}
-      <div
-        onClick={handleNearest}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '14px 20px',
-          border: '1px solid #2a2218',
-          marginBottom: '24px',
-          cursor: 'pointer',
-          transition: 'border-color 0.2s',
-          background: '#141008',
-        }}
-        onMouseEnter={e => (e.currentTarget.style.borderColor = '#c9a84c')}
-        onMouseLeave={e => (e.currentTarget.style.borderColor = '#2a2218')}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#c9a84c', flexShrink: 0 }} />
-          <span style={{ fontSize: '11px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '1px' }}>
-            Nearest available:
-          </span>
-          <span style={{ fontSize: '13px', color: '#e8e0d0', fontFamily: 'sans-serif' }}>
-            {NEAREST.label}
-          </span>
+      {nearestSlot && (
+        <div
+          onClick={handleNearest}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 20px',
+            border: '1px solid #2a2218',
+            marginBottom: '24px',
+            cursor: 'pointer',
+            transition: 'border-color 0.2s',
+            background: '#141008',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = '#c9a84c')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = '#2a2218')}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#c9a84c', flexShrink: 0 }} />
+            <span style={{ fontSize: '11px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '1px' }}>
+              Nearest available:
+            </span>
+            <span style={{ fontSize: '13px', color: '#e8e0d0', fontFamily: 'sans-serif' }}>
+              {format(new Date(nearestSlot.date + 'T12:00:00'), 'EEE MMM d')} · {nearestSlot.time}
+            </span>
+          </div>
+          <span style={{ fontSize: '16px', color: '#c9a84c', fontFamily: 'Georgia, serif', flexShrink: 0 }}>→</span>
         </div>
-        <span style={{ fontSize: '16px', color: '#c9a84c', fontFamily: 'Georgia, serif', flexShrink: 0 }}>→</span>
-      </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: '#2a2218' }}>
         {/* Calendar */}

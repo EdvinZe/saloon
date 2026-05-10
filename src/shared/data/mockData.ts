@@ -24,7 +24,7 @@ export const SERVICES: Service[] = [
   { id: 'haircut', name: 'Haircut', isActive: true, desc: 'Classic, fade, undercut — crafted to your face shape and lifestyle.', price: 'from €25', priceNum: 25, dur: '45 min', durationMin: 45, bufferMin: 15 },
   { id: 'beard',   name: 'Beard', isActive: true,  desc: 'Shape, trim, sculpt. Hot towel and blade finish included.',           price: 'from €18', priceNum: 18, dur: '30 min', durationMin: 30, bufferMin: 15 },
   { id: 'combo',   name: 'Combo', isActive: true,  desc: 'The full look. Haircut and beard in one visit. Most popular choice.', price: 'from €38', priceNum: 38, dur: '75 min', durationMin: 75, bufferMin: 15 },
-  { id: 'combo',   name: 'Combo', isActive: true,  desc: 'The full look. Haircut and beard in one visit. Most popular choice.', price: 'from €38', priceNum: 38, dur: '75 min', durationMin: 75, bufferMin: 15 },
+  { id: 'combo1',   name: 'Combo', isActive: true,  desc: 'The full look. Haircut and beard in one visit. Most popular choice.', price: 'from €38', priceNum: 38, dur: '75 min', durationMin: 75, bufferMin: 15 },
 ]
 
 export const MOCK_MASTERS: Master[] = [

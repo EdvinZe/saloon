@@ -1,16 +1,17 @@
 import { format } from 'date-fns'
 import { useAvailableMasters } from '../hooks/useAvailableMasters'
-import type { Master } from '../../../shared/data/mockData'
+import type { Master, Service } from '../../../shared/data/mockData'
 
 interface Props {
+  service: Service
   date: string | null
   time: string | null
   selected: Master | null
   onSelect: (m: Master) => void
 }
 
-export default function MasterSelect({ date, time, selected, onSelect }: Props) {
-  const { data: masters = [] } = useAvailableMasters(date, time)
+export default function MasterSelect({ service, date, time, selected, onSelect }: Props) {
+  const { data: masters = [], isLoading } = useAvailableMasters(date, time, service.id)
 
   const formattedDate = date
     ? format(new Date(date + 'T12:00:00'), 'EEE, MMM d')
@@ -28,7 +29,11 @@ export default function MasterSelect({ date, time, selected, onSelect }: Props) 
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: '#2a2218' }}>
-        {masters.map(master => {
+        {isLoading ? (
+          <div style={{ color: '#5a5040', fontFamily: 'sans-serif', fontSize: '13px', textAlign: 'center', padding: '36px 28px', background: '#141008' }}>
+            Loading...
+          </div>
+        ) : masters.map(master => {
           const sel = selected?.id === master.id
           return (
             <div

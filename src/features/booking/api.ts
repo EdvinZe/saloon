@@ -1,9 +1,10 @@
 import axios from 'axios'
+import { addDays, format } from 'date-fns'
 import type { Master, Service } from '../../shared/data/mockData'
 import { MOCK_MASTERS, SERVICES } from '../../shared/data/mockData'
-import { MOCK_BUSY_BOOKINGS, MOCK_EXISTING, TODAY_STR } from './mock/bookingMockData'
-import { getSlotStatusesForService, isMasterBusyAt as checkMasterBusyAt, type AvailabilitySlotStatus } from './utils/availability'
-import { generateSlotTimes } from './utils/timeSlots'
+import { getAvailableMastersForSlot, getAvailableSlotsForService, type AvailableSlotStatus } from '../bookingavailability/api'
+import { MOCK_EXISTING, TODAY_STR } from './mock/bookingMockData'
+import { isMasterBusyAt as checkMasterBusyAt } from './utils/availability'
 
 const BASE_URL = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -17,21 +18,40 @@ export interface SlotStatus {
   taken: boolean
 }
 
+export interface NearestAvailableSlot {
+  date: string
+  time: string
+}
+
 // ─── New-booking API ────────────────────────────────────────────────────────────
 
 export async function getAvailableSlots(_date: string): Promise<SlotStatus[]> {
-  // Replace with: return _api.get(`/slots?date=${_date}`).then(r => r.data)
-  return Promise.resolve(
-    generateSlotTimes().map(time => ({
-      time,
-      taken: MOCK_BUSY_BOOKINGS.some(booking => booking.startTime === time),
-    }))
-  )
+  const slots = await getAvailableSlotsForService({ date: _date, serviceId: 'haircut' })
+  return slots.map(slot => ({
+    time: slot.time,
+    taken: slot.status !== 'free',
+  }))
 }
 
-export async function getAvailableMasters(_date: string, _time: string): Promise<Master[]> {
-  // Replace with: return _api.get(`/masters/available?date=${_date}&time=${_time}`).then(r => r.data)
-  return Promise.resolve(MOCK_MASTERS)
+export async function getAvailableMasters(date: string, time: string, serviceId: string): Promise<Master[]> {
+  return getAvailableMastersForSlot({ date, time, serviceId })
+}
+
+export async function getNearestAvailableSlot(serviceId: string): Promise<NearestAvailableSlot | null> {
+  // Replace with FastAPI endpoint: return _api.get(`/api/v1/bookings/nearest-slot?service_id=${serviceId}`).then(r => r.data)
+  const today = new Date(TODAY_STR + 'T12:00:00')
+
+  for (let offset = 0; offset < 30; offset += 1) {
+    const date = format(addDays(today, offset), 'yyyy-MM-dd')
+    const slots = await getSlotsForService(date, serviceId)
+    const freeSlot = slots.find(slot => slot.status === 'free')
+
+    if (freeSlot) {
+      return { date, time: freeSlot.time }
+    }
+  }
+
+  return null
 }
 
 export interface BookingPayload {
@@ -59,7 +79,7 @@ export interface ManagedBooking {
   status: 'pending' | 'confirmed'
 }
 
-export type ManagedSlotStatus = AvailabilitySlotStatus
+export type ManagedSlotStatus = AvailableSlotStatus
 
 export function isMasterBusyAt(masterId: string, date: string, startTime: string, durationMin: number): boolean {
   return checkMasterBusyAt(MOCK_EXISTING, masterId, date, startTime, durationMin)
@@ -73,30 +93,14 @@ export async function getBookingByToken(_token: string): Promise<ManagedBooking>
     date: TODAY_STR,
     time: '09:30',
     master: MOCK_MASTERS[0],  // Alex Kravtsov
-    depositPaid: 8,
+    depositPaid: 10,
     status: 'confirmed' as const,
   })
 }
 
 export async function getSlotsForService(date: string, serviceId: string): Promise<ManagedSlotStatus[]> {
   // Replace with: return _api.get(`/api/v1/bookings/slots?date=${date}&service_id=${serviceId}`).then(r => r.data)
-  void date
-
-  const service = SERVICES.find(s => s.id === serviceId)
-  if (!service) return Promise.resolve([])
-
-  return Promise.resolve(getSlotStatusesForService(service, MOCK_BUSY_BOOKINGS))
-}
-
-export async function getAvailableMastersForReschedule(
-  date: string,
-  startTime: string,
-  durationMin: number,
-): Promise<Master[]> {
-  // Replace with: return _api.get(`/api/v1/masters/available?date=${date}&time=${startTime}&duration=${durationMin}`).then(r => r.data)
-  return Promise.resolve(
-    MOCK_MASTERS.filter(m => !isMasterBusyAt(m.id, date, startTime, durationMin))
-  )
+  return getAvailableSlotsForService({ date, serviceId })
 }
 
 export interface ReschedulePayload {

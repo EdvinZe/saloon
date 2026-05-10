@@ -1,6 +1,6 @@
 import type { Service } from '../../../shared/data/mockData'
-import { SERVICES } from '../../../shared/data/mockData'
 import { useBookingConfig } from '../../bookingconfig/hooks/useBookingConfig'
+import { useManageServices } from '../hooks/useManageServices'
 
 interface Props {
   selected: Service | null
@@ -8,10 +8,12 @@ interface Props {
 }
 
 export default function ManageServiceSelect({ selected, onSelect }: Props) {
+  const { data: services = [], isLoading } = useManageServices()
   const { data: bookingConfig } = useBookingConfig()
   const depositAmount = bookingConfig?.depositAmount ?? 10
   const currency = bookingConfig?.currency ?? 'EUR'
   const currencySymbol = currency === 'EUR' ? '€' : currency
+  void isLoading
 
   return (
     <div>
@@ -23,7 +25,7 @@ export default function ManageServiceSelect({ selected, onSelect }: Props) {
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: '#2a2218' }}>
-        {SERVICES.map(svc => {
+        {services.map(svc => {
           const sel = selected?.id === svc.id
           return (
             <div
