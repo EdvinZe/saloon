@@ -14,7 +14,7 @@ export default function ManageMasterSelect({ currentMasterName, service, date, t
   const { data: masters = [], isLoading } = useManageAvailableMasters(date, time, service.durationMin)
 
   return (
-    <div>
+    <div style={{ width: '100%', minWidth: 0 }}>
       <p style={{
         fontSize: '10px', letterSpacing: '3px', color: '#c9a84c',
         textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '14px',
@@ -32,6 +32,7 @@ export default function ManageMasterSelect({ currentMasterName, service, date, t
         color: '#8a6040',
         fontFamily: 'sans-serif',
         lineHeight: 1.6,
+        boxSizing: 'border-box',
       }}>
         {currentMasterName} is not available at {time}. Please choose another barber.
       </div>
@@ -45,7 +46,7 @@ export default function ManageMasterSelect({ currentMasterName, service, date, t
           No barbers available at this time. Please choose a different slot.
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1px', background: '#2a2218' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1px', background: '#2a2218', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
           {masters.map(master => {
             const sel = selected?.id === master.id
             return (
@@ -60,6 +61,8 @@ export default function ManageMasterSelect({ currentMasterName, service, date, t
                   outline: sel ? '1px solid #c9a84c' : '1px solid transparent',
                   outlineOffset: '-1px',
                   transition: 'all 0.2s',
+                  boxSizing: 'border-box',
+                  minWidth: 0,
                 }}
                 onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = 'rgba(201,168,76,0.03)' }}
                 onMouseLeave={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = '#141008' }}

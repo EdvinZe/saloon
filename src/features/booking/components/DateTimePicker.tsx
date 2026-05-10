@@ -58,7 +58,7 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
   }
 
   return (
-    <div>
+    <div style={{ width: '100%', minWidth: 0 }}>
       <div style={{ marginBottom: '28px' }}>
         <p style={{ fontSize: '10px', letterSpacing: '4px', color: '#c9a84c', textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '10px' }}>
           Step 2
@@ -74,17 +74,19 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: '14px',
             padding: '14px 20px',
             border: '1px solid #2a2218',
             marginBottom: '24px',
             cursor: 'pointer',
             transition: 'border-color 0.2s',
             background: '#141008',
+            boxSizing: 'border-box',
           }}
           onMouseEnter={e => (e.currentTarget.style.borderColor = '#c9a84c')}
           onMouseLeave={e => (e.currentTarget.style.borderColor = '#2a2218')}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flexWrap: 'wrap' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#c9a84c', flexShrink: 0 }} />
             <span style={{ fontSize: '11px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '1px' }}>
               Nearest available:
@@ -97,9 +99,9 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: '#2a2218' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: '#2a2218', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
         {/* Calendar */}
-        <div style={{ background: '#141008', padding: '28px' }}>
+        <div style={{ background: '#141008', padding: 'clamp(20px, 5vw, 28px)', minWidth: 0, boxSizing: 'border-box' }}>
           {/* Month navigation */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <button
@@ -165,7 +167,7 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
         </div>
 
         {/* Time slots */}
-        <div style={{ background: '#141008', padding: '28px' }}>
+        <div style={{ background: '#141008', padding: 'clamp(20px, 5vw, 28px)', minWidth: 0, boxSizing: 'border-box' }}>
           {!pickedDate ? (
             <div style={{ color: '#3a3020', fontFamily: 'sans-serif', fontSize: '13px', textAlign: 'center', paddingTop: '60px' }}>
               Select a date first
@@ -175,7 +177,7 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
               <div style={{ fontSize: '10px', color: '#7a7060', fontFamily: 'sans-serif', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '20px' }}>
                 {format(new Date(pickedDate + 'T12:00:00'), 'EEEE, MMM d')}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: '8px' }}>
                 {slots.map(slot => {
                   const isTaken = slot.status === 'taken'
                   const isTooShort = slot.status === 'tooShort'
@@ -205,6 +207,7 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
                         opacity: isTooShort ? 0.4 : 1,
                         transition: 'all 0.15s',
                         userSelect: 'none',
+                        boxSizing: 'border-box',
                       }}
                       onMouseEnter={e => {
                         if (isFree && !selSlot) {

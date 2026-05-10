@@ -29,7 +29,7 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
   const slotSelected = !!(selectedDate === pickedDate && selectedTime)
 
   return (
-    <div>
+    <div style={{ width: '100%', minWidth: 0 }}>
       <p style={{
         fontSize: '10px', letterSpacing: '3px', color: '#c9a84c',
         textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '14px',
@@ -38,7 +38,7 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
       </p>
 
       {/* Date picker row — 7 days forward */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '4px' }}>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '4px', width: '100%', boxSizing: 'border-box' }}>
         {days.map(day => {
           const ds = format(day, 'yyyy-MM-dd')
           const sel = pickedDate === ds
@@ -56,6 +56,7 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
                 background: sel ? 'rgba(201,168,76,0.06)' : '#0f0f0f',
                 transition: 'all 0.15s',
                 userSelect: 'none',
+                boxSizing: 'border-box',
               }}
               onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
               onMouseLeave={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}
@@ -78,7 +79,7 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
             Loading slots...
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(64px, 1fr))', gap: '6px', marginBottom: '16px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
             {slots.map(slot => {
               const isTaken = slot.status === 'taken'
               const isTooShort = slot.status === 'tooShort'
@@ -102,6 +103,7 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
                     opacity: isTooShort ? 0.4 : 1,
                     transition: 'all 0.15s',
                     userSelect: 'none',
+                    boxSizing: 'border-box',
                   }}
                   onMouseEnter={e => { if (isFree && !isSelected) (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
                   onMouseLeave={e => { if (isFree && !isSelected) (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}
@@ -124,6 +126,7 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
           fontFamily: 'sans-serif',
           color: '#7a7060',
           lineHeight: 1.6,
+          boxSizing: 'border-box',
         }}>
           Deposit already paid: €{depositPaid}. No extra charge for rescheduling.
         </div>

@@ -11,9 +11,10 @@ export default function BookingManageResult({ doneType, depositPaid }: Props) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '80px 24px', minHeight: 'calc(100vh - 70px)',
+      padding: '80px clamp(16px, 5vw, 24px)', minHeight: 'calc(100vh - 70px)',
+      width: '100%', boxSizing: 'border-box',
     }}>
-      <div style={{ width: '100%', maxWidth: '520px', textAlign: 'center' }}>
+      <div style={{ width: '100%', maxWidth: '520px', textAlign: 'center', minWidth: 0 }}>
         <div style={{
           width: '72px', height: '72px', borderRadius: '50%',
           border: `1px solid ${cancelled ? '#c87070' : '#c9a84c'}`,

@@ -63,7 +63,7 @@ export default function PaymentForm({ service, date, time, master }: Props) {
   })
 
   return (
-    <div>
+    <div style={{ width: '100%', minWidth: 0 }}>
       <div style={{ marginBottom: '28px' }}>
         <p style={{ fontSize: '10px', letterSpacing: '4px', color: '#c9a84c', textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '10px' }}>
           Step 4
@@ -71,13 +71,13 @@ export default function PaymentForm({ service, date, time, master }: Props) {
         <h2 style={{ fontSize: '28px', color: '#e8e0d0', fontWeight: 400 }}>Your details & payment</h2>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1px', background: '#2a2218', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: '#2a2218', alignItems: 'start', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
         {/* Left: form fields */}
-        <div style={{ background: '#141008', padding: '36px 32px' }}>
+        <div style={{ background: '#141008', padding: 'clamp(24px, 6vw, 36px)', minWidth: 0, boxSizing: 'border-box' }}>
           {/* Personal details */}
           <div style={{ marginBottom: '36px' }}>
             <div style={sectionHeadStyle}>Personal details</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
               <div>
                 <label style={labelStyle}>Full name</label>
                 <input
@@ -118,7 +118,7 @@ export default function PaymentForm({ service, date, time, master }: Props) {
                 <span style={{ fontSize: '11px', color: '#3a3020', letterSpacing: '1px' }}>VISA / MC</span>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '16px' }}>
               <div>
                 <label style={labelStyle}>Expiry</label>
                 <div
@@ -142,7 +142,7 @@ export default function PaymentForm({ service, date, time, master }: Props) {
         </div>
 
         {/* Right: summary + CTA */}
-        <div style={{ background: '#0f0f0f', padding: '36px 28px' }}>
+        <div style={{ background: '#0f0f0f', padding: 'clamp(24px, 6vw, 36px)', minWidth: 0, boxSizing: 'border-box' }}>
           <BookingSummary service={service} date={date} time={time} master={master} depositAmount={depositAmount} currencySymbol={currencySymbol} />
 
           <button

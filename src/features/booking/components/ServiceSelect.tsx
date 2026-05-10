@@ -12,7 +12,7 @@ export default function ServiceSelect({ selected, onSelect }: Props) {
   void isLoading
 
   return (
-    <div>
+    <div style={{ width: '100%', minWidth: 0 }}>
       <div style={{ marginBottom: '28px' }}>
         <p style={{ fontSize: '10px', letterSpacing: '4px', color: '#c9a84c', textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '10px' }}>
           Step 1
@@ -32,12 +32,14 @@ export default function ServiceSelect({ selected, onSelect }: Props) {
               onClick={() => onSelect(svc)}
               style={{
                 background: sel ? 'rgba(201,168,76,0.06)' : '#141008',
-                padding: '36px 28px',
+                padding: 'clamp(24px, 6vw, 36px) clamp(20px, 5vw, 28px)',
                 cursor: 'pointer',
                 outline: sel ? '1px solid #c9a84c' : '1px solid #2a2218',
                 outlineOffset: '-1px',
                 transition: 'all 0.2s',
                 height: '100%',
+                boxSizing: 'border-box',
+                minWidth: 0,
               }}
               onMouseEnter={e => {
                 if (!sel) {

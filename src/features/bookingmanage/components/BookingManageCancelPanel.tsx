@@ -1,5 +1,5 @@
 import type { CSSProperties, RefObject } from 'react'
-import CancelConfirm from '../../booking/components/CancelConfirm'
+import CancelConfirm from './CancelConfirm'
 
 const revealStyle = (visible: boolean): CSSProperties => ({
   maxHeight: visible ? '2000px' : '0',
@@ -32,7 +32,7 @@ export default function BookingManageCancelPanel({
     <div style={revealStyle(visible)}>
       <div
         ref={panelRef}
-        style={{ background: '#141008', border: '1px solid #2a2218', padding: '24px', marginTop: '12px' }}
+        style={{ background: '#141008', border: '1px solid #2a2218', padding: 'clamp(20px, 6vw, 24px)', marginTop: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}
       >
         <CancelConfirm
           depositPaid={depositPaid}

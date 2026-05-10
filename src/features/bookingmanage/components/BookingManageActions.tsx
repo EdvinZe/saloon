@@ -7,7 +7,7 @@ interface Props {
 
 export default function BookingManageActions({ activePanel, onSelect }: Props) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '4px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '4px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
 
       {/* Reschedule */}
       <div
@@ -19,6 +19,8 @@ export default function BookingManageActions({ activePanel, onSelect }: Props) {
           cursor: 'pointer',
           textAlign: 'center',
           transition: 'all 0.2s',
+          boxSizing: 'border-box',
+          minWidth: 0,
         }}
         onMouseEnter={e => { if (activePanel !== 'reschedule') (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
         onMouseLeave={e => { if (activePanel !== 'reschedule') (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}
@@ -40,6 +42,8 @@ export default function BookingManageActions({ activePanel, onSelect }: Props) {
           cursor: 'pointer',
           textAlign: 'center',
           transition: 'all 0.2s',
+          boxSizing: 'border-box',
+          minWidth: 0,
         }}
         onMouseEnter={e => { if (activePanel !== 'cancel') (e.currentTarget as HTMLDivElement).style.borderColor = '#c87070' }}
         onMouseLeave={e => { if (activePanel !== 'cancel') (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}

@@ -14,6 +14,9 @@ export default function BookingProgress({ step }: Props) {
       justifyContent: 'center',
       maxWidth: '560px',
       margin: '0 auto 52px',
+      width: '100%',
+      minWidth: 0,
+      boxSizing: 'border-box',
     }}>
       {STEPS.map((label, i) => {
         const num = i + 1
@@ -31,7 +34,7 @@ export default function BookingProgress({ step }: Props) {
                 transition: 'background 0.4s ease',
               }} />
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', minWidth: 0 }}>
               <div style={{
                 width: '34px',
                 height: '34px',
@@ -56,6 +59,7 @@ export default function BookingProgress({ step }: Props) {
                 fontFamily: 'sans-serif',
                 whiteSpace: 'nowrap',
                 transition: 'color 0.3s ease',
+                textAlign: 'center',
               }}>
                 {label}
               </span>

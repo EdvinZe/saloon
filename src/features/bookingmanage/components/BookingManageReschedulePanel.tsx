@@ -57,7 +57,7 @@ export default function BookingManageReschedulePanel({
     <div style={revealStyle(visible)}>
       <div
         ref={panelRef}
-        style={{ background: '#141008', border: '1px solid #2a2218', padding: '24px', marginTop: '12px' }}
+        style={{ background: '#141008', border: '1px solid #2a2218', padding: 'clamp(20px, 6vw, 24px)', marginTop: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}
       >
         {/* Step 1 — Service */}
         <ManageServiceSelect selected={newService} onSelect={onServiceSelect} />
@@ -91,7 +91,7 @@ export default function BookingManageReschedulePanel({
 
         {/* Confirm reschedule (reveals when all required fields are filled) */}
         <div ref={confirmRef} style={revealStyle(canConfirm)}>
-          <div style={{ paddingTop: '20px', borderTop: '1px solid #1a1810', marginTop: '4px' }}>
+          <div style={{ paddingTop: '20px', borderTop: '1px solid #1a1810', marginTop: '4px', minWidth: 0 }}>
             <button
               onClick={onConfirm}
               disabled={submitting}
@@ -108,6 +108,7 @@ export default function BookingManageReschedulePanel({
                 cursor: submitting ? 'not-allowed' : 'pointer',
                 opacity: submitting ? 0.5 : 1,
                 transition: 'all 0.2s',
+                boxSizing: 'border-box',
               }}
               onMouseEnter={e => { if (!submitting) e.currentTarget.style.background = 'rgba(201,168,76,0.08)' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}

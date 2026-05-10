@@ -14,6 +14,7 @@ const rowStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'baseline',
+  gap: '16px',
   padding: '10px 0',
   borderBottom: '1px solid #1a1810',
 }
@@ -32,7 +33,7 @@ export default function BookingSummary({ service, date, time, master, depositAmo
   ]
 
   return (
-    <div style={{ background: '#141008', border: '1px solid #2a2218', padding: '24px' }}>
+    <div style={{ background: '#141008', border: '1px solid #2a2218', padding: '24px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
       <div style={{ fontSize: '10px', letterSpacing: '4px', color: '#c9a84c', textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '16px' }}>
         Booking summary
       </div>
@@ -40,7 +41,7 @@ export default function BookingSummary({ service, date, time, master, depositAmo
       {rows.map(row => (
         <div key={row.label} style={rowStyle}>
           <span style={{ fontSize: '11px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '1px' }}>{row.label}</span>
-          <span style={{ fontSize: '13px', color: '#e8e0d0', fontFamily: 'sans-serif' }}>{row.value}</span>
+          <span style={{ fontSize: '13px', color: '#e8e0d0', fontFamily: 'sans-serif', textAlign: 'right', minWidth: 0 }}>{row.value}</span>
         </div>
       ))}
 

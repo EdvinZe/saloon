@@ -9,7 +9,7 @@ import {
   cancelBooking,
   isMasterBusyAt,
 } from '../features/booking/api'
-import { useManageStore } from '../features/booking/hooks/useManageStore'
+import { useManageStore } from '../features/bookingmanage/hooks/useManageStore'
 import BookingManageHeader from '../features/bookingmanage/components/BookingManageHeader'
 import BookingManageDetailsCard from '../features/bookingmanage/components/BookingManageDetailsCard'
 import BookingManageActions from '../features/bookingmanage/components/BookingManageActions'
@@ -168,9 +168,9 @@ export default function BookingManagePage() {
   ]
 
   return (
-    <div style={{ background: '#0f0f0f', minHeight: '100vh' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 24px 80px' }}>
-        <div style={{ width: '100%', maxWidth: '520px' }}>
+    <div style={{ background: '#0f0f0f', minHeight: '100vh', overflowX: 'hidden' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '60px clamp(16px, 5vw, 24px) 80px', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ width: '100%', maxWidth: '520px', minWidth: 0, boxSizing: 'border-box' }}>
 
           <BookingManageHeader />
           <BookingManageDetailsCard rows={bookingRows} />

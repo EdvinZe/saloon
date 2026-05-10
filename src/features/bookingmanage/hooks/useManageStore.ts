@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Service, Master } from '../../../shared/data/mockData'
-import type { ManagedBooking } from '../api'
+import type { ManagedBooking } from '../../booking/api'
 
 interface ManageState {
   token: string | null

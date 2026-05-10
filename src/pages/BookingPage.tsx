@@ -15,8 +15,8 @@ export default function BookingPage() {
   const { step2Ref, step3Ref, step4Ref } = useBookingStepScroll(step)
 
   return (
-    <div style={{ background: '#0f0f0f', minHeight: '100vh' }}>
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '60px 48px 80px' }}>
+    <div style={{ background: '#0f0f0f', minHeight: '100vh', overflowX: 'hidden' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '60px clamp(20px, 5vw, 48px) 80px', width: '100%', boxSizing: 'border-box' }}>
         <BookingPageHeader />
 
         <BookingProgress step={step} />
