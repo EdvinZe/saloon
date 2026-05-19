@@ -11,7 +11,7 @@ import {
   addMonths,
   subMonths,
 } from 'date-fns'
-import type { Service } from '../../../shared/data/mockData'
+import type { Service } from '../../services/api'
 import { useAvailableSlots } from '../hooks/useAvailableSlots'
 import { useNearestAvailableSlot } from '../hooks/useNearestAvailableSlot'
 

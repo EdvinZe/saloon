@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { format, addDays, startOfDay } from 'date-fns'
-import type { Service } from '../../../shared/data/mockData'
+import type { Service } from '../../services/api'
 import { useManageAvailableSlots } from '../hooks/useManageAvailableSlots'
 
 interface Props {

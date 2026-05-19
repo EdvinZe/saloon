@@ -1,4 +1,5 @@
-import type { Service, Master } from '../../../shared/data/mockData'
+import type { Master } from '../../../shared/data/mockData'
+import type { Service } from '../../services/api'
 import { useManageAvailableMasters } from '../hooks/useManageAvailableMasters'
 
 interface Props {
@@ -11,7 +12,7 @@ interface Props {
 }
 
 export default function ManageMasterSelect({ currentMasterName, service, date, time, selected, onSelect }: Props) {
-  const { data: masters = [], isLoading } = useManageAvailableMasters(date, time, service.durationMin)
+  const { data: masters = [], isLoading } = useManageAvailableMasters(date, time, service.totalDurationMinutes)
 
   return (
     <div style={{ width: '100%', minWidth: 0 }}>

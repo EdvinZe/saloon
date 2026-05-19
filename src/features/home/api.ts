@@ -1,6 +1,3 @@
-import type { Service } from '../../shared/data/mockData'
-import { SERVICES } from '../../shared/data/mockData'
-
 export type HomeMetrics = {
   openedAt: string
   googleRating: number
@@ -18,10 +15,4 @@ export async function getHomeMetrics(): Promise<HomeMetrics> {
     happyClients: 2400,
     satisfactionPercent: 100,
   })
-}
-
-export async function getHomeServices(): Promise<Service[]> {
-  return Promise.resolve(
-    SERVICES.filter(service => service.isActive)
-  )
 }

@@ -1,5 +1,6 @@
 import type { CSSProperties, RefObject } from 'react'
-import type { Service, Master } from '../../../shared/data/mockData'
+import type { Master } from '../../../shared/data/mockData'
+import type { Service } from '../../services/api'
 import ManageServiceSelect from './ManageServiceSelect'
 import ManageTimeSlots from './ManageTimeSlots'
 import ManageMasterSelect from './ManageMasterSelect'

@@ -1,4 +1,4 @@
-import type { Service } from '../../../shared/data/mockData'
+import type { Service } from '../../services/api'
 import type { MockBusyBooking, MockExistingBooking } from '../mock/bookingMockData'
 import {
   generateSlotTimes,
@@ -42,7 +42,7 @@ export function getSlotStatusesForService(
   service: Service,
   busyBookings: MockBusyBooking[],
 ): AvailabilitySlotStatus[] {
-  const needed = service.durationMin + service.bufferMin
+  const needed = service.totalDurationMinutes
   const endOfDay = toMinutes(WORK_END)
   const times = generateSlotTimes()
 

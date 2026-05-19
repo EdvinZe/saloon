@@ -1,12 +1,13 @@
 import type { Master } from '../../shared/data/mockData'
-import { MOCK_MASTERS, SERVICES } from '../../shared/data/mockData'
+import { MOCK_MASTERS } from '../../shared/data/mockData'
 import { MOCK_BUSY_BOOKINGS, MOCK_EXISTING } from '../booking/mock/bookingMockData'
 import { getSlotStatusesForService, isMasterBusyAt } from '../booking/utils/availability'
+import { getServices } from '../services/api'
 
 export interface AvailableMastersForSlotParams {
   date: string
   time: string
-  serviceId?: string
+  serviceId?: number
   durationMin?: number
 }
 
@@ -17,7 +18,7 @@ export type AvailableSlotStatus = {
 
 export interface AvailableSlotsParams {
   date: string
-  serviceId: string
+  serviceId: number
   excludeBookingToken?: string
 }
 
@@ -45,7 +46,8 @@ export async function getAvailableSlotsForService(
   void params.date
   void params.excludeBookingToken
 
-  const service = SERVICES.find(s => s.id === params.serviceId)
+  const services = await getServices()
+  const service = services.find(s => s.id === params.serviceId)
   if (!service) return Promise.resolve([])
 
   return Promise.resolve(getSlotStatusesForService(service, MOCK_BUSY_BOOKINGS))

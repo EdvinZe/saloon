@@ -3,7 +3,7 @@ import { getAvailableSlotsForService } from '../../bookingavailability/api'
 
 export function useManageAvailableSlots(
   date: string | null,
-  serviceId: string | null,
+  serviceId: number | null,
   excludeBookingToken?: string | null,
 ) {
   return useQuery({

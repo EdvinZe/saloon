@@ -1,4 +1,4 @@
-import type { Service } from '../../../shared/data/mockData'
+import type { Service } from '../../services/api'
 import Carousel from '../../../components/ui/Carousel'
 import { useBookingServices } from '../hooks/useBookingServices'
 
@@ -75,7 +75,7 @@ export default function ServiceSelect({ selected, onSelect }: Props) {
                 lineHeight: 1.8,
                 marginBottom: '24px',
               }}>
-                {svc.desc}
+                {svc.description}
               </div>
 
               <div style={{
@@ -94,7 +94,7 @@ export default function ServiceSelect({ selected, onSelect }: Props) {
                 textTransform: 'uppercase',
                 marginTop: '4px',
               }}>
-                {svc.dur}
+                {svc.totalDurationMinutes} min
               </div>
 
               {sel && (

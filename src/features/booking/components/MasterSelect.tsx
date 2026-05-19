@@ -1,6 +1,7 @@
 import { format } from 'date-fns'
 import { useAvailableMasters } from '../hooks/useAvailableMasters'
-import type { Master, Service } from '../../../shared/data/mockData'
+import type { Master } from '../../../shared/data/mockData'
+import type { Service } from '../../services/api'
 
 interface Props {
   service: Service

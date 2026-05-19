@@ -1,7 +1,9 @@
 import axios from 'axios'
 import { addDays, format } from 'date-fns'
-import type { Master, Service } from '../../shared/data/mockData'
-import { MOCK_MASTERS, SERVICES } from '../../shared/data/mockData'
+import type { Master } from '../../shared/data/mockData'
+import { MOCK_MASTERS } from '../../shared/data/mockData'
+import type { Service } from '../services/api'
+import { getServices } from '../services/api'
 import { getAvailableMastersForSlot, getAvailableSlotsForService, type AvailableSlotStatus } from '../bookingavailability/api'
 import { MOCK_EXISTING, TODAY_STR } from './mock/bookingMockData'
 import { isMasterBusyAt as checkMasterBusyAt } from './utils/availability'
@@ -33,11 +35,11 @@ export async function getAvailableSlots(_date: string): Promise<SlotStatus[]> {
   }))
 }
 
-export async function getAvailableMasters(date: string, time: string, serviceId: string): Promise<Master[]> {
+export async function getAvailableMasters(date: string, time: string, serviceId: number): Promise<Master[]> {
   return getAvailableMastersForSlot({ date, time, serviceId })
 }
 
-export async function getNearestAvailableSlot(serviceId: string): Promise<NearestAvailableSlot | null> {
+export async function getNearestAvailableSlot(serviceId: number): Promise<NearestAvailableSlot | null> {
   // Replace with FastAPI endpoint: return _api.get(`/api/v1/bookings/nearest-slot?service_id=${serviceId}`).then(r => r.data)
   const today = new Date(TODAY_STR + 'T12:00:00')
 
@@ -55,7 +57,7 @@ export async function getNearestAvailableSlot(serviceId: string): Promise<Neares
 }
 
 export interface BookingPayload {
-  serviceId: string
+  serviceId: number
   date: string
   time: string
   masterId: string
@@ -87,9 +89,11 @@ export function isMasterBusyAt(masterId: string, date: string, startTime: string
 
 export async function getBookingByToken(_token: string): Promise<ManagedBooking> {
   // Replace with: return _api.get(`/api/v1/bookings/manage?token=${_token}`).then(r => r.data)
+  const services = await getServices()
+
   return Promise.resolve({
     id: 'BK-001',
-    service: SERVICES.find(s => s.id === 'haircut')!,
+    service: services[0],
     date: TODAY_STR,
     time: '09:30',
     master: MOCK_MASTERS[0],  // Alex Kravtsov
@@ -98,14 +102,14 @@ export async function getBookingByToken(_token: string): Promise<ManagedBooking>
   })
 }
 
-export async function getSlotsForService(date: string, serviceId: string): Promise<ManagedSlotStatus[]> {
+export async function getSlotsForService(date: string, serviceId: number): Promise<ManagedSlotStatus[]> {
   // Replace with: return _api.get(`/api/v1/bookings/slots?date=${date}&service_id=${serviceId}`).then(r => r.data)
   return getAvailableSlotsForService({ date, serviceId })
 }
 
 export interface ReschedulePayload {
   token: string
-  serviceId: string
+  serviceId: number
   date: string
   time: string
   masterId: string

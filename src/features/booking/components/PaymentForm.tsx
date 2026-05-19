@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { Service, Master } from '../../../shared/data/mockData'
+import type { Master } from '../../../shared/data/mockData'
+import type { Service } from '../../services/api'
 import BookingSummary from './BookingSummary'
 import { useBookingStore } from '../hooks/useBookingStore'
 import { useBookingConfig } from '../../bookingconfig/hooks/useBookingConfig'

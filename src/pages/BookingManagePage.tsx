@@ -53,7 +53,7 @@ export default function BookingManagePage() {
   // Derived: does current barber overlap the newly selected slot?
   const needsMasterSelect = !!(
     newService && newSlot && booking &&
-    isMasterBusyAt(booking.master.id, newSlot.date, newSlot.time, newService.durationMin)
+    isMasterBusyAt(booking.master.id, newSlot.date, newSlot.time, newService.totalDurationMinutes)
   )
 
   const canConfirm = !!(newService && newSlot && (!needsMasterSelect || newMaster))
@@ -161,7 +161,7 @@ export default function BookingManagePage() {
   const bookingDateFormatted = format(new Date(booking.date + 'T12:00:00'), 'EEE, MMM d')
 
   const bookingRows: { label: string; value: string; gold?: boolean }[] = [
-    { label: 'Service',      value: `${booking.service.name} · ${booking.service.dur}` },
+    { label: 'Service',      value: `${booking.service.name} · ${booking.service.totalDurationMinutes} min` },
     { label: 'Date & time',  value: `${bookingDateFormatted} · ${booking.time}` },
     { label: 'Barber',       value: booking.master.name },
     { label: 'Deposit paid', value: `€${booking.depositPaid}`, gold: true },

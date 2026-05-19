@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
-import type { Service, Master } from '../../../shared/data/mockData'
+import type { Master } from '../../../shared/data/mockData'
+import type { Service } from '../../services/api'
 
 interface Props {
   service: Service | null
@@ -29,7 +30,7 @@ export default function BookingSummary({ service, date, time, master, depositAmo
     { label: 'Date',     value: formattedDate },
     { label: 'Time',     value: time ?? '—' },
     { label: 'Barber',   value: master?.name ?? '—' },
-    { label: 'Duration', value: service?.dur ?? '—' },
+    { label: 'Duration', value: service ? `${service.totalDurationMinutes} min` : '—' },
   ]
 
   return (

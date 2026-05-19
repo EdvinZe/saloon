@@ -1,4 +1,4 @@
-import type { Service } from '../../../shared/data/mockData'
+import type { Service } from '../../services/api'
 import Carousel from '../../../components/ui/Carousel'
 
 interface Props {
@@ -58,7 +58,7 @@ export default function Services({ services }: Props) {
               lineHeight: 1.8,
               marginBottom: '28px',
             }}>
-              {service.desc}
+              {service.description}
             </div>
 
             <div style={{
@@ -77,7 +77,7 @@ export default function Services({ services }: Props) {
               textTransform: 'uppercase',
               marginTop: '4px',
             }}>
-              {service.dur}
+              {service.totalDurationMinutes} min
             </div>
           </div>
         ))}

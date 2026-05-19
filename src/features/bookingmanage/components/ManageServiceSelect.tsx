@@ -1,4 +1,4 @@
-import type { Service } from '../../../shared/data/mockData'
+import type { Service } from '../../services/api'
 import { useBookingConfig } from '../../bookingconfig/hooks/useBookingConfig'
 import { useManageServices } from '../hooks/useManageServices'
 
@@ -55,7 +55,7 @@ export default function ManageServiceSelect({ selected, onSelect }: Props) {
                   dep. {currencySymbol}{depositAmount}
                 </div>
                 <div style={{ fontSize: '10px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '1px' }}>
-                  {svc.dur}
+                  {svc.totalDurationMinutes} min
                 </div>
                 {sel && (
                   <div style={{ marginTop: '10px', fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#c9a84c', fontFamily: 'sans-serif' }}>

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getAvailableSlotsForService } from '../../bookingavailability/api'
 import type { AvailableSlotStatus } from '../../bookingavailability/api'
 
-export function useAvailableSlots(date: string | null, serviceId: string | null) {
+export function useAvailableSlots(date: string | null, serviceId: number | null) {
   return useQuery<AvailableSlotStatus[]>({
     queryKey: ['booking-slots', date, serviceId],
     queryFn: () => getAvailableSlotsForService({ date: date!, serviceId: serviceId! }),
