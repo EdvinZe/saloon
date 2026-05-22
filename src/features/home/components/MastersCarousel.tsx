@@ -1,4 +1,4 @@
-import type { Master } from '../../../shared/data/mockData'
+import type { Master } from '../../masters/api'
 import Carousel from '../../../components/ui/Carousel'
 
 interface MastersCarouselProps {
@@ -68,9 +68,9 @@ export default function MastersCarousel({ masters }: MastersCarouselProps) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              {master.tags.map(tag => (
+              {master.services.map(service => (
                 <span
-                  key={tag}
+                  key={service.id}
                   style={{
                     fontSize: '10px',
                     color: '#7a7060',
@@ -79,7 +79,7 @@ export default function MastersCarousel({ masters }: MastersCarouselProps) {
                     padding: '4px 10px',
                   }}
                 >
-                  {tag}
+                  {service.name}
                 </span>
               ))}
             </div>

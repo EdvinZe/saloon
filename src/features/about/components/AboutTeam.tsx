@@ -91,8 +91,8 @@ export default function AboutTeam() {
             </p>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center' }}>
-              {master.tags.map(tag => (
-                <span key={tag} style={{
+              {master.services.map(service => (
+                <span key={service.id} style={{
                   fontSize: '9px',
                   letterSpacing: '2px',
                   textTransform: 'uppercase',
@@ -101,7 +101,7 @@ export default function AboutTeam() {
                   border: '1px solid #2a2218',
                   padding: '3px 8px',
                 }}>
-                  {tag}
+                  {service.name}
                 </span>
               ))}
             </div>

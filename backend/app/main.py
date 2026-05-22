@@ -1,29 +1,17 @@
 from fastapi import FastAPI
 
-from app.core.database import Base, engine
-from app.modules.services.models import Service
-from app.modules.services.admin_router import router as admin_services_router
-from app.modules.services.router import router as services_router
+from app.api.router import register_routers
+from app.core.init_db import init_db
+from app.core.logging import setup_logging
+
+setup_logging(debug=True)
 
 app = FastAPI(title="Saloon API")
 
-# Development only: create local SQLite tables until migrations are added.
-_ = Service
-Base.metadata.create_all(bind=engine)
-
-app.include_router(
-    services_router,
-    prefix="/api/services",
-    tags=["Services"],
-)
-
-app.include_router(
-    admin_services_router,
-    prefix="/api/admin/services",
-    tags=["Admin Services"],
-)
+init_db()
+register_routers(app)
 
 
-@app.get("/health")
+@app.get("/health", tags=["Health"])
 def health_check():
     return {"status": "ok"}

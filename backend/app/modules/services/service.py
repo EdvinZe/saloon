@@ -1,8 +1,12 @@
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.modules.services.models import Service
 from app.modules.services.schemas import ServiceCreate
+
+logger = logging.getLogger(__name__)
 
 
 def create_service(db: Session, data: ServiceCreate) -> Service:
@@ -10,10 +14,16 @@ def create_service(db: Session, data: ServiceCreate) -> Service:
     db.add(service)
     db.commit()
     db.refresh(service)
+    logger.info(
+        "[SERVICES] Service created: service_id=%s name=%s",
+        service.id,
+        service.name,
+    )
     return service
 
 
 def list_public_services(db: Session) -> list[Service]:
+    logger.debug("[SERVICES] Public services requested")
     statement = (
         select(Service)
         .where(Service.is_active.is_(True))
