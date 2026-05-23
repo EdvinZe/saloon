@@ -1,7 +1,15 @@
-import { MOCK_BUSY_BOOKINGS, MOCK_EXISTING } from '../booking/mock/bookingMockData'
-import { getSlotStatusesForService, isMasterBusyAt } from '../booking/utils/availability'
-import { getMasters, type Master } from '../masters/api'
-import { getServices } from '../services/api'
+import type { Master, MasterService } from '../masters/api'
+
+type ApiMaster = {
+  id: number
+  name: string
+  role: string
+  bio: string
+  initials: string
+  services: MasterService[]
+}
+
+const API_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_URL
 
 export interface AvailableMastersForSlotParams {
   date: string
@@ -21,33 +29,53 @@ export interface AvailableSlotsParams {
   excludeBookingToken?: string
 }
 
+function mapMaster(apiMaster: ApiMaster): Master {
+  return {
+    id: apiMaster.id,
+    name: apiMaster.name,
+    role: apiMaster.role,
+    bio: apiMaster.bio,
+    initials: apiMaster.initials,
+    services: apiMaster.services,
+  }
+}
+
 export async function getAvailableMastersForSlot(
   params: AvailableMastersForSlotParams
 ): Promise<Master[]> {
-  // Later FastAPI should handle active master, service capability, working schedule,
-  // vacations/time off, existing bookings, and excluding current booking during reschedule if needed.
-  const masters = await getMasters(params.serviceId)
-
-  if (params.durationMin) {
-    return masters.filter(master =>
-      !isMasterBusyAt(MOCK_EXISTING, master.id, params.date, params.time, params.durationMin!)
-    )
+  if (typeof params.serviceId !== 'number' || !Number.isFinite(params.serviceId)) {
+    return []
   }
 
-  return masters
+  const searchParams = new URLSearchParams({
+    service_id: String(params.serviceId),
+    date: params.date,
+    time: params.time,
+  })
+  const response = await fetch(`${API_BASE_URL}/api/availability/masters?${searchParams}`)
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch available masters')
+  }
+
+  const data = await response.json() as ApiMaster[]
+  return data.map(mapMaster)
 }
 
 export async function getAvailableSlotsForService(
   params: AvailableSlotsParams
 ): Promise<AvailableSlotStatus[]> {
-  // Later FastAPI should calculate this using service duration, buffer, master schedules,
-  // vacations/time off, existing bookings, business hours, and excludeBookingToken for reschedule flow.
-  void params.date
   void params.excludeBookingToken
 
-  const services = await getServices()
-  const service = services.find(s => s.id === params.serviceId)
-  if (!service) return Promise.resolve([])
+  const searchParams = new URLSearchParams({
+    service_id: String(params.serviceId),
+    date: params.date,
+  })
+  const response = await fetch(`${API_BASE_URL}/api/availability/slots?${searchParams}`)
 
-  return Promise.resolve(getSlotStatusesForService(service, MOCK_BUSY_BOOKINGS))
+  if (!response.ok) {
+    throw new Error('Failed to fetch available slots')
+  }
+
+  return response.json() as Promise<AvailableSlotStatus[]>
 }

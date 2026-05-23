@@ -26,8 +26,12 @@ export interface NearestAvailableSlot {
 
 // ─── New-booking API ────────────────────────────────────────────────────────────
 
-export async function getAvailableSlots(_date: string): Promise<SlotStatus[]> {
-  const slots = await getAvailableSlotsForService({ date: _date, serviceId: 'haircut' })
+export async function getAvailableSlots(_date: string, serviceId?: number): Promise<SlotStatus[]> {
+  if (typeof serviceId !== 'number' || !Number.isFinite(serviceId)) {
+    return []
+  }
+
+  const slots = await getAvailableSlotsForService({ date: _date, serviceId })
   return slots.map(slot => ({
     time: slot.time,
     taken: slot.status !== 'free',
