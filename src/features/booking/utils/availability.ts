@@ -22,7 +22,7 @@ export function hasOverlap(
 
 export function isMasterBusyAt(
   bookings: MockExistingBooking[],
-  masterId: string,
+  masterId: number,
   date: string,
   startTime: string,
   durationMin: number

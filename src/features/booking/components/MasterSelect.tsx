@@ -1,6 +1,6 @@
 import { format } from 'date-fns'
 import { useAvailableMasters } from '../hooks/useAvailableMasters'
-import type { Master } from '../../../shared/data/mockData'
+import type { Master } from '../../masters/api'
 import type { Service } from '../../services/api'
 
 interface Props {
@@ -75,9 +75,9 @@ export default function MasterSelect({ service, date, time, selected, onSelect }
                 {master.role}
               </div>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                {master.tags.map(tag => (
-                  <span key={tag} style={{ fontSize: '10px', color: '#7a7060', fontFamily: 'sans-serif', border: '1px solid #2a2218', padding: '3px 8px' }}>
-                    {tag}
+                {master.services.map(service => (
+                  <span key={service.id} style={{ fontSize: '10px', color: '#7a7060', fontFamily: 'sans-serif', border: '1px solid #2a2218', padding: '3px 8px' }}>
+                    {service.name}
                   </span>
                 ))}
               </div>

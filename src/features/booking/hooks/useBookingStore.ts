@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Master } from '../../../shared/data/mockData'
+import type { Master } from '../../masters/api'
 import type { Service } from '../../services/api'
 
 interface BookingState {

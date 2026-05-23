@@ -39,8 +39,11 @@ function mapMaster(apiMaster: ApiMaster): Master {
   }
 }
 
-export async function getMasters(): Promise<Master[]> {
-  const response = await fetch(`${API_BASE_URL}/api/masters/public`)
+export async function getMasters(serviceId?: number): Promise<Master[]> {
+  const path = typeof serviceId === 'number' && Number.isFinite(serviceId)
+    ? `/api/masters/public?service_id=${serviceId}`
+    : '/api/masters/public'
+  const response = await fetch(`${API_BASE_URL}${path}`)
 
   if (!response.ok) {
     throw new Error('Failed to fetch masters')

@@ -9,5 +9,8 @@ router = APIRouter()
 
 
 @router.get("/public", response_model=list[MasterPublic])
-def get_public_masters(db: Session = Depends(get_db)):
-    return list_public_masters(db)
+def get_public_masters(
+    service_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    return list_public_masters(db, service_id=service_id)

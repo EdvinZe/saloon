@@ -12,7 +12,7 @@ export const MOCK_BUSY_BOOKINGS: MockBusyBooking[] = [
 ]
 
 export interface MockExistingBooking {
-  masterId: string
+  masterId: number
   date: string
   startTime: string  // 'HH:MM'
   durationMin: number
@@ -24,6 +24,6 @@ export const TODAY_STR = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 // Alex busy at 11:00 today — triggers Step 3 (master select) in reschedule flow
 // Michael busy at 14:00 today — demonstrates multi-master filtering
 export const MOCK_EXISTING: MockExistingBooking[] = [
-  { masterId: '1', date: TODAY_STR, startTime: '11:00', durationMin: 45 },
-  { masterId: '2', date: TODAY_STR, startTime: '14:00', durationMin: 30 },
+  { masterId: 1, date: TODAY_STR, startTime: '11:00', durationMin: 45 },
+  { masterId: 2, date: TODAY_STR, startTime: '14:00', durationMin: 30 },
 ]

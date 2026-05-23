@@ -11,13 +11,22 @@ from app.modules.services.models import Service
 logger = logging.getLogger(__name__)
 
 
-def list_public_masters(db: Session) -> list[Master]:
+def list_public_masters(
+    db: Session,
+    service_id: int | None = None,
+) -> list[Master]:
     statement = (
         select(Master)
         .where(Master.is_active.is_(True))
         .options(selectinload(Master.service_links).selectinload(MasterService.service))
         .order_by(Master.sort_order, Master.id)
     )
+
+    if service_id is not None:
+        statement = statement.join(MasterService).where(
+            MasterService.service_id == service_id
+        )
+
     return list(db.scalars(statement).all())
 
 

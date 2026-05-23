@@ -1,4 +1,4 @@
-import type { Master } from '../../../shared/data/mockData'
+import type { Master } from '../../masters/api'
 import type { Service } from '../../services/api'
 import { useManageAvailableMasters } from '../hooks/useManageAvailableMasters'
 
@@ -82,9 +82,9 @@ export default function ManageMasterSelect({ currentMasterName, service, date, t
                   {master.role}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                  {master.tags.map(tag => (
-                    <span key={tag} style={{ fontSize: '9px', color: '#7a7060', fontFamily: 'sans-serif', border: '1px solid #2a2218', padding: '2px 6px' }}>
-                      {tag}
+                  {master.services.map(service => (
+                    <span key={service.id} style={{ fontSize: '9px', color: '#7a7060', fontFamily: 'sans-serif', border: '1px solid #2a2218', padding: '2px 6px' }}>
+                      {service.name}
                     </span>
                   ))}
                 </div>

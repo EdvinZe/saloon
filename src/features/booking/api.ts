@@ -1,12 +1,11 @@
 import axios from 'axios'
 import { addDays, format } from 'date-fns'
-import type { Master } from '../../shared/data/mockData'
-import { MOCK_MASTERS } from '../../shared/data/mockData'
 import type { Service } from '../services/api'
 import { getServices } from '../services/api'
 import { getAvailableMastersForSlot, getAvailableSlotsForService, type AvailableSlotStatus } from '../bookingavailability/api'
 import { MOCK_EXISTING, TODAY_STR } from './mock/bookingMockData'
 import { isMasterBusyAt as checkMasterBusyAt } from './utils/availability'
+import { getMasters, type Master } from '../masters/api'
 
 const BASE_URL = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -60,7 +59,7 @@ export interface BookingPayload {
   serviceId: number
   date: string
   time: string
-  masterId: string
+  masterId: number
   clientName: string
   clientPhone: string
 }
@@ -83,20 +82,26 @@ export interface ManagedBooking {
 
 export type ManagedSlotStatus = AvailableSlotStatus
 
-export function isMasterBusyAt(masterId: string, date: string, startTime: string, durationMin: number): boolean {
+export function isMasterBusyAt(masterId: number, date: string, startTime: string, durationMin: number): boolean {
   return checkMasterBusyAt(MOCK_EXISTING, masterId, date, startTime, durationMin)
 }
 
 export async function getBookingByToken(_token: string): Promise<ManagedBooking> {
   // Replace with: return _api.get(`/api/v1/bookings/manage?token=${_token}`).then(r => r.data)
   const services = await getServices()
+  const masters = await getMasters()
+  const master = masters[0]
+
+  if (!master) {
+    throw new Error('Failed to fetch masters')
+  }
 
   return Promise.resolve({
     id: 'BK-001',
     service: services[0],
     date: TODAY_STR,
     time: '09:30',
-    master: MOCK_MASTERS[0],  // Alex Kravtsov
+    master,
     depositPaid: 10,
     status: 'confirmed' as const,
   })
@@ -112,7 +117,7 @@ export interface ReschedulePayload {
   serviceId: number
   date: string
   time: string
-  masterId: string
+  masterId: number
 }
 
 export async function rescheduleBooking(data: ReschedulePayload): Promise<{ success: boolean }> {

@@ -1,7 +1,6 @@
-import type { Master } from '../../shared/data/mockData'
-import { MOCK_MASTERS } from '../../shared/data/mockData'
 import { MOCK_BUSY_BOOKINGS, MOCK_EXISTING } from '../booking/mock/bookingMockData'
 import { getSlotStatusesForService, isMasterBusyAt } from '../booking/utils/availability'
+import { getMasters, type Master } from '../masters/api'
 import { getServices } from '../services/api'
 
 export interface AvailableMastersForSlotParams {
@@ -27,15 +26,15 @@ export async function getAvailableMastersForSlot(
 ): Promise<Master[]> {
   // Later FastAPI should handle active master, service capability, working schedule,
   // vacations/time off, existing bookings, and excluding current booking during reschedule if needed.
-  let masters = MOCK_MASTERS.filter(master => master.isActive)
+  const masters = await getMasters(params.serviceId)
 
   if (params.durationMin) {
-    masters = masters.filter(master =>
+    return masters.filter(master =>
       !isMasterBusyAt(MOCK_EXISTING, master.id, params.date, params.time, params.durationMin!)
     )
   }
 
-  return Promise.resolve(masters)
+  return masters
 }
 
 export async function getAvailableSlotsForService(
