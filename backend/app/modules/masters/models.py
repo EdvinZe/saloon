@@ -46,6 +46,11 @@ class Master(Base):
         back_populates="master",
         cascade="all, delete-orphan",
     )
+    shifts: Mapped[list["MasterShift"]] = relationship(
+        "MasterShift",
+        back_populates="master",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def services(self) -> list[Service]:

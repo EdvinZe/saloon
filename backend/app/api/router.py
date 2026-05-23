@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from app.modules.master_shifts.admin_router import router as admin_master_shifts_router
 from app.modules.masters.admin_router import router as admin_masters_router
 from app.modules.masters.router import router as masters_router
 from app.modules.services.admin_router import router as admin_services_router
@@ -29,4 +30,10 @@ def register_routers(app: FastAPI) -> None:
         admin_masters_router,
         prefix="/api/admin/masters",
         tags=["Admin Masters"],
+    )
+
+    app.include_router(
+        admin_master_shifts_router,
+        prefix="/api/admin/master-shifts",
+        tags=["Admin Master Shifts"],
     )
