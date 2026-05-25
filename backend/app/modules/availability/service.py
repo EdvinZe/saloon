@@ -6,11 +6,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.modules.availability.schemas import AvailableSlotStatus
+from app.modules.bookings.models import Booking
 from app.modules.master_shifts.models import MasterShift
 from app.modules.masters.models import Master, MasterService
 from app.modules.services.models import Service
 
 AVAILABLE_SHIFT_STATUSES = ("working", "extra_day")
+BLOCKING_BOOKING_STATUSES = ("confirmed",)
 SLOT_STEP_MINUTES = 15
 
 
@@ -40,7 +42,15 @@ def list_available_slots(
         while current < shift_end:
             slot_end = current + timedelta(minutes=total_duration)
             time_key = current.strftime("%H:%M")
-            status_value = "free" if slot_end <= shift_end else "tooShort"
+            status_value = "tooShort"
+
+            if slot_end <= shift_end and not _master_has_booking_conflict(
+                db,
+                shift.master_id,
+                current,
+                slot_end,
+            ):
+                status_value = "free"
 
             if slot_statuses.get(time_key) != "free":
                 slot_statuses[time_key] = status_value
@@ -94,6 +104,7 @@ def list_available_masters(
             slot_start,
             slot_end,
         )
+        and not _master_has_booking_conflict(db, master.id, slot_start, slot_end)
     ]
 
 
@@ -179,6 +190,23 @@ def _master_has_fitting_shift(
             return True
 
     return False
+
+
+def _master_has_booking_conflict(
+    db: Session,
+    master_id: int,
+    slot_start: datetime,
+    slot_end: datetime,
+) -> bool:
+    booking_id = db.scalar(
+        select(Booking.id).where(
+            Booking.master_id == master_id,
+            Booking.status.in_(BLOCKING_BOOKING_STATUSES),
+            Booking.start_at < slot_end,
+            Booking.end_at > slot_start,
+        )
+    )
+    return booking_id is not None
 
 
 def _combine(value_date: date, value_time: time) -> datetime:
