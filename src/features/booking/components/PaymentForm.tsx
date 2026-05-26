@@ -4,6 +4,7 @@ import type { Service } from '../../services/api'
 import BookingSummary from './BookingSummary'
 import { useBookingStore } from '../hooks/useBookingStore'
 import { useBookingConfig } from '../../bookingconfig/hooks/useBookingConfig'
+import { checkBookingAvailability } from '../api'
 
 interface Props {
   service: Service | null
@@ -47,21 +48,94 @@ const sectionHeadStyle: React.CSSProperties = {
 }
 
 export default function PaymentForm({ service, date, time, master }: Props) {
-  const { clientName, clientPhone, setClientName, setClientPhone } = useBookingStore()
+  const {
+    customerFirstName,
+    customerLastName,
+    customerPhone,
+    customerEmail,
+    setCustomerFirstName,
+    setCustomerLastName,
+    setCustomerPhone,
+    setCustomerEmail,
+  } = useBookingStore()
   const { data: bookingConfig } = useBookingConfig()
   const depositAmount = bookingConfig?.depositAmount ?? 10
   const currency = bookingConfig?.currency ?? 'EUR'
   const currencySymbol = currency === 'EUR' ? '€' : currency
-  // Tracks which mock card field appears "focused"
-  const [cardFocus, setCardFocus] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [isChecking, setIsChecking] = useState(false)
 
-  const mockFieldStyle = (field: string): React.CSSProperties => ({
-    ...inputStyle,
-    color: cardFocus === field ? '#7a7060' : '#3a3020',
-    borderColor: cardFocus === field ? '#c9a84c' : '#2a2218',
-    cursor: 'text',
-    userSelect: 'none',
-  })
+  const validateCustomerDetails = () => {
+    if (!customerFirstName.trim()) return 'First name is required.'
+    if (!customerLastName.trim()) return 'Last name is required.'
+    if (!customerPhone.trim()) return 'Phone number is required.'
+    if (!customerEmail.trim()) return 'Email is required.'
+    if (!customerEmail.includes('@')) return 'Enter a valid email address.'
+    return null
+  }
+
+  const getErrorStatus = (error: unknown) => {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'status' in error &&
+      typeof (error as { status?: unknown }).status === 'number'
+    ) {
+      return (error as { status: number }).status
+    }
+
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'response' in error &&
+      typeof (error as { response?: { status?: unknown } }).response?.status === 'number'
+    ) {
+      return (error as { response: { status: number } }).response.status
+    }
+
+    return null
+  }
+
+  const handleConfirmAndPay = async () => {
+    setErrorMessage(null)
+    setSuccessMessage(null)
+
+    const validationError = validateCustomerDetails()
+    if (validationError) {
+      setErrorMessage(validationError)
+      return
+    }
+
+    if (!service || !master || !date || !time) {
+      setErrorMessage('Could not check booking availability. Please try again.')
+      return
+    }
+
+    setIsChecking(true)
+
+    try {
+      await checkBookingAvailability({
+        service_id: service.id,
+        master_id: master.id,
+        date,
+        time,
+        customer_first_name: customerFirstName.trim(),
+        customer_last_name: customerLastName.trim(),
+        customer_phone: customerPhone.trim(),
+        customer_email: customerEmail.trim(),
+      })
+      setSuccessMessage('Slot is available. Stripe payment will be added next.')
+    } catch (error) {
+      if (getErrorStatus(error) === 409) {
+        setErrorMessage('This time is no longer available. Please choose another time.')
+      } else {
+        setErrorMessage('Could not check booking availability. Please try again.')
+      }
+    } finally {
+      setIsChecking(false)
+    }
+  }
 
   return (
     <div style={{ width: '100%', minWidth: 0 }}>
@@ -80,12 +154,26 @@ export default function PaymentForm({ service, date, time, master }: Props) {
             <div style={sectionHeadStyle}>Personal details</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
               <div>
-                <label style={labelStyle}>Full name</label>
+                <label style={labelStyle}>First name</label>
                 <input
                   type="text"
-                  value={clientName}
-                  onChange={e => setClientName(e.target.value)}
-                  placeholder="Your name"
+                  value={customerFirstName}
+                  onChange={e => setCustomerFirstName(e.target.value)}
+                  placeholder="John"
+                  autoComplete="given-name"
+                  style={inputStyle}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#c9a84c')}
+                  onBlur={e => (e.currentTarget.style.borderColor = '#2a2218')}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Last name</label>
+                <input
+                  type="text"
+                  value={customerLastName}
+                  onChange={e => setCustomerLastName(e.target.value)}
+                  placeholder="Smith"
+                  autoComplete="family-name"
                   style={inputStyle}
                   onFocus={e => (e.currentTarget.style.borderColor = '#c9a84c')}
                   onBlur={e => (e.currentTarget.style.borderColor = '#2a2218')}
@@ -95,9 +183,23 @@ export default function PaymentForm({ service, date, time, master }: Props) {
                 <label style={labelStyle}>Phone number</label>
                 <input
                   type="tel"
-                  value={clientPhone}
-                  onChange={e => setClientPhone(e.target.value)}
+                  value={customerPhone}
+                  onChange={e => setCustomerPhone(e.target.value)}
                   placeholder="+370 ..."
+                  autoComplete="tel"
+                  style={inputStyle}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#c9a84c')}
+                  onBlur={e => (e.currentTarget.style.borderColor = '#2a2218')}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Email</label>
+                <input
+                  type="email"
+                  value={customerEmail}
+                  onChange={e => setCustomerEmail(e.target.value)}
+                  placeholder="john@example.com"
+                  autoComplete="email"
                   style={inputStyle}
                   onFocus={e => (e.currentTarget.style.borderColor = '#c9a84c')}
                   onBlur={e => (e.currentTarget.style.borderColor = '#2a2218')}
@@ -106,37 +208,22 @@ export default function PaymentForm({ service, date, time, master }: Props) {
             </div>
           </div>
 
-          {/* Mock Stripe card fields */}
           <div>
             <div style={sectionHeadStyle}>Card details</div>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={labelStyle}>Card number</label>
-              <div
-                style={{ ...mockFieldStyle('card'), display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                onClick={() => setCardFocus(f => f === 'card' ? null : 'card')}
-              >
-                <span>•••• •••• •••• ••••</span>
-                <span style={{ fontSize: '11px', color: '#3a3020', letterSpacing: '1px' }}>VISA / MC</span>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '16px' }}>
-              <div>
-                <label style={labelStyle}>Expiry</label>
-                <div
-                  style={mockFieldStyle('exp')}
-                  onClick={() => setCardFocus(f => f === 'exp' ? null : 'exp')}
-                >
-                  MM / YY
-                </div>
-              </div>
-              <div>
-                <label style={labelStyle}>CVC</label>
-                <div
-                  style={mockFieldStyle('cvc')}
-                  onClick={() => setCardFocus(f => f === 'cvc' ? null : 'cvc')}
-                >
-                  •••
-                </div>
+            <div
+              style={{
+                border: '1px dashed #2a2218',
+                background: '#0f0f0f',
+                minHeight: '112px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px',
+                boxSizing: 'border-box',
+              }}
+            >
+              <div style={{ fontSize: '13px', color: '#7a7060', fontFamily: 'sans-serif', textAlign: 'center', lineHeight: 1.7 }}>
+                Secure Stripe payment form will appear here.
               </div>
             </div>
           </div>
@@ -161,8 +248,13 @@ export default function PaymentForm({ service, date, time, master }: Props) {
               fontFamily: 'Georgia, serif',
               fontWeight: 400,
               transition: 'all 0.2s',
+              opacity: isChecking ? 0.55 : 1,
+              pointerEvents: isChecking ? 'none' : 'auto',
             }}
+            disabled={isChecking}
+            onClick={handleConfirmAndPay}
             onMouseEnter={e => {
+              if (isChecking) return
               e.currentTarget.style.background = 'rgba(201,168,76,0.08)'
               e.currentTarget.style.boxShadow = '0 0 20px rgba(201,168,76,0.2)'
             }}
@@ -171,8 +263,20 @@ export default function PaymentForm({ service, date, time, master }: Props) {
               e.currentTarget.style.boxShadow = 'none'
             }}
           >
-            Confirm & pay {currencySymbol}{depositAmount} deposit →
+            {isChecking ? 'Checking availability...' : `Confirm & pay ${currencySymbol}${depositAmount} deposit →`}
           </button>
+
+          {errorMessage && (
+            <p style={{ fontSize: '12px', color: '#d06b5f', fontFamily: 'sans-serif', textAlign: 'center', marginTop: '14px', lineHeight: 1.6 }}>
+              {errorMessage}
+            </p>
+          )}
+
+          {successMessage && (
+            <p style={{ fontSize: '12px', color: '#c9a84c', fontFamily: 'sans-serif', textAlign: 'center', marginTop: '14px', lineHeight: 1.6 }}>
+              {successMessage}
+            </p>
+          )}
 
           <p style={{ fontSize: '11px', color: '#3a3020', fontFamily: 'sans-serif', textAlign: 'center', marginTop: '14px', lineHeight: 1.7 }}>
             Deposit is held — not charged until<br />your visit is confirmed

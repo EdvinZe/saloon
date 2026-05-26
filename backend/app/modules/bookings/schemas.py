@@ -14,6 +14,11 @@ class BookingCreate(BaseModel):
     customer_email: str = Field(min_length=1, max_length=255)
 
 
+class BookingAvailabilityCheckResponse(BaseModel):
+    available: bool
+    message: str
+
+
 class BookingPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

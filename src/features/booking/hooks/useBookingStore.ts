@@ -8,16 +8,20 @@ interface BookingState {
   date: string | null
   time: string | null
   master: Master | null
-  clientName: string
-  clientPhone: string
+  customerFirstName: string
+  customerLastName: string
+  customerPhone: string
+  customerEmail: string
 }
 
 interface BookingActions {
   setService: (s: Service) => void
   setDateTime: (date: string, time: string) => void
   setMaster: (m: Master) => void
-  setClientName: (name: string) => void
-  setClientPhone: (phone: string) => void
+  setCustomerFirstName: (firstName: string) => void
+  setCustomerLastName: (lastName: string) => void
+  setCustomerPhone: (phone: string) => void
+  setCustomerEmail: (email: string) => void
 }
 
 export type BookingStore = BookingState & BookingActions
@@ -28,13 +32,17 @@ export const useBookingStore = create<BookingStore>((set) => ({
   date: null,
   time: null,
   master: null,
-  clientName: '',
-  clientPhone: '',
+  customerFirstName: '',
+  customerLastName: '',
+  customerPhone: '',
+  customerEmail: '',
 
   // Step advances forward only — re-selecting a service on step 4 keeps step 4 visible
   setService: (service) => set((state) => ({ service, step: Math.max(state.step, 2) })),
   setDateTime: (date, time) => set((state) => ({ date, time, step: Math.max(state.step, 3) })),
   setMaster: (master) => set((state) => ({ master, step: Math.max(state.step, 4) })),
-  setClientName: (clientName) => set({ clientName }),
-  setClientPhone: (clientPhone) => set({ clientPhone }),
+  setCustomerFirstName: (customerFirstName) => set({ customerFirstName }),
+  setCustomerLastName: (customerLastName) => set({ customerLastName }),
+  setCustomerPhone: (customerPhone) => set({ customerPhone }),
+  setCustomerEmail: (customerEmail) => set({ customerEmail }),
 }))

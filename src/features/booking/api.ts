@@ -8,6 +8,7 @@ import { isMasterBusyAt as checkMasterBusyAt } from './utils/availability'
 import { getMasters, type Master } from '../masters/api'
 
 const BASE_URL = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL ?? 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_URL
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _api = axios.create({ baseURL: BASE_URL })
@@ -60,16 +61,54 @@ export async function getNearestAvailableSlot(serviceId: number): Promise<Neares
 }
 
 export interface BookingPayload {
-  serviceId: number
+  service_id: number
+  master_id: number
   date: string
   time: string
-  masterId: number
-  clientName: string
-  clientPhone: string
+  customer_first_name: string
+  customer_last_name: string
+  customer_phone: string
+  customer_email: string
+}
+
+export interface BookingCheckPayload {
+  service_id: number
+  master_id: number
+  date: string
+  time: string
+  customer_first_name: string
+  customer_last_name: string
+  customer_phone: string
+  customer_email: string
+}
+
+export interface BookingAvailabilityCheckResponse {
+  available: boolean
+  message: string
 }
 
 export async function createBooking(data: BookingPayload) {
   return _api.post('/bookings', data).then(r => r.data)
+}
+
+export async function checkBookingAvailability(
+  payload: BookingCheckPayload
+): Promise<BookingAvailabilityCheckResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/bookings/check-availability`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw Object.assign(new Error('Failed to check booking availability'), {
+      status: response.status,
+    })
+  }
+
+  return response.json() as Promise<BookingAvailabilityCheckResponse>
 }
 
 // ─── Manage-booking API ─────────────────────────────────────────────────────────

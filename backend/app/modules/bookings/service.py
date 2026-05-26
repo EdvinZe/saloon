@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.modules.bookings.models import Booking
-from app.modules.bookings.schemas import BookingCreate
+from app.modules.bookings.schemas import BookingAvailabilityCheckResponse, BookingCreate
 from app.modules.master_shifts.models import MasterShift
 from app.modules.masters.models import Master, MasterService
 from app.modules.services.models import Service
@@ -174,6 +174,27 @@ def create_confirmed_booking(
     )
 
     return booking
+
+
+def check_booking_availability(
+    db: Session,
+    data: BookingCreate,
+) -> BookingAvailabilityCheckResponse:
+    validate_booking_creation(db, data)
+
+    logger.info(
+        "[BOOKINGS] Booking availability checked: service_id=%s master_id=%s "
+        "date=%s time=%s",
+        data.service_id,
+        data.master_id,
+        data.date,
+        data.time,
+    )
+
+    return BookingAvailabilityCheckResponse(
+        available=True,
+        message="Selected slot is available",
+    )
 
 
 def list_bookings(
