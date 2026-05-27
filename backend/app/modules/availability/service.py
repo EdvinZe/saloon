@@ -24,6 +24,7 @@ def list_available_slots(
     service = _get_active_service_or_404(db, service_id)
     total_duration = _get_service_total_duration_minutes(service)
     master_ids = _get_active_master_ids_for_service(db, service_id)
+    now = datetime.now()
 
     if not master_ids:
         return []
@@ -40,6 +41,10 @@ def list_available_slots(
         current = shift_start
 
         while current < shift_end:
+            if current < now:
+                current += timedelta(minutes=SLOT_STEP_MINUTES)
+                continue
+
             slot_end = current + timedelta(minutes=total_duration)
             time_key = current.strftime("%H:%M")
             status_value = "tooShort"
@@ -73,6 +78,12 @@ def list_available_masters(
     total_duration = _get_service_total_duration_minutes(service)
     slot_start_time = _parse_slot_time(selected_time)
     slot_start = _combine(selected_date, slot_start_time)
+    if slot_start < datetime.now():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot check availability for a time in the past",
+        )
+
     slot_end = slot_start + timedelta(minutes=total_duration)
 
     statement = (

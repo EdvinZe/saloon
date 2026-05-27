@@ -93,6 +93,12 @@ def validate_booking_creation(
         )
 
     start_at = parse_booking_start(data.date, data.time)
+    if start_at < datetime.now():
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail="Cannot book a time in the past",
+        )
+
     end_at = start_at + timedelta(minutes=get_service_total_duration_minutes(service))
 
     shifts = list(

@@ -37,8 +37,19 @@ export const useBookingStore = create<BookingStore>((set) => ({
   customerPhone: '',
   customerEmail: '',
 
-  // Step advances forward only — re-selecting a service on step 4 keeps step 4 visible
-  setService: (service) => set((state) => ({ service, step: Math.max(state.step, 2) })),
+  setService: (service) => set((state) => {
+    if (state.service?.id === service.id) {
+      return { service, step: Math.max(state.step, 2) }
+    }
+
+    return {
+      service,
+      date: null,
+      time: null,
+      master: null,
+      step: 2,
+    }
+  }),
   setDateTime: (date, time) => set((state) => ({ date, time, step: Math.max(state.step, 3) })),
   setMaster: (master) => set((state) => ({ master, step: Math.max(state.step, 4) })),
   setCustomerFirstName: (customerFirstName) => set({ customerFirstName }),

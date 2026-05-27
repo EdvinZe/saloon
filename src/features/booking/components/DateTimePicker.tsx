@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   format,
   startOfMonth,
@@ -32,6 +32,12 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
   const [pickedDate, setPickedDate] = useState<string | null>(selectedDate)
   const { data: nearestSlot = null } = useNearestAvailableSlot(service.id)
   const { data: slots = [] } = useAvailableSlots(pickedDate, service.id)
+
+  useEffect(() => {
+    if (selectedDate === null) {
+      setPickedDate(null)
+    }
+  }, [selectedDate])
 
   const days = eachDayOfInterval({ start: startOfMonth(viewMonth), end: endOfMonth(viewMonth) })
   // Monday-first offset: getDay returns 0=Sun…6=Sat, remap to 0=Mon…6=Sun
