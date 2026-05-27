@@ -19,6 +19,11 @@ class BookingAvailabilityCheckResponse(BaseModel):
     message: str
 
 
+class BookingDepositIntentResponse(BaseModel):
+    client_secret: str
+    payment_intent_id: str
+
+
 class BookingPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

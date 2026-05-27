@@ -13,6 +13,23 @@ const API_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_UR
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _api = axios.create({ baseURL: BASE_URL })
 
+async function buildApiError(response: Response, fallbackMessage: string) {
+  const responseText = await response.text()
+  let responseBody: unknown = responseText
+
+  try {
+    responseBody = responseText ? JSON.parse(responseText) : null
+  } catch {
+    responseBody = responseText
+  }
+
+  return Object.assign(new Error(fallbackMessage), {
+    status: response.status,
+    url: response.url,
+    responseBody,
+  })
+}
+
 // ─── Shared ────────────────────────────────────────────────────────────────────
 
 export interface SlotStatus {
@@ -87,6 +104,11 @@ export interface BookingAvailabilityCheckResponse {
   message: string
 }
 
+export interface BookingDepositIntentResponse {
+  client_secret: string
+  payment_intent_id: string
+}
+
 export async function createBooking(data: BookingPayload) {
   return _api.post('/bookings', data).then(r => r.data)
 }
@@ -103,12 +125,28 @@ export async function checkBookingAvailability(
   })
 
   if (!response.ok) {
-    throw Object.assign(new Error('Failed to check booking availability'), {
-      status: response.status,
-    })
+    throw await buildApiError(response, 'Failed to check booking availability')
   }
 
   return response.json() as Promise<BookingAvailabilityCheckResponse>
+}
+
+export async function createBookingDepositIntent(
+  payload: BookingCheckPayload
+): Promise<BookingDepositIntentResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/bookings/deposit-intent`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw await buildApiError(response, 'Failed to create booking deposit intent')
+  }
+
+  return response.json() as Promise<BookingDepositIntentResponse>
 }
 
 // ─── Manage-booking API ─────────────────────────────────────────────────────────

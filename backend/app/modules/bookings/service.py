@@ -146,6 +146,15 @@ def create_confirmed_booking(
             detail=f"Invalid booking source: {source}",
         )
 
+    if stripe_payment_intent_id is not None:
+        existing_booking = db.scalar(
+            select(Booking).where(
+                Booking.stripe_payment_intent_id == stripe_payment_intent_id
+            )
+        )
+        if existing_booking is not None:
+            return existing_booking
+
     _, master, start_at, end_at = validate_booking_creation(db, data)
     booking = Booking(
         service_id=data.service_id,

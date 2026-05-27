@@ -80,6 +80,7 @@ class Booking(Base):
     stripe_payment_intent_id: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
+        unique=True,
         index=True,
     )
     created_at: Mapped[datetime] = mapped_column(

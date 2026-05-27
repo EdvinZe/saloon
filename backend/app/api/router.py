@@ -6,6 +6,7 @@ from app.modules.bookings.router import router as bookings_router
 from app.modules.master_shifts.admin_router import router as admin_master_shifts_router
 from app.modules.masters.admin_router import router as admin_masters_router
 from app.modules.masters.router import router as masters_router
+from app.modules.payments.webhook_router import router as stripe_webhook_router
 from app.modules.services.admin_router import router as admin_services_router
 from app.modules.services.router import router as services_router
 
@@ -39,6 +40,12 @@ def register_routers(app: FastAPI) -> None:
         bookings_router,
         prefix="/api/bookings",
         tags=["Bookings"],
+    )
+
+    app.include_router(
+        stripe_webhook_router,
+        prefix="/api/stripe",
+        tags=["Stripe"],
     )
 
     app.include_router(
