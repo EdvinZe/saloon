@@ -1,5 +1,4 @@
 import logging
-from datetime import date
 
 import stripe
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
@@ -28,6 +27,26 @@ REQUIRED_PAYMENT_INTENT_METADATA = {
     "deposit_amount_cents",
     "currency",
 }
+
+
+def _metadata_value(metadata, key: str) -> str | None:
+    try:
+        value = metadata[key]
+    except KeyError:
+        return None
+
+    if value is None:
+        return None
+
+    return str(value)
+
+
+def _missing_metadata_keys(metadata) -> list[str]:
+    return [
+        key
+        for key in REQUIRED_PAYMENT_INTENT_METADATA
+        if _metadata_value(metadata, key) in (None, "")
+    ]
 
 
 @router.post("/webhook")
@@ -61,20 +80,18 @@ async def stripe_webhook(
 
 def _handle_payment_intent_succeeded(db: Session, payment_intent) -> None:
     payment_intent_id = payment_intent["id"]
-    metadata = dict(payment_intent["metadata"] or {})
+    metadata = payment_intent["metadata"] or {}
 
     logger.info(
         "[STRIPE] payment_intent.succeeded received: payment_intent_id=%s",
         payment_intent_id,
     )
-    logger.info("[STRIPE] PaymentIntent metadata keys: %s", list(metadata.keys()))
 
-    missing_metadata = REQUIRED_PAYMENT_INTENT_METADATA - set(metadata.keys())
-    if missing_metadata:
+    missing = _missing_metadata_keys(metadata)
+    if missing:
         logger.error(
-            "[STRIPE] Missing required metadata for booking creation: missing=%s "
-            "payment_intent_id=%s",
-            sorted(missing_metadata),
+            "[STRIPE] Missing required metadata for booking creation: missing=%s payment_intent_id=%s",
+            missing,
             payment_intent_id,
         )
         return
@@ -91,17 +108,17 @@ def _handle_payment_intent_succeeded(db: Session, payment_intent) -> None:
 
     try:
         booking_data = BookingCreate(
-            service_id=int(metadata["service_id"]),
-            master_id=int(metadata["master_id"]),
-            date=date.fromisoformat(metadata["date"]),
-            time=metadata["time"],
-            customer_first_name=metadata["customer_first_name"],
-            customer_last_name=metadata["customer_last_name"],
-            customer_phone=metadata["customer_phone"],
-            customer_email=metadata["customer_email"],
+            service_id=int(_metadata_value(metadata, "service_id")),
+            master_id=int(_metadata_value(metadata, "master_id")),
+            date=_metadata_value(metadata, "date"),
+            time=_metadata_value(metadata, "time"),
+            customer_first_name=_metadata_value(metadata, "customer_first_name"),
+            customer_last_name=_metadata_value(metadata, "customer_last_name"),
+            customer_phone=_metadata_value(metadata, "customer_phone"),
+            customer_email=_metadata_value(metadata, "customer_email"),
         )
-        deposit_amount_cents = int(metadata["deposit_amount_cents"])
-        currency = metadata["currency"]
+        deposit_amount_cents = int(_metadata_value(metadata, "deposit_amount_cents"))
+        currency = _metadata_value(metadata, "currency")
     except (TypeError, ValueError) as exc:
         logger.error(
             "[STRIPE] Invalid metadata for booking creation: "

@@ -12,6 +12,7 @@ from app.modules.bookings.schemas import BookingAvailabilityCheckResponse, Booki
 from app.modules.master_shifts.models import MasterShift
 from app.modules.masters.models import Master, MasterService
 from app.modules.services.models import Service
+from app.modules.services.service import get_service_total_duration_minutes
 
 logger = logging.getLogger(__name__)
 
@@ -52,14 +53,6 @@ def parse_booking_start(selected_date: date, time_str: str) -> datetime:
         ) from exc
 
     return datetime.combine(selected_date, selected_time)
-
-
-def get_service_total_duration_minutes(service: Service) -> int:
-    total_duration = getattr(service, "total_duration_minutes", None)
-    if isinstance(total_duration, int):
-        return total_duration
-
-    return service.duration_minutes + service.cleanup_time_minutes
 
 
 def validate_booking_creation(
@@ -253,6 +246,20 @@ def list_bookings(
 
 def get_booking_by_manage_token(db: Session, token: str) -> Booking | None:
     return db.scalar(select(Booking).where(Booking.manage_token == token))
+
+
+def get_booking_by_payment_intent(
+    db: Session,
+    payment_intent_id: str,
+) -> Booking | None:
+    if not payment_intent_id or not payment_intent_id.strip():
+        return None
+
+    return db.scalar(
+        select(Booking).where(
+            Booking.stripe_payment_intent_id == payment_intent_id.strip()
+        )
+    )
 
 
 def has_overlapping_confirmed_booking(

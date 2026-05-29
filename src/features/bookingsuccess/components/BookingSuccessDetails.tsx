@@ -1,14 +1,9 @@
-type Booking = {
-  service: string
-  duration: string
-  date: string
-  time: string
-  barber: string
-  deposit: string
-}
+import { format } from 'date-fns'
+import type { BookingPaymentResult } from '../api'
+
+type Booking = NonNullable<BookingPaymentResult['booking']>
 
 interface Props {
-  bookingId: string | null
   booking: Booking
 }
 
@@ -19,12 +14,23 @@ const rowStyle: React.CSSProperties = {
   padding: '10px 0',
 }
 
-export default function BookingSuccessDetails({ bookingId, booking }: Props) {
+function formatDateTime(value: string) {
+  return format(new Date(value), 'MMMM d, yyyy · HH:mm')
+}
+
+function formatDeposit(cents: number, currency: string) {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+  }).format(cents / 100)
+}
+
+export default function BookingSuccessDetails({ booking }: Props) {
+  const customerName = `${booking.customer_first_name} ${booking.customer_last_name}`
   const rows = [
-    { label: 'Service', value: `${booking.service} · ${booking.duration}` },
-    { label: 'Date & time', value: `${booking.date} · ${booking.time}` },
-    { label: 'Barber', value: booking.barber },
-    { label: 'Deposit paid', value: booking.deposit },
+    { label: 'Date & time', value: formatDateTime(booking.start_at) },
+    { label: 'Customer', value: customerName },
+    { label: 'Deposit paid', value: formatDeposit(booking.deposit_amount_cents, booking.currency) },
   ]
 
   return (
@@ -35,7 +41,7 @@ export default function BookingSuccessDetails({ bookingId, booking }: Props) {
       textAlign: 'left',
       marginBottom: '24px',
     }}>
-      {bookingId && (
+      {booking.booking_code && (
         <div style={{
           fontSize: '10px',
           color: '#3a3020',
@@ -46,7 +52,7 @@ export default function BookingSuccessDetails({ bookingId, booking }: Props) {
           paddingBottom: '12px',
           borderBottom: '1px solid #1a1810',
         }}>
-          Ref: {bookingId}
+          Ref: {booking.booking_code}
         </div>
       )}
 

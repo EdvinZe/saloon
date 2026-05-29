@@ -27,7 +27,7 @@ class ServicePublic(BaseModel):
     @computed_field
     @property
     def total_duration_minutes(self) -> int:
-        return self.duration_minutes + self.cleanup_time_minutes
+        return self.duration_minutes + (self.cleanup_time_minutes or 0)
 
 
 class ServiceAdmin(ServicePublic):

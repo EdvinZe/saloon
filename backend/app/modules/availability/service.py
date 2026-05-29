@@ -10,6 +10,7 @@ from app.modules.bookings.models import Booking
 from app.modules.master_shifts.models import MasterShift
 from app.modules.masters.models import Master, MasterService
 from app.modules.services.models import Service
+from app.modules.services.service import get_service_total_duration_minutes
 
 AVAILABLE_SHIFT_STATUSES = ("working", "extra_day")
 BLOCKING_BOOKING_STATUSES = ("confirmed",)
@@ -22,7 +23,7 @@ def list_available_slots(
     selected_date: date,
 ) -> list[AvailableSlotStatus]:
     service = _get_active_service_or_404(db, service_id)
-    total_duration = _get_service_total_duration_minutes(service)
+    total_duration = get_service_total_duration_minutes(service)
     master_ids = _get_active_master_ids_for_service(db, service_id)
     now = datetime.now()
 
@@ -75,7 +76,7 @@ def list_available_masters(
     selected_time: str,
 ) -> list[Master]:
     service = _get_active_service_or_404(db, service_id)
-    total_duration = _get_service_total_duration_minutes(service)
+    total_duration = get_service_total_duration_minutes(service)
     slot_start_time = _parse_slot_time(selected_time)
     slot_start = _combine(selected_date, slot_start_time)
     if slot_start < datetime.now():
@@ -128,14 +129,6 @@ def _get_active_service_or_404(db: Session, service_id: int) -> Service:
         )
 
     return service
-
-
-def _get_service_total_duration_minutes(service: Service) -> int:
-    total_duration = getattr(service, "total_duration_minutes", None)
-    if isinstance(total_duration, int):
-        return total_duration
-
-    return service.duration_minutes + service.cleanup_time_minutes
 
 
 def _get_active_master_ids_for_service(db: Session, service_id: int) -> list[int]:

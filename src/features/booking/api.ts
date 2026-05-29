@@ -109,6 +109,32 @@ export interface BookingDepositIntentResponse {
   payment_intent_id: string
 }
 
+export type BookingPaymentResultStatus = 'confirmed' | 'processing' | 'not_found'
+
+export interface BookingPaymentResult {
+  status: BookingPaymentResultStatus
+  message: string
+  booking: {
+    id: number
+    booking_code: string | null
+    manage_token: string
+    manage_url: string
+    service_id: number
+    master_id: number
+    customer_first_name: string
+    customer_last_name: string
+    customer_phone: string
+    customer_email: string
+    start_at: string
+    end_at: string
+    status: string
+    deposit_status: string
+    source: string
+    deposit_amount_cents: number
+    currency: string
+  } | null
+}
+
 export async function createBooking(data: BookingPayload) {
   return _api.post('/bookings', data).then(r => r.data)
 }
@@ -147,6 +173,18 @@ export async function createBookingDepositIntent(
   }
 
   return response.json() as Promise<BookingDepositIntentResponse>
+}
+
+export async function getBookingPaymentResult(paymentIntentId: string): Promise<BookingPaymentResult> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/bookings/payment-result?payment_intent=${encodeURIComponent(paymentIntentId)}`
+  )
+
+  if (!response.ok) {
+    throw await buildApiError(response, 'Failed to get booking payment result')
+  }
+
+  return response.json() as Promise<BookingPaymentResult>
 }
 
 // ─── Manage-booking API ─────────────────────────────────────────────────────────

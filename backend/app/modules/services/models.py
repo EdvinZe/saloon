@@ -33,3 +33,7 @@ class Service(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+    @property
+    def total_duration_minutes(self) -> int:
+        return self.duration_minutes + (self.cleanup_time_minutes or 0)

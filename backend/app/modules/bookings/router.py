@@ -8,11 +8,13 @@ from app.modules.bookings.schemas import (
     BookingAvailabilityCheckResponse,
     BookingCreate,
     BookingDepositIntentResponse,
+    BookingPaymentResultResponse,
     BookingPublic,
 )
 from app.modules.bookings.service import (
     check_booking_availability,
     create_confirmed_booking,
+    get_booking_by_payment_intent,
     validate_booking_creation,
 )
 from app.modules.payments.stripe_service import create_booking_deposit_payment_intent
@@ -51,6 +53,36 @@ def create_booking_deposit_intent_endpoint(
     )
     validate_booking_creation(db, data)
     return create_booking_deposit_payment_intent(data)
+
+
+@router.get(
+    "/payment-result",
+    response_model=BookingPaymentResultResponse,
+)
+def get_booking_payment_result_endpoint(
+    payment_intent: str = "",
+    db: Session = Depends(get_db),
+):
+    if not payment_intent or not payment_intent.strip():
+        return BookingPaymentResultResponse(
+            status="not_found",
+            message="Payment intent is missing",
+            booking=None,
+        )
+
+    booking = get_booking_by_payment_intent(db, payment_intent)
+    if booking is not None:
+        return BookingPaymentResultResponse(
+            status="confirmed",
+            message="Booking confirmed",
+            booking=booking,
+        )
+
+    return BookingPaymentResultResponse(
+        status="processing",
+        message="Payment received. Booking is still being confirmed.",
+        booking=None,
+    )
 
 
 @router.post(

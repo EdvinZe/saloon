@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
 
-export default function BookingSuccessActions() {
+interface Props {
+  manageUrl: string
+}
+
+export default function BookingSuccessActions({ manageUrl }: Props) {
   return (
     <>
       <p style={{
@@ -13,13 +17,32 @@ export default function BookingSuccessActions() {
         A confirmation has been sent. Your barber will be notified shortly.
       </p>
 
-      <Link to="/" style={{ textDecoration: 'none' }}>
+      <Link to="/" style={{ textDecoration: 'none', marginRight: '12px' }}>
+        <button
+          style={{
+            background: '#c9a84c',
+            border: '1px solid #c9a84c',
+            color: '#0f0f0f',
+            padding: '14px 36px',
+            fontSize: '11px',
+            letterSpacing: '3px',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            fontFamily: 'Georgia, serif',
+            fontWeight: 400,
+          }}
+        >
+          Back to home
+        </button>
+      </Link>
+
+      <Link to={manageUrl} style={{ textDecoration: 'none' }}>
         <button
           style={{
             background: 'transparent',
             border: '1px solid #c9a84c',
             color: '#c9a84c',
-            padding: '14px 36px',
+            padding: '14px 28px',
             fontSize: '11px',
             letterSpacing: '3px',
             textTransform: 'uppercase',
@@ -37,7 +60,7 @@ export default function BookingSuccessActions() {
             e.currentTarget.style.boxShadow = 'none'
           }}
         >
-          ← Back to home
+          Change booking
         </button>
       </Link>
     </>

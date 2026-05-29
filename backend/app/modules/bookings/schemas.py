@@ -47,7 +47,13 @@ class BookingPublic(BaseModel):
     @computed_field
     @property
     def manage_url(self) -> str:
-        return f"/booking/manage/{self.manage_token}"
+        return f"/booking/manage?token={self.manage_token}"
+
+
+class BookingPaymentResultResponse(BaseModel):
+    status: str
+    message: str
+    booking: BookingPublic | None = None
 
 
 class BookingAdmin(BookingPublic):
