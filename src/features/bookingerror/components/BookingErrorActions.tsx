@@ -3,9 +3,16 @@ import { Link, useNavigate } from 'react-router-dom'
 interface Props {
   btn: string
   btnHref: string
+  secondaryBtn?: string
+  secondaryHref?: string
 }
 
-export default function BookingErrorActions({ btn, btnHref }: Props) {
+export default function BookingErrorActions({
+  btn,
+  btnHref,
+  secondaryBtn,
+  secondaryHref,
+}: Props) {
   const navigate = useNavigate()
 
   return (
@@ -37,33 +44,35 @@ export default function BookingErrorActions({ btn, btnHref }: Props) {
         {btn}
       </button>
 
-      <Link to="/" style={{ textDecoration: 'none' }}>
-        <button
-          style={{
-            background: 'transparent',
-            border: '1px solid #2a2218',
-            color: '#7a7060',
-            padding: '14px 28px',
-            fontSize: '11px',
-            letterSpacing: '3px',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            fontFamily: 'Georgia, serif',
-            fontWeight: 400,
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.borderColor = '#5a5040'
-            e.currentTarget.style.color = '#e8e0d0'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.borderColor = '#2a2218'
-            e.currentTarget.style.color = '#7a7060'
-          }}
-        >
-          ← Back to home
-        </button>
-      </Link>
+      {secondaryBtn && secondaryHref && (
+        <Link to={secondaryHref} style={{ textDecoration: 'none' }}>
+          <button
+            style={{
+              background: 'transparent',
+              border: '1px solid #2a2218',
+              color: '#7a7060',
+              padding: '14px 28px',
+              fontSize: '11px',
+              letterSpacing: '3px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              fontFamily: 'Georgia, serif',
+              fontWeight: 400,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = '#5a5040'
+              e.currentTarget.style.color = '#e8e0d0'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = '#2a2218'
+              e.currentTarget.style.color = '#7a7060'
+            }}
+          >
+            {secondaryBtn}
+          </button>
+        </Link>
+      )}
     </div>
   )
 }

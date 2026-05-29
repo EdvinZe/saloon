@@ -25,6 +25,10 @@ export default function App() {
             <Route path="/booking/manage" element={<BookingManagePage />} />
             <Route path="/works" element={<WorksPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route
+              path="*"
+              element={<BookingErrorPage forcedType="page" forcedReason="not_found" />}
+            />
           </Routes>
         </div>
       </BrowserRouter>

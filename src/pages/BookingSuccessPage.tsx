@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom'
 import Footer from '../components/layout/Footer'
 import CenteredPageLayout from '../components/layout/CenteredPageLayout'
 import BookingSuccessHeader from '../features/bookingsuccess/components/BookingSuccessHeader'
@@ -5,8 +6,6 @@ import BookingSuccessDetails from '../features/bookingsuccess/components/Booking
 import BookingSuccessActions from '../features/bookingsuccess/components/BookingSuccessActions'
 import BookingSuccessLoading from '../features/bookingsuccess/components/BookingSuccessLoading'
 import { useBookingSuccess } from '../features/bookingsuccess/hooks/useBookingSuccess'
-import BookingErrorContent from '../features/bookingerror/components/BookingErrorContent'
-import { getBookingErrorConfig } from '../features/bookingerror/config/bookingErrorConfig'
 
 export default function BookingSuccessPage() {
   const { booking, isLoading, isProcessing, isError, errorReason } = useBookingSuccess()
@@ -23,10 +22,10 @@ export default function BookingSuccessPage() {
 
   if (isError) {
     return (
-      <div style={{ background: '#0f0f0f', minHeight: '100vh' }}>
-        <BookingErrorContent config={getBookingErrorConfig('payment_result', errorReason ?? '')} />
-        <Footer />
-      </div>
+      <Navigate
+        replace
+        to={`/booking/error?type=payment_result&reason=${errorReason ?? 'lookup_failed'}`}
+      />
     )
   }
 

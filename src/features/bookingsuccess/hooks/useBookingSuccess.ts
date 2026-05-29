@@ -32,9 +32,11 @@ export function useBookingSuccess() {
   })
 
   const isMissingPaymentIntent = !paymentIntentId
-  const isProcessing = query.data?.status === 'processing'
   const isProcessingTimeout =
-    isProcessing && query.dataUpdateCount >= MAX_PAYMENT_RESULT_ATTEMPTS
+    query.data?.status === 'processing' &&
+    query.dataUpdateCount >= MAX_PAYMENT_RESULT_ATTEMPTS
+  const isProcessing =
+    query.data?.status === 'processing' && !isProcessingTimeout
   const isNotFound = query.data?.status === 'not_found'
   const isError =
     isMissingPaymentIntent ||
@@ -52,7 +54,7 @@ export function useBookingSuccess() {
     errorReason: isMissingPaymentIntent
       ? 'missing_payment_intent'
       : hasInvalidRedirectStatus
-        ? redirectStatus === 'canceled'
+        ? redirectStatus === 'canceled' || redirectStatus === 'cancelled'
           ? 'cancelled'
           : 'failed'
         : isProcessingTimeout

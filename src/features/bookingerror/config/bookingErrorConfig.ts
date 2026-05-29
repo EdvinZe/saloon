@@ -3,6 +3,8 @@ export interface ErrorConfig {
   sub: string
   btn: string
   btnHref: string
+  secondaryBtn?: string
+  secondaryHref?: string
 }
 
 // Keyed by `type` or `payment_failed.{reason}` for payment sub-types
@@ -67,6 +69,12 @@ export const ERROR_MAP: Record<string, ErrorConfig> = {
     btn: 'Back to home →',
     btnHref: '/',
   },
+  'page.not_found': {
+    title: 'Page not found',
+    sub: 'The page you are looking for does not exist or may have been moved.',
+    btn: 'Back to home →',
+    btnHref: '/',
+  },
   booking_cancelled: {
     title: 'Booking cancelled',
     sub: 'Your booking was cancelled by the barber. Please choose another time or a different barber.',
@@ -83,7 +91,7 @@ export const ERROR_MAP: Record<string, ErrorConfig> = {
 
 export function getBookingErrorConfig(type: string, reason: string) {
   const key =
-    type === 'payment_failed' || type === 'payment_result'
+    type === 'payment_failed' || type === 'payment_result' || type === 'page'
       ? `${type}.${reason}`
       : type
   return ERROR_MAP[key] ?? ERROR_MAP['default']

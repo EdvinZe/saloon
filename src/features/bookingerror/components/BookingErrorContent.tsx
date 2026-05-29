@@ -26,8 +26,12 @@ export default function BookingErrorContent({ config }: Props) {
           {config.sub}
         </p>
 
-        {/* Primary (gold) + Secondary (grey) buttons */}
-        <BookingErrorActions btn={config.btn} btnHref={config.btnHref} />
+        <BookingErrorActions
+          btn={config.btn}
+          btnHref={config.btnHref}
+          secondaryBtn={config.secondaryBtn}
+          secondaryHref={config.secondaryHref}
+        />
       </div>
     </div>
   )
