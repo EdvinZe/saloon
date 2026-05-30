@@ -28,7 +28,7 @@ export default function BookingManageActions({ activePanel, onSelect }: Props) {
         <div style={{ fontSize: '22px', color: '#c9a84c', marginBottom: '8px' }}>↺</div>
         <div style={{ fontSize: '13px', color: '#e8e0d0', fontFamily: 'Georgia, serif', marginBottom: '4px' }}>Reschedule</div>
         <div style={{ fontSize: '10px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '1px' }}>
-          Change date, time or service
+          Change date, time or barber
         </div>
       </div>
 

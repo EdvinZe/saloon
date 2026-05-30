@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { Navigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import Footer from '../components/layout/Footer'
 import {
   getBookingByToken,
-  rescheduleBooking,
+  rescheduleManagedBooking,
   cancelManagedBooking,
-  isMasterBusyAt,
 } from '../features/booking/api'
 import { useManageStore } from '../features/bookingmanage/hooks/useManageStore'
 import BookingManageHeader from '../features/bookingmanage/components/BookingManageHeader'
@@ -48,15 +47,18 @@ function getErrorDetail(error: unknown): string | null {
 export default function BookingManagePage() {
   const [params] = useSearchParams()
   const token = params.get('token')?.trim() ?? ''
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
 
   const {
-    newService, newSlot, newMaster, step,
-    setNewService, setNewSlot, setNewMaster, reset,
+    newSlot, newMaster, step,
+    setNewSlot, setNewMaster, reset,
   } = useManageStore()
 
   const [activePanel, setActivePanel] = useState<ActivePanel>('none')
   const [doneType, setDoneType] = useState<DoneType | null>(null)
+  const [rescheduleSuccess, setRescheduleSuccess] = useState(false)
+  const [isRedirectingAfterReschedule, setIsRedirectingAfterReschedule] = useState(false)
 
   // Step reveal refs
   const rescheduleRef = useRef<HTMLDivElement>(null)
@@ -76,13 +78,8 @@ export default function BookingManagePage() {
   // Reset form state when token changes (page load)
   useEffect(() => { reset() }, [token, reset])
 
-  // Derived: does current barber overlap the newly selected slot?
-  const needsMasterSelect = !!(
-    newService && newSlot && booking &&
-    isMasterBusyAt(booking.master.id, newSlot.date, newSlot.time, newService.totalDurationMinutes)
-  )
-
-  const canConfirm = !!(newService && newSlot && (!needsMasterSelect || newMaster))
+  const needsMasterSelect = Boolean(newSlot)
+  const canConfirm = Boolean(newSlot && newMaster)
 
   // ScrollIntoView when steps advance — mirrors BookingPage pattern
   const prevStep = useRef(step)
@@ -110,6 +107,8 @@ export default function BookingManagePage() {
   const handlePanelSelect = (panel: 'reschedule' | 'cancel') => {
     const next: ActivePanel = activePanel === panel ? 'none' : panel
     setActivePanel(next)
+    setRescheduleSuccess(false)
+    setIsRedirectingAfterReschedule(false)
     reset()
     if (next === 'reschedule') {
       setTimeout(() => rescheduleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
@@ -119,8 +118,15 @@ export default function BookingManagePage() {
   }
 
   const rescheduleMutation = useMutation({
-    mutationFn: rescheduleBooking,
-    onSuccess: () => setDoneType('rescheduled'),
+    mutationFn: rescheduleManagedBooking,
+    onSuccess: response => {
+      queryClient.setQueryData(['booking-manage', token], response.booking)
+      reset()
+      setActivePanel('none')
+      setRescheduleSuccess(true)
+      setIsRedirectingAfterReschedule(true)
+      setTimeout(() => navigate('/'), 1200)
+    },
   })
 
   const cancelMutation = useMutation({
@@ -132,14 +138,12 @@ export default function BookingManagePage() {
   })
 
   const handleReschedule = () => {
-    if (!canConfirm || !booking || !newService || !newSlot) return
-    const masterId = needsMasterSelect ? (newMaster?.id ?? booking.master.id) : booking.master.id
+    if (!canConfirm || !newMaster || !newSlot || isRedirectingAfterReschedule) return
     rescheduleMutation.mutate({
       token,
-      serviceId: newService.id,
+      master_id: newMaster.id,
       date: newSlot.date,
       time: newSlot.time,
-      masterId,
     })
   }
 
@@ -185,6 +189,15 @@ export default function BookingManagePage() {
     )
   }
 
+  if (rescheduleMutation.isError && getErrorStatus(rescheduleMutation.error) === 404) {
+    return (
+      <Navigate
+        replace
+        to="/booking/error?type=booking_manage&reason=invalid_token"
+      />
+    )
+  }
+
   // ── Post-action success screen ────────────────────────────────────────────────
   if (doneType) {
     return (
@@ -204,6 +217,12 @@ export default function BookingManagePage() {
       ? getErrorDetail(cancelMutation.error) ?? 'Booking cannot be cancelled'
       : cancelMutation.isError
         ? 'Could not cancel booking. Please try again.'
+        : null
+  const rescheduleErrorMessage =
+    rescheduleMutation.isError && getErrorStatus(rescheduleMutation.error) === 400
+      ? getErrorDetail(rescheduleMutation.error) ?? 'This time is no longer available. Please choose another time.'
+      : rescheduleMutation.isError
+        ? 'Could not reschedule booking. Please try again.'
         : null
 
   const bookingRows: { label: string; value: string; gold?: boolean }[] = [
@@ -231,25 +250,31 @@ export default function BookingManagePage() {
             </div>
           )}
 
+          {rescheduleSuccess && (
+            <div style={{ background: '#141008', border: '1px solid #2a2218', padding: '20px 24px', marginTop: '12px', color: '#c9a84c', fontFamily: 'Georgia, serif', fontSize: '15px', textAlign: 'center' }}>
+              Booking rescheduled successfully
+            </div>
+          )}
+
           <BookingManageReschedulePanel
             visible={canManageBooking && activePanel === 'reschedule'}
             panelRef={rescheduleRef}
             step2Ref={step2Ref}
             step3Ref={step3Ref}
             confirmRef={confirmRef}
-            newService={newService}
+            service={booking.service}
             newSlot={newSlot}
             newMaster={newMaster}
             depositPaid={booking.depositPaid}
             currentMasterName={booking.master.name}
             needsMasterSelect={needsMasterSelect}
             canConfirm={canConfirm}
-            onServiceSelect={setNewService}
             onSlotSelect={setNewSlot}
             onMasterSelect={setNewMaster}
             onConfirm={handleReschedule}
-            submitting={rescheduleMutation.isPending}
+            submitting={rescheduleMutation.isPending || isRedirectingAfterReschedule}
             isError={rescheduleMutation.isError}
+            errorMessage={rescheduleErrorMessage}
           />
 
           <BookingManageCancelPanel

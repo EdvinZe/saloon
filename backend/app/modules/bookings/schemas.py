@@ -28,6 +28,13 @@ class BookingCancelRequest(BaseModel):
     token: str
 
 
+class BookingRescheduleRequest(BaseModel):
+    token: str
+    master_id: int
+    date: date
+    time: str
+
+
 class BookingPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -61,6 +68,12 @@ class BookingPaymentResultResponse(BaseModel):
 
 
 class BookingCancelResponse(BaseModel):
+    success: bool
+    message: str
+    booking: BookingPublic
+
+
+class BookingRescheduleResponse(BaseModel):
     success: bool
     message: str
     booking: BookingPublic

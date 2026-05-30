@@ -205,6 +205,19 @@ export interface ManagedBookingCancelResponse {
   booking: ManagedBooking
 }
 
+export interface ManagedBookingReschedulePayload {
+  token: string
+  master_id: number
+  date: string
+  time: string
+}
+
+export interface ManagedBookingRescheduleResponse {
+  success: boolean
+  message: string
+  booking: ManagedBooking
+}
+
 export type ManagedSlotStatus = AvailableSlotStatus
 
 interface ApiManagedBooking {
@@ -228,6 +241,12 @@ interface ApiManagedBooking {
 }
 
 interface ApiManagedBookingCancelResponse {
+  success: boolean
+  message: string
+  booking: ApiManagedBooking
+}
+
+interface ApiManagedBookingRescheduleResponse {
   success: boolean
   message: string
   booking: ApiManagedBooking
@@ -272,6 +291,38 @@ export async function cancelManagedBooking(token: string): Promise<ManagedBookin
   }
 
   const data = await response.json() as ApiManagedBookingCancelResponse
+  return {
+    success: data.success,
+    message: data.message,
+    booking: await mapManagedBooking(data.booking),
+  }
+}
+
+export async function rescheduleManagedBooking(
+  payload: ManagedBookingReschedulePayload
+): Promise<ManagedBookingRescheduleResponse> {
+  if (!payload.token.trim()) {
+    throw Object.assign(new Error('Booking token is required'), { status: 400 })
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/bookings/manage/reschedule`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      token: payload.token.trim(),
+      master_id: payload.master_id,
+      date: payload.date,
+      time: payload.time,
+    }),
+  })
+
+  if (!response.ok) {
+    throw await buildApiError(response, 'Failed to reschedule booking')
+  }
+
+  const data = await response.json() as ApiManagedBookingRescheduleResponse
   return {
     success: data.success,
     message: data.message,

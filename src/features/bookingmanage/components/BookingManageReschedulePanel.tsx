@@ -1,7 +1,6 @@
 import type { CSSProperties, RefObject } from 'react'
 import type { Master } from '../../masters/api'
 import type { Service } from '../../services/api'
-import ManageServiceSelect from './ManageServiceSelect'
 import ManageTimeSlots from './ManageTimeSlots'
 import ManageMasterSelect from './ManageMasterSelect'
 
@@ -19,19 +18,19 @@ interface Props {
   step2Ref: RefObject<HTMLDivElement | null>
   step3Ref: RefObject<HTMLDivElement | null>
   confirmRef: RefObject<HTMLDivElement | null>
-  newService: Service | null
+  service: Service
   newSlot: { date: string; time: string } | null
   newMaster: Master | null
   depositPaid: number
   currentMasterName: string
   needsMasterSelect: boolean
   canConfirm: boolean
-  onServiceSelect: (service: Service) => void
   onSlotSelect: (date: string, time: string) => void
   onMasterSelect: (master: Master) => void
   onConfirm: () => void
   submitting: boolean
   isError: boolean
+  errorMessage?: string | null
 }
 
 export default function BookingManageReschedulePanel({
@@ -40,19 +39,19 @@ export default function BookingManageReschedulePanel({
   step2Ref,
   step3Ref,
   confirmRef,
-  newService,
+  service,
   newSlot,
   newMaster,
   depositPaid,
   currentMasterName,
   needsMasterSelect,
   canConfirm,
-  onServiceSelect,
   onSlotSelect,
   onMasterSelect,
   onConfirm,
   submitting,
   isError,
+  errorMessage,
 }: Props) {
   return (
     <div style={revealStyle(visible)}>
@@ -60,28 +59,44 @@ export default function BookingManageReschedulePanel({
         ref={panelRef}
         style={{ background: '#141008', border: '1px solid #2a2218', padding: 'clamp(20px, 6vw, 24px)', marginTop: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}
       >
-        {/* Step 1 — Service */}
-        <ManageServiceSelect selected={newService} onSelect={onServiceSelect} />
-
-        {/* Step 2 — Time (reveals after service selected) */}
-        <div ref={step2Ref} style={revealStyle(!!newService)}>
-          {newService && (
-            <ManageTimeSlots
-              service={newService}
-              depositPaid={depositPaid}
-              selectedDate={newSlot?.date ?? null}
-              selectedTime={newSlot?.time ?? null}
-              onSelect={onSlotSelect}
-            />
-          )}
+        <div style={{ width: '100%', minWidth: 0 }}>
+          <p style={{
+            fontSize: '10px', letterSpacing: '3px', color: '#c9a84c',
+            textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '14px',
+          }}>
+            Booked service
+          </p>
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(201,168,76,0.16)', padding: '18px 20px', marginBottom: '28px', boxSizing: 'border-box', cursor: 'default' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '16px', color: '#e8e0d0', fontFamily: 'Georgia, serif', fontWeight: 500 }}>
+                {service.name}
+              </span>
+              <span style={{ color: '#b89a4a', border: '1px solid rgba(201,168,76,0.16)', padding: '4px 8px', borderRadius: '999px', fontFamily: 'sans-serif', fontSize: '12px', letterSpacing: '1px', lineHeight: 1 }}>
+                {service.totalDurationMinutes} min
+              </span>
+            </div>
+            <div style={{ marginTop: '10px', color: '#5a5040', fontFamily: 'sans-serif', fontSize: '11px', lineHeight: 1.5 }}>
+              Service cannot be changed for this booking.
+            </div>
+          </div>
         </div>
 
-        {/* Step 3 — Master (reveals only if current barber unavailable) */}
+        <div ref={step2Ref} style={revealStyle(true)}>
+          <ManageTimeSlots
+            service={service}
+            depositPaid={depositPaid}
+            selectedDate={newSlot?.date ?? null}
+            selectedTime={newSlot?.time ?? null}
+            onSelect={onSlotSelect}
+          />
+        </div>
+
+        {/* Step 3 — Master */}
         <div ref={step3Ref} style={revealStyle(needsMasterSelect)}>
-          {needsMasterSelect && newService && newSlot && (
+          {needsMasterSelect && newSlot && (
             <ManageMasterSelect
               currentMasterName={currentMasterName}
-              service={newService}
+              service={service}
               date={newSlot.date}
               time={newSlot.time}
               selected={newMaster}
@@ -119,7 +134,7 @@ export default function BookingManageReschedulePanel({
 
             {isError && (
               <div style={{ marginTop: '10px', fontSize: '11px', color: '#c87070', fontFamily: 'sans-serif', textAlign: 'center' }}>
-                Something went wrong. Please try again.
+                {errorMessage ?? 'Could not reschedule booking. Please try again.'}
               </div>
             )}
           </div>

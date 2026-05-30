@@ -12,6 +12,8 @@ from app.modules.bookings.schemas import (
     BookingDepositIntentResponse,
     BookingPaymentResultResponse,
     BookingPublic,
+    BookingRescheduleRequest,
+    BookingRescheduleResponse,
 )
 from app.modules.bookings.service import (
     cancel_booking_by_manage_token,
@@ -19,6 +21,7 @@ from app.modules.bookings.service import (
     create_confirmed_booking,
     get_booking_by_manage_token,
     get_booking_by_payment_intent,
+    reschedule_booking_by_manage_token,
     validate_booking_creation,
 )
 from app.modules.payments.stripe_service import create_booking_deposit_payment_intent
@@ -125,6 +128,22 @@ def cancel_booking_manage_endpoint(
     return BookingCancelResponse(
         success=True,
         message="Booking cancelled",
+        booking=booking,
+    )
+
+
+@router.post(
+    "/manage/reschedule",
+    response_model=BookingRescheduleResponse,
+)
+def reschedule_booking_manage_endpoint(
+    data: BookingRescheduleRequest,
+    db: Session = Depends(get_db),
+):
+    booking = reschedule_booking_by_manage_token(db, data.token, data)
+    return BookingRescheduleResponse(
+        success=True,
+        message="Booking rescheduled successfully",
         booking=booking,
     )
 

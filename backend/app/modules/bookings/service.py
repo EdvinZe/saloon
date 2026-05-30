@@ -8,7 +8,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.modules.bookings.models import Booking
-from app.modules.bookings.schemas import BookingAvailabilityCheckResponse, BookingCreate
+from app.modules.bookings.schemas import (
+    BookingAvailabilityCheckResponse,
+    BookingCreate,
+    BookingRescheduleRequest,
+)
 from app.modules.master_shifts.models import MasterShift
 from app.modules.masters.models import Master, MasterService
 from app.modules.services.models import Service
@@ -58,6 +62,7 @@ def parse_booking_start(selected_date: date, time_str: str) -> datetime:
 def validate_booking_creation(
     db: Session,
     data: BookingCreate,
+    exclude_booking_id: int | None = None,
 ) -> tuple[Service, Master, datetime, datetime]:
     service = db.get(Service, data.service_id)
     if service is None or not service.is_active:
@@ -115,7 +120,13 @@ def validate_booking_creation(
             detail="Selected time does not fit master's working shift",
         )
 
-    if has_overlapping_confirmed_booking(db, data.master_id, start_at, end_at):
+    if has_overlapping_confirmed_booking(
+        db,
+        data.master_id,
+        start_at,
+        end_at,
+        exclude_booking_id=exclude_booking_id,
+    ):
         raise HTTPException(
             status_code=http_status.HTTP_409_CONFLICT,
             detail="Selected slot is already taken",
@@ -295,6 +306,63 @@ def cancel_booking_by_manage_token(db: Session, token: str) -> Booking:
     return booking
 
 
+def reschedule_booking_by_manage_token(
+    db: Session,
+    token: str,
+    data: BookingRescheduleRequest,
+) -> Booking:
+    cleaned_token = token.strip() if token else ""
+    if not cleaned_token:
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail="Booking token is required",
+        )
+
+    booking = get_booking_by_manage_token(db, cleaned_token)
+    if booking is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="Booking not found",
+        )
+
+    if booking.status != "confirmed":
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail="Only confirmed bookings can be rescheduled",
+        )
+
+    validation_data = BookingCreate(
+        service_id=booking.service_id,
+        master_id=data.master_id,
+        date=data.date,
+        time=data.time,
+        customer_first_name=booking.customer_first_name,
+        customer_last_name=booking.customer_last_name,
+        customer_phone=booking.customer_phone,
+        customer_email=booking.customer_email,
+    )
+    _, _, start_at, end_at = validate_booking_creation(
+        db,
+        validation_data,
+        exclude_booking_id=booking.id,
+    )
+
+    booking.master_id = data.master_id
+    booking.start_at = start_at
+    booking.end_at = end_at
+    # TODO: send reschedule notification to customer and staff.
+    db.commit()
+    db.refresh(booking)
+
+    logger.info(
+        "[BOOKINGS] Booking rescheduled: booking_id=%s booking_code=%s",
+        booking.id,
+        booking.booking_code,
+    )
+
+    return booking
+
+
 def get_booking_by_payment_intent(
     db: Session,
     payment_intent_id: str,
@@ -314,15 +382,19 @@ def has_overlapping_confirmed_booking(
     master_id: int,
     start_at: datetime,
     end_at: datetime,
+    exclude_booking_id: int | None = None,
 ) -> bool:
-    existing_booking_id = db.scalar(
-        select(Booking.id).where(
-            Booking.master_id == master_id,
-            Booking.status.in_(BLOCKING_BOOKING_STATUSES),
-            Booking.start_at < end_at,
-            Booking.end_at > start_at,
-        )
+    statement = select(Booking.id).where(
+        Booking.master_id == master_id,
+        Booking.status.in_(BLOCKING_BOOKING_STATUSES),
+        Booking.start_at < end_at,
+        Booking.end_at > start_at,
     )
+
+    if exclude_booking_id is not None:
+        statement = statement.where(Booking.id != exclude_booking_id)
+
+    existing_booking_id = db.scalar(statement)
     return existing_booking_id is not None
 
 

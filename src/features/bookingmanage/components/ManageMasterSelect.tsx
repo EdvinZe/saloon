@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function ManageMasterSelect({ currentMasterName, service, date, time, selected, onSelect }: Props) {
-  const { data: masters = [], isLoading } = useManageAvailableMasters(date, time, service.totalDurationMinutes)
+  const { data: masters = [], isLoading } = useManageAvailableMasters(date, time, service.id)
 
   return (
     <div style={{ width: '100%', minWidth: 0 }}>
