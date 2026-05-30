@@ -196,34 +196,110 @@ export interface ManagedBooking {
   time: string   // 'HH:MM'
   master: Master
   depositPaid: number
-  status: 'pending' | 'confirmed'
+  status: string
+}
+
+export interface ManagedBookingCancelResponse {
+  success: boolean
+  message: string
+  booking: ManagedBooking
 }
 
 export type ManagedSlotStatus = AvailableSlotStatus
+
+interface ApiManagedBooking {
+  id: number
+  booking_code: string | null
+  manage_token: string
+  manage_url: string
+  service_id: number
+  master_id: number
+  customer_first_name: string
+  customer_last_name: string
+  customer_phone: string
+  customer_email: string
+  start_at: string
+  end_at: string
+  status: string
+  deposit_status: string
+  source: string
+  deposit_amount_cents: number
+  currency: string
+}
+
+interface ApiManagedBookingCancelResponse {
+  success: boolean
+  message: string
+  booking: ApiManagedBooking
+}
 
 export function isMasterBusyAt(masterId: number, date: string, startTime: string, durationMin: number): boolean {
   return checkMasterBusyAt(MOCK_EXISTING, masterId, date, startTime, durationMin)
 }
 
-export async function getBookingByToken(_token: string): Promise<ManagedBooking> {
-  // Replace with: return _api.get(`/api/v1/bookings/manage?token=${_token}`).then(r => r.data)
-  const services = await getServices()
-  const masters = await getMasters()
-  const master = masters[0]
-
-  if (!master) {
-    throw new Error('Failed to fetch masters')
+export async function getBookingByToken(token: string): Promise<ManagedBooking> {
+  if (!token.trim()) {
+    throw Object.assign(new Error('Booking token is required'), { status: 400 })
   }
 
-  return Promise.resolve({
-    id: 'BK-001',
-    service: services[0],
-    date: TODAY_STR,
-    time: '09:30',
-    master,
-    depositPaid: 10,
-    status: 'confirmed' as const,
+  const response = await fetch(
+    `${API_BASE_URL}/api/bookings/manage?token=${encodeURIComponent(token.trim())}`
+  )
+
+  if (!response.ok) {
+    throw await buildApiError(response, 'Failed to fetch managed booking')
+  }
+
+  const booking = await response.json() as ApiManagedBooking
+  return mapManagedBooking(booking)
+}
+
+export async function cancelManagedBooking(token: string): Promise<ManagedBookingCancelResponse> {
+  if (!token.trim()) {
+    throw Object.assign(new Error('Booking token is required'), { status: 400 })
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/bookings/manage/cancel`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ token: token.trim() }),
   })
+
+  if (!response.ok) {
+    throw await buildApiError(response, 'Failed to cancel booking')
+  }
+
+  const data = await response.json() as ApiManagedBookingCancelResponse
+  return {
+    success: data.success,
+    message: data.message,
+    booking: await mapManagedBooking(data.booking),
+  }
+}
+
+async function mapManagedBooking(booking: ApiManagedBooking): Promise<ManagedBooking> {
+  const [services, masters] = await Promise.all([
+    getServices(),
+    getMasters(),
+  ])
+  const service = services.find(item => item.id === booking.service_id)
+  const master = masters.find(item => item.id === booking.master_id)
+
+  if (!service || !master) {
+    throw new Error('Failed to load booking details')
+  }
+
+  return {
+    id: String(booking.id),
+    service,
+    date: booking.start_at.slice(0, 10),
+    time: booking.start_at.slice(11, 16),
+    master,
+    depositPaid: booking.deposit_amount_cents / 100,
+    status: booking.status,
+  }
 }
 
 export async function getSlotsForService(date: string, serviceId: number): Promise<ManagedSlotStatus[]> {

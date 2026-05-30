@@ -20,9 +20,9 @@ export default function CancelConfirm({ depositPaid, onConfirm, onKeep, submitti
           Cancel your booking?
         </div>
         <div style={{ fontSize: '12px', color: '#7a6060', fontFamily: 'sans-serif', lineHeight: 1.7 }}>
-          Your deposit of{' '}
+          Are you sure you want to cancel this booking? Your paid deposit of{' '}
           <span style={{ color: '#c87070' }}>€{depositPaid}</span>
-          {' '}will be fully refunded within 3–5 business days.
+          {' '}will be handled according to the salon policy.
         </div>
       </div>
 

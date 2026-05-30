@@ -245,7 +245,54 @@ def list_bookings(
 
 
 def get_booking_by_manage_token(db: Session, token: str) -> Booking | None:
-    return db.scalar(select(Booking).where(Booking.manage_token == token))
+    if not token or not token.strip():
+        return None
+
+    return db.scalar(select(Booking).where(Booking.manage_token == token.strip()))
+
+
+def cancel_booking_by_manage_token(db: Session, token: str) -> Booking:
+    cleaned_token = token.strip() if token else ""
+    if not cleaned_token:
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail="Booking token is required",
+        )
+
+    booking = get_booking_by_manage_token(db, cleaned_token)
+    if booking is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="Booking not found",
+        )
+
+    if booking.status == "cancelled":
+        return booking
+
+    if booking.status in ("completed", "no_show"):
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail="Booking can no longer be cancelled",
+        )
+
+    if booking.status != "confirmed":
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail="Booking cannot be cancelled",
+        )
+
+    booking.status = "cancelled"
+    # TODO: Integrate Stripe refunds separately from booking cancellation.
+    db.commit()
+    db.refresh(booking)
+
+    logger.info(
+        "[BOOKINGS] Booking cancelled: booking_id=%s booking_code=%s",
+        booking.id,
+        booking.booking_code,
+    )
+
+    return booking
 
 
 def get_booking_by_payment_intent(

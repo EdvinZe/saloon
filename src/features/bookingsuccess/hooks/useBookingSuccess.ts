@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { getBookingPaymentResult } from '../api'
 
 const MAX_PAYMENT_RESULT_ATTEMPTS = 5
@@ -9,21 +10,32 @@ export function useBookingSuccess() {
   const [params] = useSearchParams()
   const paymentIntentId = params.get('payment_intent')?.trim() ?? ''
   const redirectStatus = params.get('redirect_status')
+  const [paymentResultAttempts, setPaymentResultAttempts] = useState(0)
   const hasInvalidRedirectStatus = Boolean(
     redirectStatus && redirectStatus !== 'succeeded'
   )
+  const canCheckPaymentResult = Boolean(paymentIntentId) && !hasInvalidRedirectStatus
+
+  useEffect(() => {
+    setPaymentResultAttempts(0)
+  }, [paymentIntentId, redirectStatus])
 
   const query = useQuery({
     queryKey: ['booking-payment-result', paymentIntentId],
-    queryFn: () => getBookingPaymentResult(paymentIntentId),
-    enabled: Boolean(paymentIntentId) && !hasInvalidRedirectStatus,
+    queryFn: () => {
+      setPaymentResultAttempts(attempts => attempts + 1)
+      return getBookingPaymentResult(paymentIntentId)
+    },
+    enabled: canCheckPaymentResult && paymentResultAttempts < MAX_PAYMENT_RESULT_ATTEMPTS,
     staleTime: 0,
+    retry: false,
+    refetchOnWindowFocus: false,
     refetchInterval: result => {
       if (result.state.data?.status !== 'processing') {
         return false
       }
 
-      if (result.state.dataUpdateCount >= MAX_PAYMENT_RESULT_ATTEMPTS) {
+      if (paymentResultAttempts >= MAX_PAYMENT_RESULT_ATTEMPTS) {
         return false
       }
 
@@ -34,20 +46,23 @@ export function useBookingSuccess() {
   const isMissingPaymentIntent = !paymentIntentId
   const isProcessingTimeout =
     query.data?.status === 'processing' &&
-    query.dataUpdateCount >= MAX_PAYMENT_RESULT_ATTEMPTS
+    paymentResultAttempts >= MAX_PAYMENT_RESULT_ATTEMPTS
   const isProcessing =
     query.data?.status === 'processing' && !isProcessingTimeout
+  const isConfirmedWithoutBooking =
+    query.data?.status === 'confirmed' && !query.data.booking
   const isNotFound = query.data?.status === 'not_found'
   const isError =
     isMissingPaymentIntent ||
     hasInvalidRedirectStatus ||
+    isConfirmedWithoutBooking ||
     isNotFound ||
     isProcessingTimeout ||
     query.isError
 
   return {
     paymentIntentId,
-    booking: query.data?.status === 'confirmed' ? query.data.booking : null,
+    booking: query.data?.status === 'confirmed' && query.data.booking ? query.data.booking : null,
     isLoading: query.isLoading,
     isProcessing,
     isError,
@@ -61,7 +76,7 @@ export function useBookingSuccess() {
           ? 'processing_timeout'
           : isNotFound
             ? 'not_found'
-            : query.isError
+            : query.isError || isConfirmedWithoutBooking
               ? 'lookup_failed'
               : null,
   }

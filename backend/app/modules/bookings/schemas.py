@@ -24,6 +24,10 @@ class BookingDepositIntentResponse(BaseModel):
     payment_intent_id: str
 
 
+class BookingCancelRequest(BaseModel):
+    token: str
+
+
 class BookingPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -54,6 +58,12 @@ class BookingPaymentResultResponse(BaseModel):
     status: str
     message: str
     booking: BookingPublic | None = None
+
+
+class BookingCancelResponse(BaseModel):
+    success: bool
+    message: str
+    booking: BookingPublic
 
 
 class BookingAdmin(BookingPublic):

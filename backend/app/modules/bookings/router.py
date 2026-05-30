@@ -1,19 +1,23 @@
 import logging
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.modules.bookings.schemas import (
     BookingAvailabilityCheckResponse,
+    BookingCancelRequest,
+    BookingCancelResponse,
     BookingCreate,
     BookingDepositIntentResponse,
     BookingPaymentResultResponse,
     BookingPublic,
 )
 from app.modules.bookings.service import (
+    cancel_booking_by_manage_token,
     check_booking_availability,
     create_confirmed_booking,
+    get_booking_by_manage_token,
     get_booking_by_payment_intent,
     validate_booking_creation,
 )
@@ -82,6 +86,46 @@ def get_booking_payment_result_endpoint(
         status="processing",
         message="Payment received. Booking is still being confirmed.",
         booking=None,
+    )
+
+
+@router.get(
+    "/manage",
+    response_model=BookingPublic,
+)
+def get_booking_manage_endpoint(
+    token: str = "",
+    db: Session = Depends(get_db),
+):
+    if not token or not token.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Booking token is required",
+        )
+
+    booking = get_booking_by_manage_token(db, token)
+    if booking is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Booking not found",
+        )
+
+    return booking
+
+
+@router.post(
+    "/manage/cancel",
+    response_model=BookingCancelResponse,
+)
+def cancel_booking_manage_endpoint(
+    data: BookingCancelRequest,
+    db: Session = Depends(get_db),
+):
+    booking = cancel_booking_by_manage_token(db, data.token)
+    return BookingCancelResponse(
+        success=True,
+        message="Booking cancelled",
+        booking=booking,
     )
 
 

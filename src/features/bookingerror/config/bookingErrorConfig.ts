@@ -75,6 +75,18 @@ export const ERROR_MAP: Record<string, ErrorConfig> = {
     btn: 'Back to home →',
     btnHref: '/',
   },
+  'booking_manage.missing_token': {
+    title: 'Booking link is missing',
+    sub: 'This booking management page needs a valid booking link.',
+    btn: 'Back to booking →',
+    btnHref: '/booking',
+  },
+  'booking_manage.invalid_token': {
+    title: 'Booking link is invalid',
+    sub: 'We could not find a booking for this management link.',
+    btn: 'Back to booking →',
+    btnHref: '/booking',
+  },
   booking_cancelled: {
     title: 'Booking cancelled',
     sub: 'Your booking was cancelled by the barber. Please choose another time or a different barber.',
@@ -91,7 +103,10 @@ export const ERROR_MAP: Record<string, ErrorConfig> = {
 
 export function getBookingErrorConfig(type: string, reason: string) {
   const key =
-    type === 'payment_failed' || type === 'payment_result' || type === 'page'
+    type === 'payment_failed' ||
+    type === 'payment_result' ||
+    type === 'page' ||
+    type === 'booking_manage'
       ? `${type}.${reason}`
       : type
   return ERROR_MAP[key] ?? ERROR_MAP['default']

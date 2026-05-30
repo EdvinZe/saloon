@@ -2,10 +2,10 @@ type DoneType = 'rescheduled' | 'cancelled'
 
 interface Props {
   doneType: DoneType
-  depositPaid: number
+  depositPaid?: number
 }
 
-export default function BookingManageResult({ doneType, depositPaid }: Props) {
+export default function BookingManageResult({ doneType }: Props) {
   const cancelled = doneType === 'cancelled'
 
   return (
@@ -30,7 +30,7 @@ export default function BookingManageResult({ doneType, depositPaid }: Props) {
         </h1>
         <p style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'sans-serif', lineHeight: 1.8 }}>
           {cancelled
-            ? `Your deposit of €${depositPaid} will be refunded within 3–5 business days.`
+            ? 'Your booking has been cancelled. If a refund is required, it will be handled according to the salon policy.'
             : 'Your appointment has been updated. A confirmation will be sent shortly.'}
         </p>
       </div>

@@ -17,6 +17,7 @@ interface Props {
   onKeep: () => void
   submitting: boolean
   isError: boolean
+  errorMessage?: string | null
 }
 
 export default function BookingManageCancelPanel({
@@ -27,6 +28,7 @@ export default function BookingManageCancelPanel({
   onKeep,
   submitting,
   isError,
+  errorMessage,
 }: Props) {
   return (
     <div style={revealStyle(visible)}>
@@ -43,7 +45,7 @@ export default function BookingManageCancelPanel({
 
         {isError && (
           <div style={{ marginTop: '10px', fontSize: '11px', color: '#c87070', fontFamily: 'sans-serif', textAlign: 'center' }}>
-            Something went wrong. Please try again.
+            {errorMessage ?? 'Could not cancel booking. Please try again.'}
           </div>
         )}
       </div>
