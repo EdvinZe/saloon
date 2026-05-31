@@ -125,9 +125,14 @@ def cancel_booking_manage_endpoint(
     db: Session = Depends(get_db),
 ):
     booking = cancel_booking_by_manage_token(db, data.token)
+    message = (
+        "Booking cancelled and deposit refunded"
+        if booking.deposit_status == "refunded"
+        else "Booking cancelled"
+    )
     return BookingCancelResponse(
         success=True,
-        message="Booking cancelled",
+        message=message,
         booking=booking,
     )
 

@@ -9,9 +9,10 @@ interface Props {
   selectedDate: string | null
   selectedTime: string | null
   onSelect: (date: string, time: string) => void
+  disabled?: boolean
 }
 
-export default function ManageTimeSlots({ service, depositPaid, selectedDate, selectedTime, onSelect }: Props) {
+export default function ManageTimeSlots({ service, depositPaid, selectedDate, selectedTime, onSelect, disabled = false }: Props) {
   const today = startOfDay(new Date())
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i))
   const [pickedDate, setPickedDate] = useState(() => format(today, 'yyyy-MM-dd'))
@@ -45,20 +46,20 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
           return (
             <div
               key={ds}
-              onClick={() => setPickedDate(ds)}
+              onClick={() => { if (!disabled) setPickedDate(ds) }}
               style={{
                 flexShrink: 0,
                 minWidth: '54px',
                 padding: '8px 6px',
                 textAlign: 'center',
-                cursor: 'pointer',
+                cursor: disabled ? 'not-allowed' : 'pointer',
                 border: sel ? '1px solid #c9a84c' : '1px solid #2a2218',
                 background: sel ? 'rgba(201,168,76,0.06)' : '#0f0f0f',
                 transition: 'all 0.15s',
                 userSelect: 'none',
                 boxSizing: 'border-box',
               }}
-              onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
+              onMouseEnter={e => { if (!disabled && !sel) (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
               onMouseLeave={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}
             >
               <div style={{ fontSize: '9px', color: '#7a7060', fontFamily: 'sans-serif', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>
@@ -89,7 +90,7 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
               return (
                 <div
                   key={slot.time}
-                  onClick={() => { if (isFree) onSelect(pickedDate, slot.time) }}
+                  onClick={() => { if (!disabled && isFree) onSelect(pickedDate, slot.time) }}
                   style={{
                     padding: '8px 6px',
                     textAlign: 'center',
@@ -99,13 +100,13 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
                     textDecoration: isTaken ? 'line-through' : 'none',
                     border: isSelected ? '1px solid #c9a84c' : '1px solid #2a2218',
                     background: isSelected ? 'rgba(201,168,76,0.06)' : 'transparent',
-                    cursor: isFree ? 'pointer' : 'not-allowed',
-                    opacity: isTooShort ? 0.4 : 1,
+                    cursor: !disabled && isFree ? 'pointer' : 'not-allowed',
+                    opacity: disabled ? 0.5 : isTooShort ? 0.4 : 1,
                     transition: 'all 0.15s',
                     userSelect: 'none',
                     boxSizing: 'border-box',
                   }}
-                  onMouseEnter={e => { if (isFree && !isSelected) (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
+                  onMouseEnter={e => { if (!disabled && isFree && !isSelected) (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
                   onMouseLeave={e => { if (isFree && !isSelected) (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}
                 >
                   {slot.time}

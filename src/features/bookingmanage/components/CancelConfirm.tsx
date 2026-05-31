@@ -1,11 +1,14 @@
 interface Props {
   depositPaid: number
+  depositStatus: string
   onConfirm: () => void
   onKeep: () => void
   submitting: boolean
 }
 
-export default function CancelConfirm({ depositPaid, onConfirm, onKeep, submitting }: Props) {
+export default function CancelConfirm({ depositPaid, depositStatus, onConfirm, onKeep, submitting }: Props) {
+  const willRefundDeposit = depositStatus === 'paid'
+
   return (
     <div>
       {/* Red warning box */}
@@ -20,9 +23,13 @@ export default function CancelConfirm({ depositPaid, onConfirm, onKeep, submitti
           Cancel your booking?
         </div>
         <div style={{ fontSize: '12px', color: '#7a6060', fontFamily: 'sans-serif', lineHeight: 1.7 }}>
-          Are you sure you want to cancel this booking? Your paid deposit of{' '}
-          <span style={{ color: '#c87070' }}>€{depositPaid}</span>
-          {' '}will be handled according to the salon policy.
+          Are you sure you want to cancel this booking?
+          {willRefundDeposit && (
+            <>
+              {' '}Your deposit of <span style={{ color: '#c87070' }}>€{depositPaid}</span>
+              {' '}will be refunded to the original payment method.
+            </>
+          )}
         </div>
       </div>
 

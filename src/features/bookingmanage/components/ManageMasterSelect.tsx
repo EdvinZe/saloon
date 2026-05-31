@@ -9,9 +9,10 @@ interface Props {
   time: string
   selected: Master | null
   onSelect: (m: Master) => void
+  disabled?: boolean
 }
 
-export default function ManageMasterSelect({ currentMasterName, service, date, time, selected, onSelect }: Props) {
+export default function ManageMasterSelect({ currentMasterName, service, date, time, selected, onSelect, disabled = false }: Props) {
   const { data: masters = [], isLoading } = useManageAvailableMasters(date, time, service.id)
 
   return (
@@ -53,19 +54,20 @@ export default function ManageMasterSelect({ currentMasterName, service, date, t
             return (
               <div
                 key={master.id}
-                onClick={() => onSelect(master)}
+                onClick={() => { if (!disabled) onSelect(master) }}
                 style={{
                   background: sel ? 'rgba(201,168,76,0.06)' : '#141008',
                   padding: '20px 16px',
                   textAlign: 'center',
-                  cursor: 'pointer',
+                  cursor: disabled ? 'not-allowed' : 'pointer',
                   outline: sel ? '1px solid #c9a84c' : '1px solid transparent',
                   outlineOffset: '-1px',
+                  opacity: disabled ? 0.5 : 1,
                   transition: 'all 0.2s',
                   boxSizing: 'border-box',
                   minWidth: 0,
                 }}
-                onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = 'rgba(201,168,76,0.03)' }}
+                onMouseEnter={e => { if (!disabled && !sel) (e.currentTarget as HTMLDivElement).style.background = 'rgba(201,168,76,0.03)' }}
                 onMouseLeave={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = '#141008' }}
               >
                 <div style={{

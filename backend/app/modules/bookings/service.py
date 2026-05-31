@@ -15,6 +15,7 @@ from app.modules.bookings.schemas import (
 )
 from app.modules.master_shifts.models import MasterShift
 from app.modules.masters.models import Master, MasterService
+from app.modules.payments.stripe_service import refund_booking_deposit
 from app.modules.services.models import Service
 from app.modules.services.service import get_service_total_duration_minutes
 
@@ -277,7 +278,30 @@ def cancel_booking_by_manage_token(db: Session, token: str) -> Booking:
             detail="Booking not found",
         )
 
+    logger.info(
+        "[BOOKINGS] Booking cancel requested: booking_id=%s booking_code=%s",
+        booking.id,
+        booking.booking_code,
+    )
+
     if booking.status == "cancelled":
+        logger.info(
+            "[BOOKINGS] Booking already cancelled: booking_id=%s booking_code=%s",
+            booking.id,
+            booking.booking_code,
+        )
+        return booking
+
+    if booking.deposit_status == "refunded":
+        logger.info(
+            "[BOOKINGS] Booking deposit already refunded: booking_id=%s booking_code=%s",
+            booking.id,
+            booking.booking_code,
+        )
+        if booking.status == "confirmed":
+            booking.status = "cancelled"
+            db.commit()
+            db.refresh(booking)
         return booking
 
     if booking.status in ("completed", "no_show"):
@@ -292,8 +316,34 @@ def cancel_booking_by_manage_token(db: Session, token: str) -> Booking:
             detail="Booking cannot be cancelled",
         )
 
+    should_refund_deposit = (
+        booking.deposit_status == "paid"
+        and booking.stripe_payment_intent_id is not None
+    )
+    if should_refund_deposit:
+        try:
+            refund_booking_deposit(
+                payment_intent_id=booking.stripe_payment_intent_id,
+                amount_cents=booking.deposit_amount_cents,
+                idempotency_key=(
+                    f"booking-cancel-refund-{booking.id}-"
+                    f"{booking.stripe_payment_intent_id}"
+                ),
+            )
+        except Exception as exc:
+            logger.warning(
+                "[BOOKINGS] Booking deposit refund failed: booking_id=%s booking_code=%s",
+                booking.id,
+                booking.booking_code,
+            )
+            raise HTTPException(
+                status_code=http_status.HTTP_502_BAD_GATEWAY,
+                detail="Could not refund deposit. Please contact support.",
+            ) from exc
+
     booking.status = "cancelled"
-    # TODO: Integrate Stripe refunds separately from booking cancellation.
+    if should_refund_deposit:
+        booking.deposit_status = "refunded"
     db.commit()
     db.refresh(booking)
 

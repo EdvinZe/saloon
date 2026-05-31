@@ -13,6 +13,7 @@ interface Props {
   visible: boolean
   panelRef: RefObject<HTMLDivElement | null>
   depositPaid: number
+  depositStatus: string
   onConfirm: () => void
   onKeep: () => void
   submitting: boolean
@@ -24,6 +25,7 @@ export default function BookingManageCancelPanel({
   visible,
   panelRef,
   depositPaid,
+  depositStatus,
   onConfirm,
   onKeep,
   submitting,
@@ -38,6 +40,7 @@ export default function BookingManageCancelPanel({
       >
         <CancelConfirm
           depositPaid={depositPaid}
+          depositStatus={depositStatus}
           onConfirm={onConfirm}
           onKeep={onKeep}
           submitting={submitting}

@@ -53,6 +53,8 @@ export default function BookingManageReschedulePanel({
   isError,
   errorMessage,
 }: Props) {
+  const disabled = submitting || !canConfirm
+
   return (
     <div style={revealStyle(visible)}>
       <div
@@ -88,6 +90,7 @@ export default function BookingManageReschedulePanel({
             selectedDate={newSlot?.date ?? null}
             selectedTime={newSlot?.time ?? null}
             onSelect={onSlotSelect}
+            disabled={submitting}
           />
         </div>
 
@@ -101,6 +104,7 @@ export default function BookingManageReschedulePanel({
               time={newSlot.time}
               selected={newMaster}
               onSelect={onMasterSelect}
+              disabled={submitting}
             />
           )}
         </div>
@@ -110,7 +114,7 @@ export default function BookingManageReschedulePanel({
           <div style={{ paddingTop: '20px', borderTop: '1px solid #1a1810', marginTop: '4px', minWidth: 0 }}>
             <button
               onClick={onConfirm}
-              disabled={submitting}
+              disabled={disabled}
               style={{
                 width: '100%',
                 padding: '14px',
@@ -121,12 +125,12 @@ export default function BookingManageReschedulePanel({
                 letterSpacing: '3px',
                 textTransform: 'uppercase',
                 fontFamily: 'Georgia, serif',
-                cursor: submitting ? 'not-allowed' : 'pointer',
-                opacity: submitting ? 0.5 : 1,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                opacity: disabled ? 0.5 : 1,
                 transition: 'all 0.2s',
                 boxSizing: 'border-box',
               }}
-              onMouseEnter={e => { if (!submitting) e.currentTarget.style.background = 'rgba(201,168,76,0.08)' }}
+              onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = 'rgba(201,168,76,0.08)' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >
               {submitting ? 'Rescheduling...' : 'Confirm reschedule'}

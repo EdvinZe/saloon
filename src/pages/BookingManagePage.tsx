@@ -57,6 +57,7 @@ export default function BookingManagePage() {
 
   const [activePanel, setActivePanel] = useState<ActivePanel>('none')
   const [doneType, setDoneType] = useState<DoneType | null>(null)
+  const [doneMessage, setDoneMessage] = useState<string | null>(null)
   const [rescheduleSuccess, setRescheduleSuccess] = useState(false)
   const [isRedirectingAfterReschedule, setIsRedirectingAfterReschedule] = useState(false)
 
@@ -107,6 +108,7 @@ export default function BookingManagePage() {
   const handlePanelSelect = (panel: 'reschedule' | 'cancel') => {
     const next: ActivePanel = activePanel === panel ? 'none' : panel
     setActivePanel(next)
+    setDoneMessage(null)
     setRescheduleSuccess(false)
     setIsRedirectingAfterReschedule(false)
     reset()
@@ -125,6 +127,13 @@ export default function BookingManagePage() {
       setActivePanel('none')
       setRescheduleSuccess(true)
       setIsRedirectingAfterReschedule(true)
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['booking-manage', token] }),
+        queryClient.invalidateQueries({ queryKey: ['manage-booking-slots'] }),
+        queryClient.invalidateQueries({ queryKey: ['manage-available-masters'] }),
+        queryClient.invalidateQueries({ queryKey: ['booking-slots'] }),
+        queryClient.invalidateQueries({ queryKey: ['available-masters'] }),
+      ])
       setTimeout(() => navigate('/'), 1200)
     },
   })
@@ -133,18 +142,27 @@ export default function BookingManagePage() {
     mutationFn: () => cancelManagedBooking(token),
     onSuccess: response => {
       queryClient.setQueryData(['booking-manage', token], response.booking)
+      setDoneMessage(response.message)
       setDoneType('cancelled')
     },
   })
 
+  const isRescheduleSubmitting =
+    rescheduleMutation.isPending || isRedirectingAfterReschedule
+
   const handleReschedule = () => {
-    if (!canConfirm || !newMaster || !newSlot || isRedirectingAfterReschedule) return
+    if (!canConfirm || !newMaster || !newSlot || isRescheduleSubmitting) return
     rescheduleMutation.mutate({
       token,
       master_id: newMaster.id,
       date: newSlot.date,
       time: newSlot.time,
     })
+  }
+
+  const handleCancel = () => {
+    if (cancelMutation.isPending) return
+    cancelMutation.mutate()
   }
 
   // ── No token ──────────────────────────────────────────────────────────────────
@@ -202,7 +220,11 @@ export default function BookingManagePage() {
   if (doneType) {
     return (
       <div style={{ background: '#0f0f0f', minHeight: '100vh' }}>
-        <BookingManageResult doneType={doneType} depositPaid={booking.depositPaid} />
+        <BookingManageResult
+          doneType={doneType}
+          depositPaid={booking.depositPaid}
+          message={doneMessage ?? undefined}
+        />
         <Footer />
       </div>
     )
@@ -212,11 +234,12 @@ export default function BookingManagePage() {
   const bookingDateFormatted = format(new Date(booking.date + 'T12:00:00'), 'EEE, MMM d')
   const isBookingCancelled = booking.status === 'cancelled'
   const canManageBooking = booking.status === 'confirmed'
+  const canCancelBooking = canManageBooking && booking.depositStatus !== 'refunded'
   const cancelErrorMessage =
     cancelMutation.isError && getErrorStatus(cancelMutation.error) === 400
       ? getErrorDetail(cancelMutation.error) ?? 'Booking cannot be cancelled'
       : cancelMutation.isError
-        ? 'Could not cancel booking. Please try again.'
+        ? getErrorDetail(cancelMutation.error) ?? 'Could not cancel booking. Please try again.'
         : null
   const rescheduleErrorMessage =
     rescheduleMutation.isError && getErrorStatus(rescheduleMutation.error) === 400
@@ -241,7 +264,11 @@ export default function BookingManagePage() {
           <BookingManageHeader />
           <BookingManageDetailsCard rows={bookingRows} />
           {canManageBooking && (
-            <BookingManageActions activePanel={activePanel} onSelect={handlePanelSelect} />
+            <BookingManageActions
+              activePanel={activePanel}
+              canCancel={canCancelBooking}
+              onSelect={handlePanelSelect}
+            />
           )}
 
           {isBookingCancelled && (
@@ -272,16 +299,17 @@ export default function BookingManagePage() {
             onSlotSelect={setNewSlot}
             onMasterSelect={setNewMaster}
             onConfirm={handleReschedule}
-            submitting={rescheduleMutation.isPending || isRedirectingAfterReschedule}
+            submitting={isRescheduleSubmitting}
             isError={rescheduleMutation.isError}
             errorMessage={rescheduleErrorMessage}
           />
 
           <BookingManageCancelPanel
-            visible={canManageBooking && activePanel === 'cancel'}
+            visible={canCancelBooking && activePanel === 'cancel'}
             panelRef={cancelRef}
             depositPaid={booking.depositPaid}
-            onConfirm={() => cancelMutation.mutate()}
+            depositStatus={booking.depositStatus}
+            onConfirm={handleCancel}
             onKeep={() => setActivePanel('none')}
             submitting={cancelMutation.isPending}
             isError={cancelMutation.isError}

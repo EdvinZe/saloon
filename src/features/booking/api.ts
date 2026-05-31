@@ -194,8 +194,11 @@ export interface ManagedBooking {
   service: Service
   date: string   // 'yyyy-MM-dd'
   time: string   // 'HH:MM'
+  start_at: string
+  end_at: string
   master: Master
   depositPaid: number
+  depositStatus: string
   status: string
 }
 
@@ -347,8 +350,11 @@ async function mapManagedBooking(booking: ApiManagedBooking): Promise<ManagedBoo
     service,
     date: booking.start_at.slice(0, 10),
     time: booking.start_at.slice(11, 16),
+    start_at: booking.start_at,
+    end_at: booking.end_at,
     master,
     depositPaid: booking.deposit_amount_cents / 100,
+    depositStatus: booking.deposit_status,
     status: booking.status,
   }
 }

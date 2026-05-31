@@ -45,3 +45,34 @@ def create_booking_deposit_payment_intent(data: BookingCreate) -> dict[str, str]
         "client_secret": payment_intent.client_secret,
         "payment_intent_id": payment_intent.id,
     }
+
+
+def refund_booking_deposit(
+    payment_intent_id: str,
+    amount_cents: int | None = None,
+    idempotency_key: str | None = None,
+) -> dict[str, str]:
+    stripe.api_key = require_stripe_secret_key()
+
+    refund_params: dict[str, object] = {"payment_intent": payment_intent_id}
+    if amount_cents is not None:
+        refund_params["amount"] = amount_cents
+
+    if idempotency_key is not None:
+        refund = stripe.Refund.create(
+            **refund_params,
+            idempotency_key=idempotency_key,
+        )
+    else:
+        refund = stripe.Refund.create(**refund_params)
+
+    logger.info(
+        "[STRIPE] Refund created: refund_id=%s payment_intent_id=%s",
+        refund["id"],
+        payment_intent_id,
+    )
+
+    return {
+        "id": refund["id"],
+        "status": refund["status"],
+    }
