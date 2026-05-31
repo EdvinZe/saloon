@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import type { Appearance, StripePaymentElementOptions } from '@stripe/stripe-js'
@@ -115,6 +116,8 @@ const stripeAppearance: Appearance = {
   },
 }
 
+const SLOT_UNAVAILABLE_MESSAGE = 'This time is no longer available. Please choose another time.'
+
 export default function PaymentForm({ service, date, time, master }: Props) {
   const {
     customerFirstName,
@@ -125,7 +128,9 @@ export default function PaymentForm({ service, date, time, master }: Props) {
     setCustomerLastName,
     setCustomerPhone,
     setCustomerEmail,
+    clearSelectedTimeAndMaster,
   } = useBookingStore()
+  const queryClient = useQueryClient()
   const { data: bookingConfig } = useBookingConfig()
   const depositAmount = bookingConfig?.depositAmount ?? 10
   const currency = bookingConfig?.currency ?? 'EUR'
@@ -135,11 +140,39 @@ export default function PaymentForm({ service, date, time, master }: Props) {
   const [isChecking, setIsChecking] = useState(false)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
+  const isStartPaymentDisabled =
+    isChecking ||
+    Boolean(clientSecret) ||
+    !service ||
+    !date ||
+    !time ||
+    !master ||
+    !customerFirstName.trim() ||
+    !customerLastName.trim() ||
+    !customerPhone.trim() ||
+    !customerEmail.trim()
 
   const clearPaymentIntent = () => {
     setClientSecret(null)
     setPaymentIntentId(null)
     setSuccessMessage(null)
+  }
+
+  const refreshAvailabilityAfterSlotConflict = () => {
+    clearPaymentIntent()
+    setErrorMessage(SLOT_UNAVAILABLE_MESSAGE)
+    void Promise.all([
+      service && date
+        ? queryClient.invalidateQueries({ queryKey: ['booking-slots', date, service.id] })
+        : Promise.resolve(),
+      service && date && time
+        ? queryClient.invalidateQueries({ queryKey: ['available-masters', date, time, service.id] })
+        : Promise.resolve(),
+      service
+        ? queryClient.invalidateQueries({ queryKey: ['nearest-available-slot', service.id] })
+        : Promise.resolve(),
+    ])
+    clearSelectedTimeAndMaster()
   }
 
   const validateCustomerDetails = () => {
@@ -190,6 +223,36 @@ export default function PaymentForm({ service, date, time, master }: Props) {
     return null
   }
 
+  const getErrorDetail = (error: unknown) => {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'responseBody' in error &&
+      typeof (error as { responseBody?: { detail?: unknown } }).responseBody?.detail === 'string'
+    ) {
+      return (error as { responseBody: { detail: string } }).responseBody.detail
+    }
+
+    return null
+  }
+
+  const isUnavailableSlotError = (error: unknown) => {
+    const status = getErrorStatus(error)
+    const detail = getErrorDetail(error)?.toLowerCase() ?? ''
+    return (
+      status === 409 ||
+      (
+        status === 400 &&
+        (
+          detail.includes('slot') ||
+          detail.includes('available') ||
+          detail.includes('working shift') ||
+          detail.includes('past')
+        )
+      )
+    )
+  }
+
   const logPaymentStartError = (error: unknown) => {
     if (typeof error === 'object' && error !== null) {
       const details = error as {
@@ -215,6 +278,8 @@ export default function PaymentForm({ service, date, time, master }: Props) {
   }
 
   const handleStartPayment = async () => {
+    if (isChecking || clientSecret) return
+
     setErrorMessage(null)
     setSuccessMessage(null)
 
@@ -239,15 +304,20 @@ export default function PaymentForm({ service, date, time, master }: Props) {
     setIsChecking(true)
 
     try {
-      await checkBookingAvailability(payload)
+      const availability = await checkBookingAvailability(payload)
+      if (!availability.available) {
+        refreshAvailabilityAfterSlotConflict()
+        return
+      }
+
       const depositIntent = await createBookingDepositIntent(payload)
       setClientSecret(depositIntent.client_secret)
       setPaymentIntentId(depositIntent.payment_intent_id)
       setSuccessMessage('Secure payment form is ready.')
     } catch (error) {
       logPaymentStartError(error)
-      if (getErrorStatus(error) === 409) {
-        setErrorMessage('This time is no longer available. Please choose another time.')
+      if (isUnavailableSlotError(error)) {
+        refreshAvailabilityAfterSlotConflict()
       } else {
         setErrorMessage('Could not start payment. Please try again.')
       }
@@ -481,13 +551,13 @@ export default function PaymentForm({ service, date, time, master }: Props) {
                 fontFamily: 'Georgia, serif',
                 fontWeight: 400,
                 transition: 'all 0.2s',
-                opacity: isChecking ? 0.55 : 1,
-                pointerEvents: isChecking ? 'none' : 'auto',
+                opacity: isStartPaymentDisabled ? 0.55 : 1,
+                pointerEvents: isStartPaymentDisabled ? 'none' : 'auto',
               }}
-              disabled={isChecking}
+              disabled={isStartPaymentDisabled}
               onClick={handleStartPayment}
               onMouseEnter={e => {
-                if (isChecking) return
+                if (isStartPaymentDisabled) return
                 e.currentTarget.style.background = 'rgba(201,168,76,0.08)'
                 e.currentTarget.style.boxShadow = '0 0 20px rgba(201,168,76,0.2)'
               }}

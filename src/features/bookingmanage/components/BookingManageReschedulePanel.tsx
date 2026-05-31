@@ -21,12 +21,10 @@ interface Props {
   service: Service
   newSlot: { date: string; time: string } | null
   newMaster: Master | null
-  depositPaid: number
-  currentMasterName: string
   needsMasterSelect: boolean
   canConfirm: boolean
   onSlotSelect: (date: string, time: string) => void
-  onMasterSelect: (master: Master) => void
+  onMasterSelect: (master: Master | null) => void
   onConfirm: () => void
   submitting: boolean
   isError: boolean
@@ -42,8 +40,6 @@ export default function BookingManageReschedulePanel({
   service,
   newSlot,
   newMaster,
-  depositPaid,
-  currentMasterName,
   needsMasterSelect,
   canConfirm,
   onSlotSelect,
@@ -86,7 +82,6 @@ export default function BookingManageReschedulePanel({
         <div ref={step2Ref} style={revealStyle(true)}>
           <ManageTimeSlots
             service={service}
-            depositPaid={depositPaid}
             selectedDate={newSlot?.date ?? null}
             selectedTime={newSlot?.time ?? null}
             onSelect={onSlotSelect}
@@ -98,7 +93,6 @@ export default function BookingManageReschedulePanel({
         <div ref={step3Ref} style={revealStyle(needsMasterSelect)}>
           {needsMasterSelect && newSlot && (
             <ManageMasterSelect
-              currentMasterName={currentMasterName}
               service={service}
               date={newSlot.date}
               time={newSlot.time}
@@ -112,6 +106,10 @@ export default function BookingManageReschedulePanel({
         {/* Confirm reschedule (reveals when all required fields are filled) */}
         <div ref={confirmRef} style={revealStyle(canConfirm)}>
           <div style={{ paddingTop: '20px', borderTop: '1px solid #1a1810', marginTop: '4px', minWidth: 0 }}>
+            <div style={{ marginBottom: '12px', color: '#5a5040', fontFamily: 'sans-serif', fontSize: '11px', lineHeight: 1.5, textAlign: 'center' }}>
+              No extra payment is required for rescheduling.
+            </div>
+
             <button
               onClick={onConfirm}
               disabled={disabled}

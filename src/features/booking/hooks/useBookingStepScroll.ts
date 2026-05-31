@@ -8,7 +8,7 @@ export function useBookingStepScroll(step: number) {
   const prevStep = useRef(step)
 
   useEffect(() => {
-    if (step > prevStep.current) {
+    if (step !== prevStep.current) {
       const refs: Record<number, React.RefObject<HTMLDivElement | null>> = {
         2: step2Ref,
         3: step3Ref,

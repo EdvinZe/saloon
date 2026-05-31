@@ -292,8 +292,6 @@ export default function BookingManagePage() {
             service={booking.service}
             newSlot={newSlot}
             newMaster={newMaster}
-            depositPaid={booking.depositPaid}
-            currentMasterName={booking.master.name}
             needsMasterSelect={needsMasterSelect}
             canConfirm={canConfirm}
             onSlotSelect={setNewSlot}

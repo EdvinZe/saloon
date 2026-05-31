@@ -17,7 +17,7 @@ interface ManageActions {
   setBooking: (b: ManagedBooking) => void
   setNewService: (s: Service) => void
   setNewSlot: (date: string, time: string) => void
-  setNewMaster: (m: Master) => void
+  setNewMaster: (m: Master | null) => void
   reset: () => void
 }
 

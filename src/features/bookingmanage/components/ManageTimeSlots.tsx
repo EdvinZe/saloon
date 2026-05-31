@@ -5,14 +5,13 @@ import { useManageAvailableSlots } from '../hooks/useManageAvailableSlots'
 
 interface Props {
   service: Service
-  depositPaid: number
   selectedDate: string | null
   selectedTime: string | null
   onSelect: (date: string, time: string) => void
   disabled?: boolean
 }
 
-export default function ManageTimeSlots({ service, depositPaid, selectedDate, selectedTime, onSelect, disabled = false }: Props) {
+export default function ManageTimeSlots({ service, selectedDate, selectedTime, onSelect, disabled = false }: Props) {
   const today = startOfDay(new Date())
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i))
   const [pickedDate, setPickedDate] = useState(() => format(today, 'yyyy-MM-dd'))
@@ -27,10 +26,22 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
     }
   }, [pickedDate, isLoading, slots.length])
 
-  const slotSelected = !!(selectedDate === pickedDate && selectedTime)
-
   return (
     <div style={{ width: '100%', minWidth: 0 }}>
+      <style>
+        {`
+          .manage-date-carousel {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .manage-date-carousel::-webkit-scrollbar {
+            display: none;
+          }
+        `}
+      </style>
+
       <p style={{
         fontSize: '10px', letterSpacing: '3px', color: '#c9a84c',
         textTransform: 'uppercase', fontFamily: 'sans-serif', marginBottom: '14px',
@@ -39,7 +50,22 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
       </p>
 
       {/* Date picker row — 7 days forward */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '4px', width: '100%', boxSizing: 'border-box' }}>
+      <div
+        className="manage-date-carousel"
+        style={{
+          display: 'flex',
+          gap: '10px',
+          marginBottom: '16px',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          paddingBottom: '2px',
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          touchAction: 'pan-x',
+          overscrollBehaviorX: 'contain',
+        }}
+      >
         {days.map(day => {
           const ds = format(day, 'yyyy-MM-dd')
           const sel = pickedDate === ds
@@ -48,9 +74,9 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
               key={ds}
               onClick={() => { if (!disabled) setPickedDate(ds) }}
               style={{
-                flexShrink: 0,
-                minWidth: '54px',
-                padding: '8px 6px',
+                flex: '0 0 auto',
+                minWidth: '62px',
+                padding: '9px 8px',
                 textAlign: 'center',
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 border: sel ? '1px solid #c9a84c' : '1px solid #2a2218',
@@ -116,22 +142,6 @@ export default function ManageTimeSlots({ service, depositPaid, selectedDate, se
           </div>
         )}
       </div>
-
-      {/* Deposit note — only when a slot on the current date is selected */}
-      {slotSelected && (
-        <div style={{
-          padding: '10px 14px',
-          background: '#141008',
-          border: '1px solid #2a2218',
-          fontSize: '12px',
-          fontFamily: 'sans-serif',
-          color: '#7a7060',
-          lineHeight: 1.6,
-          boxSizing: 'border-box',
-        }}>
-          Deposit already paid: €{depositPaid}. No extra charge for rescheduling.
-        </div>
-      )}
     </div>
   )
 }

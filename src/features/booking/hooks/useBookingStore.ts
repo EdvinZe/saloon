@@ -22,6 +22,7 @@ interface BookingActions {
   setCustomerLastName: (lastName: string) => void
   setCustomerPhone: (phone: string) => void
   setCustomerEmail: (email: string) => void
+  clearSelectedTimeAndMaster: () => void
 }
 
 export type BookingStore = BookingState & BookingActions
@@ -56,4 +57,5 @@ export const useBookingStore = create<BookingStore>((set) => ({
   setCustomerLastName: (customerLastName) => set({ customerLastName }),
   setCustomerPhone: (customerPhone) => set({ customerPhone }),
   setCustomerEmail: (customerEmail) => set({ customerEmail }),
+  clearSelectedTimeAndMaster: () => set({ time: null, master: null, step: 2 }),
 }))
