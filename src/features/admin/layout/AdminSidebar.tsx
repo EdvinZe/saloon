@@ -6,6 +6,18 @@ export default function AdminSidebar() {
       <p className="text-xs uppercase tracking-[0.24em] text-[#c9a84c]">Manager</p>
       <nav className="mt-6 grid gap-2">
         <NavLink
+          to="/admin/services"
+          className={({ isActive }) =>
+            `border px-3 py-2 text-sm ${
+              isActive
+                ? 'border-[#c9a84c] bg-[#c9a84c]/10 text-[#e8e0d0]'
+                : 'border-[#2a2218] text-[#7a7060] hover:text-[#e8e0d0]'
+            }`
+          }
+        >
+          Services
+        </NavLink>
+        <NavLink
           to="/admin/schedule"
           className={({ isActive }) =>
             `border px-3 py-2 text-sm ${
