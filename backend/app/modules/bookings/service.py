@@ -380,79 +380,20 @@ def cancel_admin_booking(
     booking_id: int,
 ) -> AdminBookingActionResponse:
     booking = _get_admin_booking_model(db, booking_id)
-
-    logger.info(
-        "[ADMIN] Booking cancel requested: booking_id=%s booking_code=%s",
-        booking.id,
-        booking.booking_code,
+    booking = cancel_booking_with_refund(
+        db=db,
+        booking=booking,
+        cancelled_by="admin",
     )
 
-    if booking.status == "cancelled":
-        return _admin_booking_action_response(
-            booking=booking,
-            message="Booking already cancelled",
-        )
-
-    if booking.deposit_status == "refunded":
-        if booking.status == "confirmed":
-            booking.status = "cancelled"
-            db.commit()
-            db.refresh(booking)
-        return _admin_booking_action_response(
-            booking=booking,
-            message="Booking already refunded",
-        )
-
-    if booking.status != "confirmed":
-        raise HTTPException(
-            status_code=http_status.HTTP_400_BAD_REQUEST,
-            detail="Only confirmed bookings can be cancelled",
-        )
-
-    should_refund_deposit = (
-        booking.deposit_status == "paid"
-        and booking.stripe_payment_intent_id is not None
+    return _admin_booking_action_response(
+        booking=booking,
+        message=(
+            "Booking cancelled and deposit refunded"
+            if booking.deposit_status == "refunded"
+            else "Booking cancelled"
+        ),
     )
-    if should_refund_deposit:
-        try:
-            refund_booking_deposit(
-                payment_intent_id=booking.stripe_payment_intent_id,
-                amount_cents=booking.deposit_amount_cents,
-                idempotency_key=(
-                    f"admin-booking-cancel-refund-{booking.id}-"
-                    f"{booking.stripe_payment_intent_id}"
-                ),
-            )
-        except Exception as exc:
-            logger.warning(
-                "[ADMIN] Booking deposit refund failed: booking_id=%s booking_code=%s",
-                booking.id,
-                booking.booking_code,
-            )
-            raise HTTPException(
-                status_code=http_status.HTTP_502_BAD_GATEWAY,
-                detail="Could not refund deposit. Please contact support.",
-            ) from exc
-
-    booking.status = "cancelled"
-    if should_refund_deposit:
-        booking.deposit_status = "refunded"
-    # TODO: send cancellation notification through future notification service.
-    db.commit()
-    db.refresh(booking)
-
-    logger.info(
-        "[ADMIN] Booking cancelled: booking_id=%s booking_code=%s",
-        booking.id,
-        booking.booking_code,
-    )
-
-    message = (
-        "Booking cancelled and deposit refunded"
-        if should_refund_deposit
-        else "Booking cancelled"
-    )
-    return _admin_booking_action_response(booking=booking, message=message)
 
 
 def get_booking_by_manage_token(db: Session, token: str) -> Booking | None:
@@ -477,10 +418,24 @@ def cancel_booking_by_manage_token(db: Session, token: str) -> Booking:
             detail="Booking not found",
         )
 
+    return cancel_booking_with_refund(
+        db=db,
+        booking=booking,
+        cancelled_by="client",
+    )
+
+
+def cancel_booking_with_refund(
+    db: Session,
+    booking: Booking,
+    *,
+    cancelled_by: str,
+) -> Booking:
     logger.info(
-        "[BOOKINGS] Booking cancel requested: booking_id=%s booking_code=%s",
+        "[BOOKINGS] Booking cancel requested: booking_id=%s booking_code=%s cancelled_by=%s",
         booking.id,
         booking.booking_code,
+        cancelled_by,
     )
 
     if booking.status == "cancelled":
@@ -503,16 +458,10 @@ def cancel_booking_by_manage_token(db: Session, token: str) -> Booking:
             db.refresh(booking)
         return booking
 
-    if booking.status in ("completed", "no_show"):
-        raise HTTPException(
-            status_code=http_status.HTTP_400_BAD_REQUEST,
-            detail="Booking can no longer be cancelled",
-        )
-
     if booking.status != "confirmed":
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
-            detail="Booking cannot be cancelled",
+            detail="Only confirmed bookings can be cancelled",
         )
 
     should_refund_deposit = (
@@ -543,13 +492,15 @@ def cancel_booking_by_manage_token(db: Session, token: str) -> Booking:
     booking.status = "cancelled"
     if should_refund_deposit:
         booking.deposit_status = "refunded"
+    # TODO: send cancellation notification through future notification service.
     db.commit()
     db.refresh(booking)
 
     logger.info(
-        "[BOOKINGS] Booking cancelled: booking_id=%s booking_code=%s",
+        "[BOOKINGS] Booking cancelled: booking_id=%s booking_code=%s cancelled_by=%s",
         booking.id,
         booking.booking_code,
+        cancelled_by,
     )
 
     return booking

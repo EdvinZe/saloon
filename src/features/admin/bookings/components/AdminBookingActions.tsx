@@ -15,6 +15,8 @@ export default function AdminBookingActions({
   onNoShow,
   onCancel,
 }: AdminBookingActionsProps) {
+  const cancelLabel = booking.deposit_status === 'paid' ? 'Cancel & refund' : 'Cancel booking'
+
   if (booking.status !== 'confirmed') {
     return (
       <span className="text-xs uppercase tracking-[0.18em] text-[#7a7060]">
@@ -42,7 +44,7 @@ export default function AdminBookingActions({
         onClick={() => onCancel(booking)}
         disabled={isSubmitting}
       >
-        Cancel & refund
+        {cancelLabel}
       </button>
     </div>
   )

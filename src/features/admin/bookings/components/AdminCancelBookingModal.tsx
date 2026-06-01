@@ -17,6 +17,12 @@ export default function AdminCancelBookingModal({
 }: AdminCancelBookingModalProps) {
   const customerName = `${booking.customer_first_name} ${booking.customer_last_name}`
   const isPaid = booking.deposit_status === 'paid'
+  const title = isPaid
+    ? 'Cancel this booking and refund the deposit?'
+    : 'Cancel this booking?'
+  const body = isPaid
+    ? 'The deposit will be refunded to the original payment method.'
+    : 'This booking will be cancelled without changing the deposit to refunded.'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
@@ -24,7 +30,7 @@ export default function AdminCancelBookingModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-rose-300">Cancel booking</p>
-            <h2 className="mt-2 text-xl text-[#e8e0d0]">Cancel this booking?</h2>
+            <h2 className="mt-2 text-xl text-[#e8e0d0]">{title}</h2>
           </div>
           <button type="button" className="text-2xl leading-none text-[#7a7060]" onClick={onClose}>
             x
@@ -35,7 +41,7 @@ export default function AdminCancelBookingModal({
           {booking.booking_code ?? `Booking #${booking.id}`} for {customerName}
         </p>
         <p className="mt-3 text-sm text-[#7a7060]">
-          If the deposit was paid online, it will be refunded to the original payment method.
+          {body}
         </p>
 
         {errorMessage ? <p className="mt-4 text-sm text-rose-300">{errorMessage}</p> : null}
