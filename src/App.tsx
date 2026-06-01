@@ -11,6 +11,7 @@ import AboutPage from './pages/AboutPage'
 import AdminSchedulePage from './pages/admin/AdminSchedulePage'
 import AdminServicesPage from './pages/admin/AdminServicesPage'
 import AdminMastersPage from './pages/admin/AdminMastersPage'
+import AdminBookingsPage from './pages/admin/AdminBookingsPage'
 
 const queryClient = new QueryClient()
 
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin/services" element={<AdminServicesPage />} />
             <Route path="/admin/masters" element={<AdminMastersPage />} />
+            <Route path="/admin/bookings" element={<AdminBookingsPage />} />
             <Route path="/admin/schedule" element={<AdminSchedulePage />} />
             <Route
               path="*"

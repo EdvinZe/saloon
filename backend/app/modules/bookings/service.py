@@ -5,10 +5,12 @@ from datetime import date, datetime, time, timedelta
 
 from fastapi import HTTPException, status as http_status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.modules.bookings.models import Booking
 from app.modules.bookings.schemas import (
+    AdminBookingActionResponse,
+    AdminBookingRead,
     BookingAvailabilityCheckResponse,
     BookingCreate,
     BookingRescheduleRequest,
@@ -256,6 +258,203 @@ def list_bookings(
     return list(db.scalars(statement).all())
 
 
+def list_admin_bookings(
+    db: Session,
+    date: date | None = None,
+    status: str | None = None,
+    master_id: int | None = None,
+    service_id: int | None = None,
+) -> list[AdminBookingRead]:
+    statement = select(Booking).options(
+        selectinload(Booking.service),
+        selectinload(Booking.master),
+    )
+
+    if date is not None:
+        statement = statement.where(
+            Booking.start_at >= datetime.combine(date, time.min),
+            Booking.start_at <= datetime.combine(date, time.max),
+        )
+
+    if status is not None:
+        if status not in VALID_BOOKING_STATUSES:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid booking status: {status}",
+            )
+        statement = statement.where(Booking.status == status)
+
+    if master_id is not None:
+        statement = statement.where(Booking.master_id == master_id)
+
+    if service_id is not None:
+        statement = statement.where(Booking.service_id == service_id)
+
+    if date is not None:
+        statement = statement.order_by(Booking.start_at.asc(), Booking.id.asc())
+    else:
+        statement = statement.order_by(Booking.start_at.desc(), Booking.id.desc())
+
+    return [
+        _booking_to_admin_read(booking)
+        for booking in db.scalars(statement).all()
+    ]
+
+
+def get_admin_booking(db: Session, booking_id: int) -> AdminBookingRead:
+    return _booking_to_admin_read(_get_admin_booking_model(db, booking_id))
+
+
+def mark_admin_booking_completed(
+    db: Session,
+    booking_id: int,
+) -> AdminBookingActionResponse:
+    booking = _get_admin_booking_model(db, booking_id)
+
+    if booking.status == "completed":
+        return _admin_booking_action_response(
+            booking=booking,
+            message="Booking already completed",
+        )
+
+    if booking.status != "confirmed":
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail="Only confirmed bookings can be completed",
+        )
+
+    booking.status = "completed"
+    # TODO: send booking completed notification through future notification service.
+    db.commit()
+    db.refresh(booking)
+
+    logger.info(
+        "[ADMIN] Booking marked completed: booking_id=%s booking_code=%s",
+        booking.id,
+        booking.booking_code,
+    )
+
+    return _admin_booking_action_response(
+        booking=booking,
+        message="Booking marked completed",
+    )
+
+
+def mark_admin_booking_no_show(
+    db: Session,
+    booking_id: int,
+) -> AdminBookingActionResponse:
+    booking = _get_admin_booking_model(db, booking_id)
+
+    if booking.status == "no_show":
+        return _admin_booking_action_response(
+            booking=booking,
+            message="Booking already marked no-show",
+        )
+
+    if booking.status != "confirmed":
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail="Only confirmed bookings can be marked as no-show",
+        )
+
+    booking.status = "no_show"
+    # TODO: send no-show notification through future notification service.
+    db.commit()
+    db.refresh(booking)
+
+    logger.info(
+        "[ADMIN] Booking marked no_show: booking_id=%s booking_code=%s",
+        booking.id,
+        booking.booking_code,
+    )
+
+    return _admin_booking_action_response(
+        booking=booking,
+        message="Booking marked no-show",
+    )
+
+
+def cancel_admin_booking(
+    db: Session,
+    booking_id: int,
+) -> AdminBookingActionResponse:
+    booking = _get_admin_booking_model(db, booking_id)
+
+    logger.info(
+        "[ADMIN] Booking cancel requested: booking_id=%s booking_code=%s",
+        booking.id,
+        booking.booking_code,
+    )
+
+    if booking.status == "cancelled":
+        return _admin_booking_action_response(
+            booking=booking,
+            message="Booking already cancelled",
+        )
+
+    if booking.deposit_status == "refunded":
+        if booking.status == "confirmed":
+            booking.status = "cancelled"
+            db.commit()
+            db.refresh(booking)
+        return _admin_booking_action_response(
+            booking=booking,
+            message="Booking already refunded",
+        )
+
+    if booking.status != "confirmed":
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail="Only confirmed bookings can be cancelled",
+        )
+
+    should_refund_deposit = (
+        booking.deposit_status == "paid"
+        and booking.stripe_payment_intent_id is not None
+    )
+    if should_refund_deposit:
+        try:
+            refund_booking_deposit(
+                payment_intent_id=booking.stripe_payment_intent_id,
+                amount_cents=booking.deposit_amount_cents,
+                idempotency_key=(
+                    f"admin-booking-cancel-refund-{booking.id}-"
+                    f"{booking.stripe_payment_intent_id}"
+                ),
+            )
+        except Exception as exc:
+            logger.warning(
+                "[ADMIN] Booking deposit refund failed: booking_id=%s booking_code=%s",
+                booking.id,
+                booking.booking_code,
+            )
+            raise HTTPException(
+                status_code=http_status.HTTP_502_BAD_GATEWAY,
+                detail="Could not refund deposit. Please contact support.",
+            ) from exc
+
+    booking.status = "cancelled"
+    if should_refund_deposit:
+        booking.deposit_status = "refunded"
+    # TODO: send cancellation notification through future notification service.
+    db.commit()
+    db.refresh(booking)
+
+    logger.info(
+        "[ADMIN] Booking cancelled: booking_id=%s booking_code=%s",
+        booking.id,
+        booking.booking_code,
+    )
+
+    message = (
+        "Booking cancelled and deposit refunded"
+        if should_refund_deposit
+        else "Booking cancelled"
+    )
+    return _admin_booking_action_response(booking=booking, message=message)
+
+
 def get_booking_by_manage_token(db: Session, token: str) -> Booking | None:
     if not token or not token.strip():
         return None
@@ -446,6 +645,68 @@ def has_overlapping_confirmed_booking(
 
     existing_booking_id = db.scalar(statement)
     return existing_booking_id is not None
+
+
+def _get_admin_booking_model(db: Session, booking_id: int) -> Booking:
+    booking = db.scalar(
+        select(Booking)
+        .where(Booking.id == booking_id)
+        .options(
+            selectinload(Booking.service),
+            selectinload(Booking.master),
+        )
+    )
+    if booking is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail=f"Booking not found: {booking_id}",
+        )
+
+    return booking
+
+
+def _booking_to_admin_read(booking: Booking) -> AdminBookingRead:
+    service_name = booking.service.name if booking.service is not None else None
+    master_name = (
+        f"{booking.master.first_name} {booking.master.last_name}"
+        if booking.master is not None
+        else None
+    )
+
+    return AdminBookingRead(
+        id=booking.id,
+        booking_code=booking.booking_code,
+        service_id=booking.service_id,
+        master_id=booking.master_id,
+        customer_first_name=booking.customer_first_name,
+        customer_last_name=booking.customer_last_name,
+        customer_phone=booking.customer_phone,
+        customer_email=booking.customer_email,
+        start_at=booking.start_at,
+        end_at=booking.end_at,
+        status=booking.status,
+        deposit_status=booking.deposit_status,
+        source=booking.source,
+        deposit_amount_cents=booking.deposit_amount_cents,
+        currency=booking.currency,
+        stripe_payment_intent_id=booking.stripe_payment_intent_id,
+        stripe_checkout_session_id=booking.stripe_checkout_session_id,
+        created_at=booking.created_at,
+        updated_at=booking.updated_at,
+        service_name=service_name,
+        master_name=master_name,
+    )
+
+
+def _admin_booking_action_response(
+    booking: Booking,
+    message: str,
+) -> AdminBookingActionResponse:
+    return AdminBookingActionResponse(
+        success=True,
+        message=message,
+        booking=_booking_to_admin_read(booking),
+    )
 
 
 def _fits_any_shift(

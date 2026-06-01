@@ -84,3 +84,33 @@ class BookingAdmin(BookingPublic):
     stripe_payment_intent_id: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class AdminBookingRead(BaseModel):
+    id: int
+    booking_code: str | None
+    service_id: int
+    master_id: int
+    customer_first_name: str
+    customer_last_name: str
+    customer_phone: str
+    customer_email: str
+    start_at: datetime
+    end_at: datetime
+    status: str
+    deposit_status: str
+    source: str
+    deposit_amount_cents: int
+    currency: str
+    stripe_payment_intent_id: str | None
+    stripe_checkout_session_id: str | None
+    created_at: datetime
+    updated_at: datetime
+    service_name: str | None = None
+    master_name: str | None = None
+
+
+class AdminBookingActionResponse(BaseModel):
+    success: bool
+    message: str
+    booking: AdminBookingRead

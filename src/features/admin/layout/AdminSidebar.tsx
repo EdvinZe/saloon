@@ -30,6 +30,18 @@ export default function AdminSidebar() {
           Masters
         </NavLink>
         <NavLink
+          to="/admin/bookings"
+          className={({ isActive }) =>
+            `border px-3 py-2 text-sm ${
+              isActive
+                ? 'border-[#c9a84c] bg-[#c9a84c]/10 text-[#e8e0d0]'
+                : 'border-[#2a2218] text-[#7a7060] hover:text-[#e8e0d0]'
+            }`
+          }
+        >
+          Bookings
+        </NavLink>
+        <NavLink
           to="/admin/schedule"
           className={({ isActive }) =>
             `border px-3 py-2 text-sm ${
