@@ -8,6 +8,7 @@ import BookingErrorPage from './pages/BookingErrorPage'
 import BookingManagePage from './pages/BookingManagePage'
 import WorksPage from './pages/WorksPage'
 import AboutPage from './pages/AboutPage'
+import AdminSchedulePage from './pages/admin/AdminSchedulePage'
 
 const queryClient = new QueryClient()
 
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/booking/manage" element={<BookingManagePage />} />
             <Route path="/works" element={<WorksPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/admin/schedule" element={<AdminSchedulePage />} />
             <Route
               path="*"
               element={<BookingErrorPage forcedType="page" forcedReason="not_found" />}

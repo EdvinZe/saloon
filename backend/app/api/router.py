@@ -3,7 +3,10 @@ from fastapi import FastAPI
 from app.modules.availability.router import router as availability_router
 from app.modules.bookings.admin_router import router as admin_bookings_router
 from app.modules.bookings.router import router as bookings_router
-from app.modules.master_shifts.admin_router import router as admin_master_shifts_router
+from app.modules.master_shifts.admin_router import (
+    router as admin_master_shifts_router,
+    schedule_router as admin_schedule_router,
+)
 from app.modules.masters.admin_router import router as admin_masters_router
 from app.modules.masters.router import router as masters_router
 from app.modules.payments.webhook_router import router as stripe_webhook_router
@@ -58,6 +61,12 @@ def register_routers(app: FastAPI) -> None:
         admin_master_shifts_router,
         prefix="/api/admin/master-shifts",
         tags=["Admin Master Shifts"],
+    )
+
+    app.include_router(
+        admin_schedule_router,
+        prefix="/api/admin/schedule",
+        tags=["Admin Schedule"],
     )
 
     app.include_router(
