@@ -47,14 +47,29 @@ async def _request(method: str, path: str, **kwargs: Any) -> Any:
         raise BackendAPIError("Backend returned an invalid response.") from exc
 
 
-async def get_admin_bookings(date: str, status: str = "confirmed") -> list[dict]:
+async def get_admin_bookings(
+    date: str,
+    status: str = "confirmed",
+    master_id: int | None = None,
+) -> list[dict]:
+    params: dict[str, str | int] = {"date": date, "status": status}
+    if master_id is not None:
+        params["master_id"] = master_id
+
     payload = await _request(
         "GET",
         "/api/admin/bookings",
-        params={"date": date, "status": status},
+        params=params,
     )
     if not isinstance(payload, list):
         raise BackendAPIError("Backend returned an invalid bookings response.")
+    return payload
+
+
+async def get_admin_booking(booking_id: int) -> dict:
+    payload = await _request("GET", f"/api/admin/bookings/{booking_id}")
+    if not isinstance(payload, dict):
+        raise BackendAPIError("Backend returned an invalid booking response.")
     return payload
 
 

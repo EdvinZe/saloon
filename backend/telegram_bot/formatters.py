@@ -36,7 +36,7 @@ def _full_name(first_name: Any, last_name: Any) -> str:
 
 
 def format_bookings_header(label: str, date: str) -> str:
-    return f"{label} bookings ({date})"
+    return f"{label} ({date})"
 
 
 def format_booking_message(booking: dict) -> str:
