@@ -4,7 +4,7 @@ import logging
 from aiogram import Bot, Dispatcher
 
 from telegram_bot.config import load_config
-from telegram_bot.handlers import actions, bookings, start
+from telegram_bot.handlers import actions, bookings, reports, start
 
 
 async def main() -> None:
@@ -15,6 +15,7 @@ async def main() -> None:
     dispatcher = Dispatcher()
     dispatcher.include_router(start.router)
     dispatcher.include_router(bookings.router)
+    dispatcher.include_router(reports.router)
     dispatcher.include_router(actions.router)
 
     await dispatcher.start_polling(bot)

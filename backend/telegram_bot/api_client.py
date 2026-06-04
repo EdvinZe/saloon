@@ -66,6 +66,28 @@ async def get_admin_bookings(
     return payload
 
 
+async def get_admin_report_summary(
+    from_date: str,
+    to_date: str,
+    master_id: int | None = None,
+) -> dict:
+    params: dict[str, str | int] = {
+        "from_date": from_date,
+        "to_date": to_date,
+    }
+    if master_id is not None:
+        params["master_id"] = master_id
+
+    payload = await _request(
+        "GET",
+        "/api/admin/reports/summary",
+        params=params,
+    )
+    if not isinstance(payload, dict):
+        raise BackendAPIError("Backend returned an invalid report response.")
+    return payload
+
+
 async def get_admin_booking(booking_id: int) -> dict:
     payload = await _request("GET", f"/api/admin/bookings/{booking_id}")
     if not isinstance(payload, dict):

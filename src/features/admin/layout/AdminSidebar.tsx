@@ -53,6 +53,18 @@ export default function AdminSidebar() {
         >
           Schedule
         </NavLink>
+        <NavLink
+          to="/admin/reports"
+          className={({ isActive }) =>
+            `border px-3 py-2 text-sm ${
+              isActive
+                ? 'border-[#c9a84c] bg-[#c9a84c]/10 text-[#e8e0d0]'
+                : 'border-[#2a2218] text-[#7a7060] hover:text-[#e8e0d0]'
+            }`
+          }
+        >
+          Reports
+        </NavLink>
       </nav>
     </aside>
   )

@@ -10,6 +10,7 @@ from app.modules.master_shifts.admin_router import (
 from app.modules.masters.admin_router import router as admin_masters_router
 from app.modules.masters.router import router as masters_router
 from app.modules.payments.webhook_router import router as stripe_webhook_router
+from app.modules.reports.admin_router import router as admin_reports_router
 from app.modules.services.admin_router import router as admin_services_router
 from app.modules.services.router import router as services_router
 
@@ -73,4 +74,10 @@ def register_routers(app: FastAPI) -> None:
         admin_bookings_router,
         prefix="/api/admin/bookings",
         tags=["Admin Bookings"],
+    )
+
+    app.include_router(
+        admin_reports_router,
+        prefix="/api/admin/reports",
+        tags=["Admin Reports"],
     )
