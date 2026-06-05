@@ -6,7 +6,7 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
 from telegram_bot.api_client import BackendAPIError, get_admin_report_summary
-from telegram_bot.auth import get_barber_master_id, get_user_role
+from telegram_bot.auth import is_manager
 from telegram_bot.formatters import format_report_summary
 from telegram_bot.report_presets import (
     get_last_month_range,
@@ -56,7 +56,7 @@ async def _send_text(
     await target.answer(text)
 
 
-async def send_report_summary(
+async def send_manager_report_summary(
     target: Message | CallbackQuery,
     preset_name: str,
     *,
@@ -74,19 +74,12 @@ async def send_report_summary(
     title, log_label, range_factory = preset
     user = target.from_user
     user_id = user.id if user else None
-    role = get_user_role(user_id) if user_id is not None else None
-    if role is None:
+    if user_id is None or not is_manager(user_id):
         if isinstance(target, CallbackQuery):
             await target.answer("Access denied.", show_alert=True)
         else:
             await target.answer("Access denied.")
         return
-
-    master_id = None
-    scope_label = "All masters"
-    if role == "barber" and user_id is not None:
-        master_id = get_barber_master_id(user_id)
-        scope_label = "Your bookings"
 
     from_date, to_date = range_factory()
 
@@ -94,13 +87,18 @@ async def send_report_summary(
         report = await get_admin_report_summary(
             from_date=from_date,
             to_date=to_date,
-            master_id=master_id,
         )
     except BackendAPIError as exc:
         logger.warning("Could not load %s: %s", log_label, exc)
+        detail = str(exc)
+        message = (
+            "Backend is unavailable. Please try again later."
+            if detail == "Backend is unavailable. Please try again later."
+            else "Could not load summary. Please try again."
+        )
         await _send_text(
             target,
-            str(exc) or "Backend is unavailable. Please try again later.",
+            message,
             edit_callback_message=edit_callback_message,
         )
         return
@@ -113,70 +111,84 @@ async def send_report_summary(
         )
         return
 
-    text = "\n".join(
-        [
-            title,
-            format_report_summary(report, scope_label=scope_label),
-        ]
-    )
+    text = format_report_summary(report, title, scope_label="All masters")
     await _send_text(target, text, edit_callback_message=edit_callback_message)
+
+
+async def send_report_summary(
+    target: Message | CallbackQuery,
+    preset_name: str,
+    *,
+    edit_callback_message: bool = False,
+) -> None:
+    await send_manager_report_summary(
+        target,
+        preset_name,
+        edit_callback_message=edit_callback_message,
+    )
 
 
 @router.message(Command("today_summary"))
 async def today_summary_command(message: Message) -> None:
-    await send_report_summary(message, "today")
+    await send_manager_report_summary(message, "today")
 
 
 @router.message(Command("yesterday_summary"))
 async def yesterday_summary_command(message: Message) -> None:
-    await send_report_summary(message, "yesterday")
+    await send_manager_report_summary(message, "yesterday")
 
 
 @router.message(Command("this_week_summary"))
 async def this_week_summary_command(message: Message) -> None:
-    await send_report_summary(message, "this_week")
+    await send_manager_report_summary(message, "this_week")
 
 
 @router.message(Command("last_week_summary"))
 async def last_week_summary_command(message: Message) -> None:
-    await send_report_summary(message, "last_week")
+    await send_manager_report_summary(message, "last_week")
 
 
 @router.message(Command("this_month_summary"))
 async def this_month_summary_command(message: Message) -> None:
-    await send_report_summary(message, "this_month")
+    await send_manager_report_summary(message, "this_month")
 
 
 @router.message(Command("last_month_summary"))
 async def last_month_summary_command(message: Message) -> None:
-    await send_report_summary(message, "last_month")
+    await send_manager_report_summary(message, "last_month")
 
 
-@router.callback_query(F.data == "report:today")
+@router.callback_query(F.data == "manager_report:today")
 async def today_summary_callback(callback: CallbackQuery) -> None:
-    await send_report_summary(callback, "today", edit_callback_message=True)
+    await send_manager_report_summary(callback, "today", edit_callback_message=True)
 
 
-@router.callback_query(F.data == "report:yesterday")
+@router.callback_query(F.data == "manager_report:yesterday")
 async def yesterday_summary_callback(callback: CallbackQuery) -> None:
-    await send_report_summary(callback, "yesterday", edit_callback_message=True)
+    await send_manager_report_summary(callback, "yesterday", edit_callback_message=True)
 
 
-@router.callback_query(F.data == "report:this_week")
+@router.callback_query(F.data == "manager_report:this_week")
 async def this_week_summary_callback(callback: CallbackQuery) -> None:
-    await send_report_summary(callback, "this_week", edit_callback_message=True)
+    await send_manager_report_summary(callback, "this_week", edit_callback_message=True)
 
 
-@router.callback_query(F.data == "report:last_week")
+@router.callback_query(F.data == "manager_report:last_week")
 async def last_week_summary_callback(callback: CallbackQuery) -> None:
-    await send_report_summary(callback, "last_week", edit_callback_message=True)
+    await send_manager_report_summary(callback, "last_week", edit_callback_message=True)
 
 
-@router.callback_query(F.data == "report:this_month")
+@router.callback_query(F.data == "manager_report:this_month")
 async def this_month_summary_callback(callback: CallbackQuery) -> None:
-    await send_report_summary(callback, "this_month", edit_callback_message=True)
+    await send_manager_report_summary(callback, "this_month", edit_callback_message=True)
 
 
-@router.callback_query(F.data == "report:last_month")
+@router.callback_query(F.data == "manager_report:last_month")
 async def last_month_summary_callback(callback: CallbackQuery) -> None:
-    await send_report_summary(callback, "last_month", edit_callback_message=True)
+    await send_manager_report_summary(callback, "last_month", edit_callback_message=True)
+
+
+@router.callback_query(F.data.startswith("report:"))
+async def legacy_report_callback(callback: CallbackQuery) -> None:
+    preset_name = callback.data.split(":", 1)[1] if callback.data else ""
+    await send_manager_report_summary(callback, preset_name, edit_callback_message=True)

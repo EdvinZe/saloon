@@ -3,8 +3,8 @@ import logging
 from aiogram import F, Router
 from aiogram.types import CallbackQuery
 
-from telegram_bot.api_client import BackendAPIError, complete_booking, get_admin_booking, mark_booking_no_show
-from telegram_bot.auth import get_barber_master_id, get_user_role
+from telegram_bot.api_client import BackendAPIError, complete_booking, mark_booking_no_show
+from telegram_bot.auth import is_manager
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -21,8 +21,7 @@ def _parse_booking_id(callback_data: str | None) -> int | None:
 
 async def _handle_action(callback: CallbackQuery, action: str) -> None:
     user_id = callback.from_user.id if callback.from_user else None
-    role = get_user_role(user_id) if user_id is not None else None
-    if role is None:
+    if user_id is None or not is_manager(user_id):
         await callback.answer("Access denied.", show_alert=True)
         return
 
@@ -32,14 +31,6 @@ async def _handle_action(callback: CallbackQuery, action: str) -> None:
         return
 
     try:
-        if role == "barber":
-            # Keep authorization at the API boundary: verify ownership through FastAPI.
-            booking = await get_admin_booking(booking_id)
-            barber_master_id = get_barber_master_id(user_id) if user_id is not None else None
-            if booking.get("master_id") != barber_master_id:
-                await callback.answer("Access denied.", show_alert=True)
-                return
-
         if action == "complete":
             await complete_booking(booking_id)
             confirmation = "Booking marked as completed."
@@ -62,11 +53,21 @@ async def _handle_action(callback: CallbackQuery, action: str) -> None:
     await callback.answer(confirmation)
 
 
-@router.callback_query(F.data.startswith("admin_booking_complete:"))
+@router.callback_query(F.data.startswith("manager_booking_complete:"))
 async def complete_booking_callback(callback: CallbackQuery) -> None:
     await _handle_action(callback, "complete")
 
 
-@router.callback_query(F.data.startswith("admin_booking_no_show:"))
+@router.callback_query(F.data.startswith("manager_booking_no_show:"))
 async def no_show_booking_callback(callback: CallbackQuery) -> None:
+    await _handle_action(callback, "no_show")
+
+
+@router.callback_query(F.data.startswith("admin_booking_complete:"))
+async def legacy_complete_booking_callback(callback: CallbackQuery) -> None:
+    await _handle_action(callback, "complete")
+
+
+@router.callback_query(F.data.startswith("admin_booking_no_show:"))
+async def legacy_no_show_booking_callback(callback: CallbackQuery) -> None:
     await _handle_action(callback, "no_show")

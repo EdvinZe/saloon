@@ -69,24 +69,35 @@ def format_booking_message(booking: dict) -> str:
     )
 
 
-def format_report_summary(report: dict, *, scope_label: str) -> str:
+def format_report_summary(
+    report: dict,
+    title: str | None = None,
+    *,
+    scope_label: str = "All masters",
+) -> str:
     currency = report.get("currency") or "EUR"
-    lines = [
-        f"Period: {report.get('from_date')} — {report.get('to_date')}",
-        f"Scope: {scope_label}",
-        "",
-        "Bookings:",
-        f"Total: {int(report.get('total_bookings') or 0)}",
-        f"Confirmed: {int(report.get('confirmed_count') or 0)}",
-        f"Completed: {int(report.get('completed_count') or 0)}",
-        f"No-show: {int(report.get('no_show_count') or 0)}",
-        f"Cancelled: {int(report.get('cancelled_count') or 0)}",
-        "",
-        "Deposits:",
-        f"Paid: {_format_money(report.get('paid_deposits_cents'), currency)}",
-        f"Refunded: {_format_money(report.get('refunded_deposits_cents'), currency)}",
-        f"Net: {_format_money(report.get('net_deposits_cents'), currency)}",
-    ]
+    lines = []
+    if title:
+        lines.append(title)
+
+    lines.extend(
+        [
+            f"Period: {report.get('from_date')} — {report.get('to_date')}",
+            f"Scope: {scope_label}",
+            "",
+            "Bookings:",
+            f"Total: {int(report.get('total_bookings') or 0)}",
+            f"Confirmed: {int(report.get('confirmed_count') or 0)}",
+            f"Completed: {int(report.get('completed_count') or 0)}",
+            f"No-show: {int(report.get('no_show_count') or 0)}",
+            f"Cancelled: {int(report.get('cancelled_count') or 0)}",
+            "",
+            "Deposits:",
+            f"Paid: {_format_money(report.get('paid_deposits_cents'), currency)}",
+            f"Refunded: {_format_money(report.get('refunded_deposits_cents'), currency)}",
+            f"Net: {_format_money(report.get('net_deposits_cents'), currency)}",
+        ]
+    )
 
     if int(report.get("total_bookings") or 0) == 0:
         lines.extend(["", "No bookings found for this period."])
@@ -98,20 +109,6 @@ def format_report_summary(report: dict, *, scope_label: str) -> str:
             if not isinstance(row, dict):
                 continue
             name = row.get("master_name") or f"Master #{row.get('master_id')}"
-            bookings = int(row.get("total_bookings") or 0)
-            net = _format_money(row.get("net_deposits_cents"), currency)
-            lines.append(f"{name} — {bookings} bookings · net {net}")
-
-    by_service = report.get("by_service")
-    if isinstance(by_service, list) and by_service:
-        lines.extend(["", "Top services:"])
-        sorted_services = sorted(
-            [row for row in by_service if isinstance(row, dict)],
-            key=lambda row: int(row.get("total_bookings") or 0),
-            reverse=True,
-        )
-        for row in sorted_services[:3]:
-            name = row.get("service_name") or f"Service #{row.get('service_id')}"
             bookings = int(row.get("total_bookings") or 0)
             net = _format_money(row.get("net_deposits_cents"), currency)
             lines.append(f"{name} — {bookings} bookings · net {net}")
