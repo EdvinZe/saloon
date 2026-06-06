@@ -6,8 +6,8 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
 from telegram_bot.api_client import BackendAPIError, get_admin_bookings
-from telegram_bot.auth import is_manager
 from telegram_bot.formatters import format_booking_message, format_bookings_header
+from telegram_bot.handlers.common import get_authorized_context
 from telegram_bot.keyboards import booking_actions_keyboard
 
 router = Router()
@@ -26,20 +26,18 @@ async def _answer_target(target: Message | CallbackQuery, text: str, **kwargs) -
 
 
 async def _send_bookings(target: Message | CallbackQuery, label: str, target_date: date) -> None:
-    user_id = target.from_user.id if target.from_user else None
-    if user_id is None or not is_manager(user_id):
-        if isinstance(target, CallbackQuery):
-            await target.answer("Access denied.", show_alert=True)
-        else:
-            await target.answer("Access denied.")
+    ctx = await get_authorized_context(target)
+    if ctx is None:
         return
 
     date_text = target_date.isoformat()
+    master_id = ctx.master_id if ctx.scope == "own_master" else None
 
     try:
         bookings = await get_admin_bookings(
             date=date_text,
             status="confirmed",
+            master_id=master_id,
         )
     except BackendAPIError as exc:
         logger.warning("Could not load %s bookings: %s", label.lower(), exc)
@@ -64,14 +62,19 @@ async def _send_bookings(target: Message | CallbackQuery, label: str, target_dat
             await target.answer()
         return
 
+    scope_label = "All confirmed bookings" if ctx.scope == "all" else "Your confirmed bookings"
     await _answer_target(
         target,
-        format_bookings_header(f"All confirmed bookings for {label.lower()}", date_text),
+        format_bookings_header(f"{scope_label} for {label.lower()}", date_text),
     )
 
     for booking in bookings:
         booking_id = booking.get("id")
-        reply_markup = booking_actions_keyboard(booking_id) if isinstance(booking_id, int) else None
+        reply_markup = (
+            booking_actions_keyboard(booking_id)
+            if ctx.role == "manager" and isinstance(booking_id, int)
+            else None
+        )
         await _answer_target(target, format_booking_message(booking), reply_markup=reply_markup)
 
     if isinstance(target, CallbackQuery):
@@ -95,4 +98,14 @@ async def today_bookings_callback(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "manager_bookings:tomorrow")
 async def tomorrow_bookings_callback(callback: CallbackQuery) -> None:
+    await _send_bookings(callback, "Tomorrow", date.today() + timedelta(days=1))
+
+
+@router.callback_query(F.data == "barber_bookings:today")
+async def barber_today_bookings_callback(callback: CallbackQuery) -> None:
+    await _send_bookings(callback, "Today", date.today())
+
+
+@router.callback_query(F.data == "barber_bookings:tomorrow")
+async def barber_tomorrow_bookings_callback(callback: CallbackQuery) -> None:
     await _send_bookings(callback, "Tomorrow", date.today() + timedelta(days=1))

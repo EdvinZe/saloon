@@ -6,8 +6,8 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
 from telegram_bot.api_client import BackendAPIError, get_admin_bookings, get_admin_schedule
-from telegram_bot.auth import get_barber_master_id, get_user_role
 from telegram_bot.formatters import format_now_message
+from telegram_bot.handlers.common import get_authorized_context
 from telegram_bot.now_service import build_now_context
 
 router = Router()
@@ -26,17 +26,11 @@ async def _answer_target(target: Message | CallbackQuery, text: str) -> None:
 
 
 async def _send_now(target: Message | CallbackQuery) -> None:
-    user_id = target.from_user.id if target.from_user else None
-    role = get_user_role(user_id) if user_id is not None else None
-
-    if role is None:
-        if isinstance(target, CallbackQuery):
-            await target.answer("Access denied.", show_alert=True)
-        else:
-            await target.answer("Access denied.")
+    ctx = await get_authorized_context(target)
+    if ctx is None:
         return
 
-    master_id = get_barber_master_id(user_id) if role == "barber" and user_id is not None else None
+    master_id = ctx.master_id if ctx.scope == "own_master" else None
     today = date.today().isoformat()
     now = datetime.now()
 
@@ -68,7 +62,7 @@ async def _send_now(target: Message | CallbackQuery) -> None:
         schedule,
         bookings,
         now,
-        role=role,
+        role=ctx.role,
         master_id=master_id,
     )
     await _answer_target(target, format_now_message(context))

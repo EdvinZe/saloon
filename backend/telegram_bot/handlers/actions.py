@@ -4,7 +4,7 @@ from aiogram import F, Router
 from aiogram.types import CallbackQuery
 
 from telegram_bot.api_client import BackendAPIError, complete_booking, mark_booking_no_show
-from telegram_bot.auth import is_manager
+from telegram_bot.handlers.common import get_authorized_context
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -20,9 +20,13 @@ def _parse_booking_id(callback_data: str | None) -> int | None:
 
 
 async def _handle_action(callback: CallbackQuery, action: str) -> None:
-    user_id = callback.from_user.id if callback.from_user else None
-    if user_id is None or not is_manager(user_id):
-        await callback.answer("Access denied.", show_alert=True)
+    ctx = await get_authorized_context(callback)
+    if ctx is None:
+        return
+
+    # TODO: for barber actions, verify booking.master_id before allowing action.
+    if ctx.role != "manager":
+        await callback.answer("This action is available for managers only.", show_alert=True)
         return
 
     booking_id = _parse_booking_id(callback.data)

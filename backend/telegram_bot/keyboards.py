@@ -18,19 +18,9 @@ def booking_actions_keyboard(booking_id: int) -> InlineKeyboardMarkup:
     )
 
 
-def report_summary_keyboard() -> InlineKeyboardMarkup:
+def manager_start_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="🟢 Now",
-                    callback_data="now",
-                ),
-                InlineKeyboardButton(
-                    text="⏭ Next",
-                    callback_data="next_placeholder",
-                ),
-            ],
             [
                 InlineKeyboardButton(
                     text="📅 Today bookings",
@@ -43,36 +33,34 @@ def report_summary_keyboard() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text="📊 Today summary",
-                    callback_data="manager_report:today",
+                    text="🟢 Now",
+                    callback_data="now",
                 ),
                 InlineKeyboardButton(
-                    text="📊 Yesterday summary",
-                    callback_data="manager_report:yesterday",
+                    text="⏭ Next",
+                    callback_data="next_placeholder",
                 ),
             ],
             [
+                InlineKeyboardButton(
+                    text="📊 Today summary",
+                    callback_data="manager_report:today",
+                ),
                 InlineKeyboardButton(
                     text="📆 This week summary",
                     callback_data="manager_report:this_week",
                 ),
                 InlineKeyboardButton(
-                    text="📆 Last week summary",
-                    callback_data="manager_report:last_week",
-                ),
-            ],
-            [
-                InlineKeyboardButton(
                     text="🗓 This month summary",
                     callback_data="manager_report:this_month",
-                ),
-                InlineKeyboardButton(
-                    text="🗓 Last month summary",
-                    callback_data="manager_report:last_month",
                 ),
             ],
         ]
     )
+
+
+def report_summary_keyboard() -> InlineKeyboardMarkup:
+    return manager_start_keyboard()
 
 
 def barber_start_keyboard() -> InlineKeyboardMarkup:
@@ -86,6 +74,16 @@ def barber_start_keyboard() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text="⏭ Next",
                     callback_data="next_placeholder",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📅 My bookings today",
+                    callback_data="barber_bookings:today",
+                ),
+                InlineKeyboardButton(
+                    text="📅 My bookings tomorrow",
+                    callback_data="barber_bookings:tomorrow",
                 ),
             ],
         ]

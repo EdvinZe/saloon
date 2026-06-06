@@ -2,7 +2,7 @@ from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
-from telegram_bot.auth import get_user_role
+from telegram_bot.handlers.common import get_authorized_context
 
 router = Router()
 
@@ -26,22 +26,17 @@ def _next_placeholder_message(role: str) -> str:
 
 
 async def _send_next_placeholder(target: Message | CallbackQuery) -> None:
-    user_id = target.from_user.id if target.from_user else None
-    role = get_user_role(user_id) if user_id is not None else None
-
-    if role not in {"manager", "barber"}:
-        if isinstance(target, CallbackQuery):
-            await target.answer("Access denied.", show_alert=True)
-        else:
-            await target.answer("Access denied.")
+    ctx = await get_authorized_context(target)
+    if ctx is None:
         return
 
-    text = _next_placeholder_message(role)
+    text = _next_placeholder_message(ctx.role)
     if isinstance(target, CallbackQuery):
         if target.message is not None:
             await target.message.answer(text)
         else:
             await target.answer(text[:200], show_alert=True)
+            return
         await target.answer()
         return
 

@@ -6,8 +6,8 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
 from telegram_bot.api_client import BackendAPIError, get_admin_report_summary
-from telegram_bot.auth import is_manager
 from telegram_bot.formatters import format_report_summary
+from telegram_bot.handlers.common import get_authorized_context
 from telegram_bot.report_presets import (
     get_last_month_range,
     get_last_week_range,
@@ -72,13 +72,16 @@ async def send_manager_report_summary(
         return
 
     title, log_label, range_factory = preset
-    user = target.from_user
-    user_id = user.id if user else None
-    if user_id is None or not is_manager(user_id):
-        if isinstance(target, CallbackQuery):
-            await target.answer("Access denied.", show_alert=True)
-        else:
-            await target.answer("Access denied.")
+    ctx = await get_authorized_context(target)
+    if ctx is None:
+        return
+
+    if ctx.role != "manager":
+        await _send_text(
+            target,
+            "This command is available for managers only.",
+            edit_callback_message=edit_callback_message,
+        )
         return
 
     from_date, to_date = range_factory()
