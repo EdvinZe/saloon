@@ -66,6 +66,17 @@ async def get_admin_bookings(
     return payload
 
 
+async def get_admin_schedule(from_date: str, to_date: str) -> dict:
+    payload = await _request(
+        "GET",
+        "/api/admin/schedule/",
+        params={"from_date": from_date, "to_date": to_date},
+    )
+    if not isinstance(payload, dict):
+        raise BackendAPIError("Backend returned an invalid schedule response.")
+    return payload
+
+
 async def get_admin_report_summary(
     from_date: str,
     to_date: str,

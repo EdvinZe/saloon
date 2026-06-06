@@ -2,8 +2,8 @@ from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-from telegram_bot.auth import is_manager
-from telegram_bot.keyboards import report_summary_keyboard
+from telegram_bot.auth import get_user_role
+from telegram_bot.keyboards import barber_start_keyboard, report_summary_keyboard
 
 router = Router()
 
@@ -11,9 +11,24 @@ router = Router()
 @router.message(CommandStart())
 async def start_command(message: Message) -> None:
     user_id = message.from_user.id if message.from_user else None
+    role = get_user_role(user_id) if user_id is not None else None
 
-    if user_id is None or not is_manager(user_id):
+    if role is None:
         await message.answer("Access denied.")
+        return
+
+    if role == "barber":
+        await message.answer(
+            "\n".join(
+                [
+                    "Welcome.",
+                    "Commands:",
+                    "/now - current salon status",
+                    "/next - upcoming reservations, coming soon",
+                ]
+            ),
+            reply_markup=barber_start_keyboard(),
+        )
         return
 
     await message.answer(
@@ -21,6 +36,8 @@ async def start_command(message: Message) -> None:
             [
                 "Welcome, manager.",
                 "Commands:",
+                "/now - current salon status",
+                "/next - upcoming reservations, coming soon",
                 "/today - all bookings today",
                 "/tomorrow - all bookings tomorrow",
                 "/today_summary - today's summary",

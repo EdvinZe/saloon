@@ -69,6 +69,110 @@ def format_booking_message(booking: dict) -> str:
     )
 
 
+def format_now_message(context: dict) -> str:
+    role = context.get("role")
+    now = context.get("now")
+    now_text = now.strftime("%H:%M") if isinstance(now, datetime) else ""
+
+    if role == "barber":
+        return _format_barber_now_message(context, now_text)
+    return _format_manager_now_message(context, now_text)
+
+
+def _format_manager_now_message(context: dict, now_text: str) -> str:
+    lines = ["🟢 Now in salon", f"Time: {now_text}"]
+    masters = context.get("masters")
+
+    if isinstance(masters, list) and masters:
+        for master in masters:
+            if not isinstance(master, dict):
+                continue
+            lines.extend(["", str(master.get("name") or f"Master #{master.get('id')}")])
+            lines.append(f"Working: {_format_shift_range(master)}")
+            lines.extend(_format_now_booking_block(master))
+        return "\n".join(lines)
+
+    lines.extend(["", "No masters are currently working."])
+    upcoming_bookings = context.get("upcoming_bookings")
+    if isinstance(upcoming_bookings, list) and upcoming_bookings:
+        lines.extend(["", "Upcoming reservations today:"])
+        for booking in upcoming_bookings:
+            if not isinstance(booking, dict):
+                continue
+            master = booking.get("master_name") or f"Master #{booking.get('master_id')}"
+            lines.append(f"{_format_booking_line(booking)} — {master}")
+
+    return "\n".join(lines)
+
+
+def _format_barber_now_message(context: dict, now_text: str) -> str:
+    lines = ["🟢 Your status now", f"Time: {now_text}"]
+    masters = context.get("masters")
+
+    if isinstance(masters, list) and masters:
+        master = masters[0]
+        if isinstance(master, dict):
+            lines.extend(["", f"Working: {_format_shift_range(master)}"])
+            lines.extend(_format_now_booking_block(master))
+            return "\n".join(lines)
+
+    lines.extend(["", "You are not currently working."])
+    current_booking = context.get("current_booking")
+    next_booking = context.get("next_booking")
+    if isinstance(current_booking, dict):
+        lines.extend(["", "Current booking:"])
+        lines.extend(_format_booking_details(current_booking))
+    elif isinstance(next_booking, dict):
+        lines.extend(["", "No current booking.", "Next today:"])
+        lines.extend(_format_booking_details(next_booking))
+    else:
+        lines.extend(["", "No reservations today."])
+
+    return "\n".join(lines)
+
+
+def _format_now_booking_block(master: dict) -> list[str]:
+    current_booking = master.get("current_booking")
+    next_booking = master.get("next_booking")
+
+    if isinstance(current_booking, dict):
+        return ["Current booking:", *_format_booking_details(current_booking)]
+    if isinstance(next_booking, dict):
+        return ["No current booking.", "Next today:", *_format_booking_details(next_booking)]
+    return ["No reservations today."]
+
+
+def _format_booking_details(booking: dict) -> list[str]:
+    lines = [_format_booking_line(booking)]
+    client = _full_name(
+        booking.get("customer_first_name"),
+        booking.get("customer_last_name"),
+    )
+    lines.append(f"Client: {client}")
+
+    deposit = booking.get("deposit_status")
+    if deposit:
+        lines.append(
+            f"Deposit: {deposit} · "
+            f"{_format_money(booking.get('deposit_amount_cents'), booking.get('currency'))}"
+        )
+
+    code = booking.get("booking_code")
+    if code:
+        lines.append(f"Code: {code}")
+
+    return lines
+
+
+def _format_booking_line(booking: dict) -> str:
+    service = booking.get("service_name") or f"Service #{booking.get('service_id')}"
+    return f"{_format_time(booking.get('start_at'))}–{_format_time(booking.get('end_at'))} — {service}"
+
+
+def _format_shift_range(master: dict) -> str:
+    return f"{master.get('start_time') or '?'}–{master.get('end_time') or '?'}"
+
+
 def format_report_summary(
     report: dict,
     title: str | None = None,
