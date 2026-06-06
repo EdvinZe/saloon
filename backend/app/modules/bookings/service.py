@@ -17,6 +17,10 @@ from app.modules.bookings.schemas import (
 )
 from app.modules.master_shifts.models import MasterShift
 from app.modules.masters.models import Master, MasterService
+from app.modules.notifications.telegram import (
+    notify_managers_booking_cancelled_today,
+    notify_managers_booking_rescheduled,
+)
 from app.modules.payments.stripe_service import refund_booking_deposit
 from app.modules.services.models import Service
 from app.modules.services.service import get_service_total_duration_minutes
@@ -456,6 +460,7 @@ def cancel_booking_with_refund(
             booking.status = "cancelled"
             db.commit()
             db.refresh(booking)
+            notify_managers_booking_cancelled_today(booking)
         return booking
 
     if booking.status != "confirmed":
@@ -492,9 +497,9 @@ def cancel_booking_with_refund(
     booking.status = "cancelled"
     if should_refund_deposit:
         booking.deposit_status = "refunded"
-    # TODO: send cancellation notification through future notification service.
     db.commit()
     db.refresh(booking)
+    notify_managers_booking_cancelled_today(booking)
 
     logger.info(
         "[BOOKINGS] Booking cancelled: booking_id=%s booking_code=%s cancelled_by=%s",
@@ -547,12 +552,15 @@ def reschedule_booking_by_manage_token(
         exclude_booking_id=booking.id,
     )
 
+    old_start_at = booking.start_at
+    old_end_at = booking.end_at
+
     booking.master_id = data.master_id
     booking.start_at = start_at
     booking.end_at = end_at
-    # TODO: send reschedule notification to customer and staff.
     db.commit()
     db.refresh(booking)
+    notify_managers_booking_rescheduled(booking, old_start_at, old_end_at)
 
     logger.info(
         "[BOOKINGS] Booking rescheduled: booking_id=%s booking_code=%s",

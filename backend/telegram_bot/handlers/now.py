@@ -8,16 +8,20 @@ from aiogram.types import CallbackQuery, Message
 from telegram_bot.api_client import BackendAPIError, get_admin_bookings, get_admin_schedule
 from telegram_bot.formatters import format_now_message
 from telegram_bot.handlers.common import get_authorized_context
+from telegram_bot.keyboards import back_to_menu_keyboard
 from telegram_bot.now_service import build_now_context
 
 router = Router()
 logger = logging.getLogger(__name__)
 
 
-async def _answer_target(target: Message | CallbackQuery, text: str) -> None:
+async def _answer_target(
+    target: Message | CallbackQuery,
+    text: str,
+) -> None:
     if isinstance(target, CallbackQuery):
         if target.message is not None:
-            await target.message.answer(text)
+            await target.message.answer(text, reply_markup=back_to_menu_keyboard())
         else:
             await target.answer(text[:200], show_alert=True)
         return
@@ -65,7 +69,10 @@ async def _send_now(target: Message | CallbackQuery) -> None:
         role=ctx.role,
         master_id=master_id,
     )
-    await _answer_target(target, format_now_message(context))
+    await _answer_target(
+        target,
+        format_now_message(context),
+    )
 
     if isinstance(target, CallbackQuery):
         await target.answer()

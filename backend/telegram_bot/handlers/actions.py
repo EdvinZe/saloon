@@ -5,6 +5,7 @@ from aiogram.types import CallbackQuery
 
 from telegram_bot.api_client import BackendAPIError, complete_booking, mark_booking_no_show
 from telegram_bot.handlers.common import get_authorized_context
+from telegram_bot.keyboards import back_to_menu_keyboard
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ async def _handle_action(callback: CallbackQuery, action: str) -> None:
 
     if callback.message:
         await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer(confirmation)
+        await callback.message.answer(confirmation, reply_markup=back_to_menu_keyboard())
     await callback.answer(confirmation)
 
 

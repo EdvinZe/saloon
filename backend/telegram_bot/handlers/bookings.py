@@ -8,7 +8,7 @@ from aiogram.types import CallbackQuery, Message
 from telegram_bot.api_client import BackendAPIError, get_admin_bookings
 from telegram_bot.formatters import format_booking_message, format_bookings_header
 from telegram_bot.handlers.common import get_authorized_context
-from telegram_bot.keyboards import booking_actions_keyboard
+from telegram_bot.keyboards import back_to_menu_keyboard, booking_actions_keyboard
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -23,6 +23,10 @@ async def _answer_target(target: Message | CallbackQuery, text: str, **kwargs) -
         return
 
     await target.answer(text, **kwargs)
+
+
+def _callback_menu_markup(target: Message | CallbackQuery):
+    return back_to_menu_keyboard() if isinstance(target, CallbackQuery) else None
 
 
 async def _send_bookings(target: Message | CallbackQuery, label: str, target_date: date) -> None:
@@ -43,21 +47,33 @@ async def _send_bookings(target: Message | CallbackQuery, label: str, target_dat
         logger.warning("Could not load %s bookings: %s", label.lower(), exc)
         detail = str(exc)
         if detail == "Backend is unavailable. Please try again later.":
-            await _answer_target(target, detail)
+            await _answer_target(target, detail, reply_markup=_callback_menu_markup(target))
         else:
-            await _answer_target(target, "Could not load bookings. Please try again.")
+            await _answer_target(
+                target,
+                "Could not load bookings. Please try again.",
+                reply_markup=_callback_menu_markup(target),
+            )
         if isinstance(target, CallbackQuery):
             await target.answer()
         return
     except Exception:
         logger.exception("Unexpected error while loading %s bookings", label.lower())
-        await _answer_target(target, "Backend is unavailable. Please try again later.")
+        await _answer_target(
+            target,
+            "Backend is unavailable. Please try again later.",
+            reply_markup=_callback_menu_markup(target),
+        )
         if isinstance(target, CallbackQuery):
             await target.answer()
         return
 
     if not bookings:
-        await _answer_target(target, f"No confirmed bookings for {label.lower()}.")
+        await _answer_target(
+            target,
+            f"No confirmed bookings for {label.lower()}.",
+            reply_markup=_callback_menu_markup(target),
+        )
         if isinstance(target, CallbackQuery):
             await target.answer()
         return
@@ -76,6 +92,9 @@ async def _send_bookings(target: Message | CallbackQuery, label: str, target_dat
             else None
         )
         await _answer_target(target, format_booking_message(booking), reply_markup=reply_markup)
+
+    if isinstance(target, CallbackQuery):
+        await _answer_target(target, "Use the menu to continue.", reply_markup=back_to_menu_keyboard())
 
     if isinstance(target, CallbackQuery):
         await target.answer()

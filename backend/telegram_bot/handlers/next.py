@@ -3,6 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
 from telegram_bot.handlers.common import get_authorized_context
+from telegram_bot.keyboards import back_to_menu_keyboard
 
 router = Router()
 
@@ -33,14 +34,14 @@ async def _send_next_placeholder(target: Message | CallbackQuery) -> None:
     text = _next_placeholder_message(ctx.role)
     if isinstance(target, CallbackQuery):
         if target.message is not None:
-            await target.message.answer(text)
+            await target.message.answer(text, reply_markup=back_to_menu_keyboard())
         else:
             await target.answer(text[:200], show_alert=True)
             return
         await target.answer()
         return
 
-    await target.answer(text)
+    await target.answer(text, reply_markup=back_to_menu_keyboard())
 
 
 @router.message(Command("next"))

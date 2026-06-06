@@ -47,12 +47,34 @@ def manager_start_keyboard() -> InlineKeyboardMarkup:
                     callback_data="manager_report:today",
                 ),
                 InlineKeyboardButton(
+                    text="📊 Yesterday summary",
+                    callback_data="manager_report:yesterday",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
                     text="📆 This week summary",
                     callback_data="manager_report:this_week",
                 ),
                 InlineKeyboardButton(
+                    text="📆 Last week summary",
+                    callback_data="manager_report:last_week",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
                     text="🗓 This month summary",
                     callback_data="manager_report:this_month",
+                ),
+                InlineKeyboardButton(
+                    text="🗓 Last month summary",
+                    callback_data="manager_report:last_month",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🏠 Menu",
+                    callback_data="manager_menu",
                 ),
             ],
         ]
@@ -84,6 +106,19 @@ def barber_start_keyboard() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text="📅 My bookings tomorrow",
                     callback_data="barber_bookings:tomorrow",
+                ),
+            ],
+        ]
+    )
+
+
+def back_to_menu_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🏠 Menu",
+                    callback_data="manager_menu",
                 ),
             ],
         ]
