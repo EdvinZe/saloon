@@ -1,9 +1,12 @@
 import os
+import logging
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -23,6 +26,7 @@ def _parse_int_set(value: str) -> set[int]:
         try:
             parsed.add(int(item))
         except ValueError:
+            logger.warning("[BOT] Invalid TELEGRAM_MANAGER_IDS value skipped: %s", item)
             continue
     return parsed
 
@@ -31,12 +35,16 @@ def _parse_int_map(value: str) -> dict[int, int]:
     parsed: dict[int, int] = {}
     for item in value.split(","):
         item = item.strip()
-        if not item or ":" not in item:
+        if not item:
+            continue
+        if ":" not in item:
+            logger.warning("[BOT] Invalid TELEGRAM_BARBER_MASTER_MAP value skipped: %s", item)
             continue
         telegram_user_id, master_id = item.split(":", 1)
         try:
             parsed[int(telegram_user_id.strip())] = int(master_id.strip())
         except ValueError:
+            logger.warning("[BOT] Invalid TELEGRAM_BARBER_MASTER_MAP value skipped: %s", item)
             continue
     return parsed
 

@@ -13,6 +13,7 @@ import AdminServicesPage from './pages/admin/AdminServicesPage'
 import AdminMastersPage from './pages/admin/AdminMastersPage'
 import AdminBookingsPage from './pages/admin/AdminBookingsPage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
+import AdminTelegramAccountsPage from './pages/admin/AdminTelegramAccountsPage'
 
 const queryClient = new QueryClient()
 
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/admin/bookings" element={<AdminBookingsPage />} />
             <Route path="/admin/schedule" element={<AdminSchedulePage />} />
             <Route path="/admin/reports" element={<AdminReportsPage />} />
+            <Route path="/admin/telegram-accounts" element={<AdminTelegramAccountsPage />} />
             <Route
               path="*"
               element={<BookingErrorPage forcedType="page" forcedReason="not_found" />}

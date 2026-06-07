@@ -25,8 +25,8 @@ async def _handle_action(callback: CallbackQuery, action: str) -> None:
     if ctx is None:
         return
 
-    # TODO: for barber actions, verify booking.master_id before allowing action.
     if ctx.role != "manager":
+        # TODO: verify booking.master_id == ctx.master_id before enabling barber actions.
         await callback.answer("This action is available for managers only.", show_alert=True)
         return
 

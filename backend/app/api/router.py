@@ -13,6 +13,9 @@ from app.modules.payments.webhook_router import router as stripe_webhook_router
 from app.modules.reports.admin_router import router as admin_reports_router
 from app.modules.services.admin_router import router as admin_services_router
 from app.modules.services.router import router as services_router
+from app.modules.telegram_accounts.admin_router import (
+    router as admin_telegram_accounts_router,
+)
 
 
 def register_routers(app: FastAPI) -> None:
@@ -80,4 +83,10 @@ def register_routers(app: FastAPI) -> None:
         admin_reports_router,
         prefix="/api/admin/reports",
         tags=["Admin Reports"],
+    )
+
+    app.include_router(
+        admin_telegram_accounts_router,
+        prefix="/api/admin/telegram-accounts",
+        tags=["Admin Telegram Accounts"],
     )
