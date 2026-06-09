@@ -69,6 +69,35 @@ def format_booking_message(booking: dict) -> str:
     )
 
 
+def format_barber_appointment_reminder(booking: dict) -> str:
+    lines = [
+        "⏰ Booking in 15 minutes",
+        "",
+        _format_booking_line(booking),
+        f"Client: {_full_name(booking.get('customer_first_name'), booking.get('customer_last_name'))}",
+        f"Phone: {booking.get('customer_phone') or 'Not provided'}",
+        (
+            f"Deposit: {booking.get('deposit_status') or 'unknown'} · "
+            f"{_format_money(booking.get('deposit_amount_cents'), booking.get('currency'))}"
+        ),
+    ]
+
+    remaining_amount_cents = booking.get("remaining_amount_cents")
+    if remaining_amount_cents is not None:
+        lines.append(
+            "Remaining to collect: "
+            f"{_format_money(remaining_amount_cents, booking.get('currency'))}"
+        )
+
+    payment_method = booking.get("payment_method")
+    if payment_method:
+        lines.append(f"Payment method: {payment_method}")
+
+    code = booking.get("booking_code") or f"#{booking.get('id')}"
+    lines.append(f"Code: {code}")
+    return "\n".join(lines)
+
+
 def format_now_message(context: dict) -> str:
     role = context.get("role")
     now = context.get("now")

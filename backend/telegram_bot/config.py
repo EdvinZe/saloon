@@ -15,6 +15,9 @@ class BotConfig:
     backend_api_url: str
     manager_ids: set[int]
     barber_master_map: dict[int, int]
+    bot_timezone: str
+    barber_reminder_minutes: int
+    barber_reminder_check_interval_seconds: int
 
 
 def _parse_int_set(value: str) -> set[int]:
@@ -49,6 +52,21 @@ def _parse_int_map(value: str) -> dict[int, int]:
     return parsed
 
 
+def _parse_positive_int(value: str, default: int, env_name: str) -> int:
+    value = value.strip()
+    if not value:
+        return default
+    try:
+        parsed = int(value)
+    except ValueError:
+        logger.warning("[BOT] Invalid %s value, using default: %s", env_name, default)
+        return default
+    if parsed <= 0:
+        logger.warning("[BOT] Invalid %s value, using default: %s", env_name, default)
+        return default
+    return parsed
+
+
 def load_config() -> BotConfig:
     telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     if not telegram_bot_token:
@@ -63,4 +81,16 @@ def load_config() -> BotConfig:
         backend_api_url=backend_api_url.rstrip("/"),
         manager_ids=_parse_int_set(os.getenv("TELEGRAM_MANAGER_IDS", "")),
         barber_master_map=_parse_int_map(os.getenv("TELEGRAM_BARBER_MASTER_MAP", "")),
+        bot_timezone=os.getenv("BOT_TIMEZONE", "Europe/Vilnius").strip()
+        or "Europe/Vilnius",
+        barber_reminder_minutes=_parse_positive_int(
+            os.getenv("BARBER_REMINDER_MINUTES", ""),
+            15,
+            "BARBER_REMINDER_MINUTES",
+        ),
+        barber_reminder_check_interval_seconds=_parse_positive_int(
+            os.getenv("BARBER_REMINDER_CHECK_INTERVAL_SECONDS", ""),
+            60,
+            "BARBER_REMINDER_CHECK_INTERVAL_SECONDS",
+        ),
     )
