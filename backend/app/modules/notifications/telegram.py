@@ -15,22 +15,20 @@ TELEGRAM_API_BASE_URL = "https://api.telegram.org"
 
 
 def notify_managers(message: str) -> None:
-    token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
-    manager_ids = _get_manager_ids()
+    manager_ids = get_manager_chat_ids()
 
-    if not token or not manager_ids:
-        logger.warning("[NOTIFY] Skipping Telegram notification: token or manager IDs missing")
+    if not manager_ids:
         return
 
     for chat_id in manager_ids:
-        send_telegram_message(chat_id, message, token=token)
+        send_telegram_message(chat_id, message)
 
 
-def send_telegram_message(chat_id: int, text: str, *, token: str | None = None) -> None:
-    bot_token = token or os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+def send_telegram_message(chat_id: int, text: str) -> bool:
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     if not bot_token:
-        logger.warning("[NOTIFY] Skipping Telegram notification: token or manager IDs missing")
-        return
+        logger.warning("[NOTIFY] Telegram notification skipped: token missing")
+        return False
 
     url = f"{TELEGRAM_API_BASE_URL}/bot{bot_token}/sendMessage"
     try:
@@ -46,20 +44,96 @@ def send_telegram_message(chat_id: int, text: str, *, token: str | None = None) 
             response.raise_for_status()
     except httpx.HTTPError as exc:
         logger.warning(
-            "[NOTIFY] Telegram manager notification failed: chat_id=%s error=%s",
+            "[NOTIFY] Telegram notification failed: chat_id=%s error=%s",
             chat_id,
             _safe_http_error(exc),
         )
-        return
+        return False
     except Exception as exc:
         logger.warning(
-            "[NOTIFY] Telegram manager notification failed: chat_id=%s error=%s",
+            "[NOTIFY] Telegram notification failed: chat_id=%s error=%s",
             chat_id,
             exc.__class__.__name__,
         )
+        return False
+
+    return True
+
+
+def notify_new_same_day_booking(booking: Any) -> None:
+    try:
+        logger.info(
+            "[NOTIFY] Same-day booking notification requested: booking_id=%s booking_code=%s",
+            getattr(booking, "id", None),
+            _booking_code(booking),
+        )
+
+        if _as_date(getattr(booking, "start_at", None)) != date.today():
+            logger.info(
+                "[NOTIFY] Same-day booking notification skipped: booking_id=%s reason=%s",
+                getattr(booking, "id", None),
+                "not_today",
+            )
+            return
+
+        notify_managers_new_booking_today(booking)
+        notify_barbers_new_booking_today(booking)
+    except Exception as exc:
+        logger.warning(
+            "[NOTIFY] Telegram notification failed: chat_id=%s error=%s",
+            "same_day_booking",
+            exc.__class__.__name__,
+        )
+
+
+def notify_managers_new_booking_today(booking: Any) -> None:
+    manager_chat_ids = get_manager_chat_ids()
+    if not manager_chat_ids:
+        logger.info(
+            "[NOTIFY] Same-day booking notification skipped: booking_id=%s reason=%s",
+            getattr(booking, "id", None),
+            "manager_chat_ids_missing",
+        )
         return
 
-    logger.info("[NOTIFY] Telegram manager notification sent: chat_id=%s", chat_id)
+    message = format_manager_new_booking_today_message(booking)
+    for chat_id in manager_chat_ids:
+        if send_telegram_message(chat_id, message):
+            logger.info(
+                "[NOTIFY] Manager new booking notification sent: chat_id=%s booking_id=%s",
+                chat_id,
+                getattr(booking, "id", None),
+            )
+
+
+def notify_barbers_new_booking_today(booking: Any) -> None:
+    master_id = getattr(booking, "master_id", None)
+    if master_id is None:
+        logger.info(
+            "[NOTIFY] Same-day booking notification skipped: booking_id=%s reason=%s",
+            getattr(booking, "id", None),
+            "master_id_missing",
+        )
+        return
+
+    barber_chat_ids = get_barber_chat_ids_for_master(int(master_id))
+    if not barber_chat_ids:
+        logger.info(
+            "[NOTIFY] Same-day booking notification skipped: booking_id=%s reason=%s",
+            getattr(booking, "id", None),
+            "barber_chat_ids_missing",
+        )
+        return
+
+    message = format_barber_new_booking_today_message(booking)
+    for chat_id in barber_chat_ids:
+        if send_telegram_message(chat_id, message):
+            logger.info(
+                "[NOTIFY] Barber new booking notification sent: chat_id=%s booking_id=%s master_id=%s",
+                chat_id,
+                getattr(booking, "id", None),
+                master_id,
+            )
 
 
 def notify_managers_booking_cancelled_today(booking: Any) -> None:
@@ -139,20 +213,94 @@ def format_booking_rescheduled_notification(
     )
 
 
-def _get_manager_ids() -> list[int]:
-    manager_ids = []
-    raw_value = os.getenv("TELEGRAM_MANAGER_IDS", "")
+def format_manager_new_booking_today_message(booking: Any) -> str:
+    return "\n".join(
+        [
+            "🆕 New booking for today",
+            "",
+            f"{booking.start_at:%H:%M} — {_service_name(booking)}",
+            f"Master: {_master_name(booking)}",
+            f"Client: {_client_name(booking)}",
+            f"Deposit: {getattr(booking, 'deposit_status', None) or 'unknown'} · {_format_money(booking)}",
+        ]
+    )
 
-    for item in raw_value.split(","):
+
+def format_barber_new_booking_today_message(booking: Any) -> str:
+    lines = [
+        "🆕 New booking for you today",
+        "",
+        f"{_format_time_range(booking.start_at, booking.end_at)} — {_service_name(booking)}",
+        f"Client: {_client_name(booking)}",
+        f"Phone: {_client_phone(booking)}",
+        f"Deposit: {getattr(booking, 'deposit_status', None) or 'unknown'} · {_format_money(booking)}",
+    ]
+
+    remaining_amount_cents = getattr(booking, "remaining_amount_cents", None)
+    if remaining_amount_cents is not None:
+        lines.append(f"Remaining to collect: {_format_cents(remaining_amount_cents, booking)}")
+
+    payment_method = getattr(booking, "payment_method", None)
+    if payment_method:
+        lines.append(f"Payment method: {payment_method}")
+
+    lines.append(f"Code: {_booking_code(booking)}")
+    return "\n".join(lines)
+
+
+def parse_telegram_manager_ids(raw: str) -> list[int]:
+    manager_ids: list[int] = []
+
+    for item in raw.split(","):
         item = item.strip()
         if not item:
             continue
         try:
-            manager_ids.append(int(item))
+            chat_id = int(item)
         except ValueError:
             logger.warning("[NOTIFY] Skipping invalid Telegram manager ID: %s", item)
+            continue
+        if chat_id not in manager_ids:
+            manager_ids.append(chat_id)
 
     return manager_ids
+
+
+def parse_telegram_barber_master_map(raw: str) -> dict[int, int]:
+    barber_master_map: dict[int, int] = {}
+
+    for item in raw.split(","):
+        item = item.strip()
+        if not item:
+            continue
+
+        try:
+            raw_chat_id, raw_master_id = item.split(":", maxsplit=1)
+        except ValueError:
+            logger.warning("[NOTIFY] Skipping invalid Telegram barber map value: %s", item)
+            continue
+
+        try:
+            barber_master_map[int(raw_chat_id.strip())] = int(raw_master_id.strip())
+        except ValueError:
+            logger.warning("[NOTIFY] Skipping invalid Telegram barber map value: %s", item)
+
+    return barber_master_map
+
+
+def get_manager_chat_ids() -> list[int]:
+    return parse_telegram_manager_ids(os.getenv("TELEGRAM_MANAGER_IDS", ""))
+
+
+def get_barber_chat_ids_for_master(master_id: int) -> list[int]:
+    barber_master_map = parse_telegram_barber_master_map(
+        os.getenv("TELEGRAM_BARBER_MASTER_MAP", "")
+    )
+    return [
+        chat_id
+        for chat_id, mapped_master_id in barber_master_map.items()
+        if mapped_master_id == master_id
+    ]
 
 
 def _service_name(booking: Any) -> str:
@@ -177,6 +325,10 @@ def _client_name(booking: Any) -> str:
     return name or "Unknown client"
 
 
+def _client_phone(booking: Any) -> str:
+    return getattr(booking, "customer_phone", None) or "Not provided"
+
+
 def _booking_code(booking: Any) -> str:
     return getattr(booking, "booking_code", None) or f"#{getattr(booking, 'id', '')}"
 
@@ -186,8 +338,12 @@ def _format_time_range(start_at: datetime, end_at: datetime) -> str:
 
 
 def _format_money(booking: Any) -> str:
+    return _format_cents(getattr(booking, "deposit_amount_cents", 0), booking)
+
+
+def _format_cents(amount_cents: Any, booking: Any) -> str:
     try:
-        amount = Decimal(int(getattr(booking, "deposit_amount_cents", 0))) / Decimal(100)
+        amount = Decimal(int(amount_cents)) / Decimal(100)
     except (TypeError, ValueError):
         amount = Decimal(0)
 

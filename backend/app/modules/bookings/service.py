@@ -20,6 +20,7 @@ from app.modules.masters.models import Master, MasterService
 from app.modules.notifications.telegram import (
     notify_managers_booking_cancelled_today,
     notify_managers_booking_rescheduled,
+    notify_new_same_day_booking,
 )
 from app.modules.payments.stripe_service import refund_booking_deposit
 from app.modules.services.models import Service
@@ -198,6 +199,8 @@ def create_confirmed_booking(
         booking.booking_code,
         booking.source,
     )
+
+    notify_new_same_day_booking(booking)
 
     return booking
 
