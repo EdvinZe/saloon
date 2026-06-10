@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 class BotConfig:
     telegram_bot_token: str
     backend_api_url: str
+    telegram_auth_source: str
     manager_ids: set[int]
     barber_master_map: dict[int, int]
     bot_timezone: str
@@ -76,11 +77,23 @@ def load_config() -> BotConfig:
     if not backend_api_url:
         backend_api_url = "http://127.0.0.1:8000"
 
+    telegram_auth_source = os.getenv("TELEGRAM_AUTH_SOURCE", "db").strip().lower()
+    if telegram_auth_source not in {"db", "env"}:
+        logger.warning("[BOT] Invalid TELEGRAM_AUTH_SOURCE value, using default: db")
+        telegram_auth_source = "db"
+
+    manager_ids: set[int] = set()
+    barber_master_map: dict[int, int] = {}
+    if telegram_auth_source == "env":
+        manager_ids = _parse_int_set(os.getenv("TELEGRAM_MANAGER_IDS", ""))
+        barber_master_map = _parse_int_map(os.getenv("TELEGRAM_BARBER_MASTER_MAP", ""))
+
     return BotConfig(
         telegram_bot_token=telegram_bot_token,
         backend_api_url=backend_api_url.rstrip("/"),
-        manager_ids=_parse_int_set(os.getenv("TELEGRAM_MANAGER_IDS", "")),
-        barber_master_map=_parse_int_map(os.getenv("TELEGRAM_BARBER_MASTER_MAP", "")),
+        telegram_auth_source=telegram_auth_source,
+        manager_ids=manager_ids,
+        barber_master_map=barber_master_map,
         bot_timezone=os.getenv("BOT_TIMEZONE", "Europe/Vilnius").strip()
         or "Europe/Vilnius",
         barber_reminder_minutes=_parse_positive_int(

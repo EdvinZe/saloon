@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.modules.masters.models import Master
 from app.modules.telegram_accounts.models import TelegramAccount
 from app.modules.telegram_accounts.schemas import (
+    BotTelegramAccountResolve,
     TelegramAccountCreate,
     TelegramAccountUpdate,
 )
@@ -112,6 +113,97 @@ def deactivate_admin_telegram_account(db: Session, account_id: int) -> TelegramA
     logger.info("[ADMIN] Telegram account deactivated: account_id=%s", account.id)
 
     return get_admin_telegram_account(db, account.id)
+
+
+def resolve_telegram_account(
+    db: Session,
+    telegram_id: int,
+) -> BotTelegramAccountResolve:
+    account = db.scalar(
+        select(TelegramAccount).where(TelegramAccount.telegram_id == telegram_id)
+    )
+    if account is None:
+        logger.info(
+            "[BOT API] Telegram account resolve denied: telegram_id=%s reason=%s",
+            telegram_id,
+            "not_found",
+        )
+        return BotTelegramAccountResolve(authorized=False)
+
+    if not account.is_active:
+        logger.info(
+            "[BOT API] Telegram account resolve denied: telegram_id=%s reason=%s",
+            telegram_id,
+            "inactive",
+        )
+        return BotTelegramAccountResolve(authorized=False)
+
+    if account.role == "manager":
+        return BotTelegramAccountResolve(
+            authorized=True,
+            telegram_id=account.telegram_id,
+            role="manager",
+            scope="all",
+            master_id=None,
+            first_name=account.first_name,
+            last_name=account.last_name,
+        )
+
+    if account.role == "barber":
+        if account.master_id is None:
+            logger.warning(
+                "[BOT API] Telegram account resolve denied: telegram_id=%s role=%s reason=%s",
+                telegram_id,
+                account.role,
+                "missing_master_id",
+            )
+            return BotTelegramAccountResolve(authorized=False)
+
+        return BotTelegramAccountResolve(
+            authorized=True,
+            telegram_id=account.telegram_id,
+            role="barber",
+            scope="own_master",
+            master_id=account.master_id,
+            first_name=account.first_name,
+            last_name=account.last_name,
+        )
+
+    logger.warning(
+        "[BOT API] Telegram account resolve denied: telegram_id=%s role=%s reason=%s",
+        telegram_id,
+        account.role,
+        "invalid_role",
+    )
+    return BotTelegramAccountResolve(authorized=False)
+
+
+def list_active_manager_telegram_ids(db: Session) -> list[int]:
+    statement = (
+        select(TelegramAccount.telegram_id)
+        .where(
+            TelegramAccount.role == "manager",
+            TelegramAccount.is_active.is_(True),
+        )
+        .order_by(TelegramAccount.id.asc())
+    )
+    return [int(telegram_id) for telegram_id in db.scalars(statement).all()]
+
+
+def list_active_barber_telegram_ids_by_master(
+    db: Session,
+    master_id: int,
+) -> list[int]:
+    statement = (
+        select(TelegramAccount.telegram_id)
+        .where(
+            TelegramAccount.role == "barber",
+            TelegramAccount.master_id == master_id,
+            TelegramAccount.is_active.is_(True),
+        )
+        .order_by(TelegramAccount.id.asc())
+    )
+    return [int(telegram_id) for telegram_id in db.scalars(statement).all()]
 
 
 def _validate_role_master(

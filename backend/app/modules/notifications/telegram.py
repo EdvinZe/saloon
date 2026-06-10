@@ -7,6 +7,12 @@ from typing import Any
 import httpx
 from dotenv import load_dotenv
 
+from app.core.database import SessionLocal
+from app.modules.telegram_accounts.service import (
+    list_active_barber_telegram_ids_by_master,
+    list_active_manager_telegram_ids,
+)
+
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -248,59 +254,29 @@ def format_barber_new_booking_today_message(booking: Any) -> str:
     return "\n".join(lines)
 
 
-def parse_telegram_manager_ids(raw: str) -> list[int]:
-    manager_ids: list[int] = []
-
-    for item in raw.split(","):
-        item = item.strip()
-        if not item:
-            continue
-        try:
-            chat_id = int(item)
-        except ValueError:
-            logger.warning("[NOTIFY] Skipping invalid Telegram manager ID: %s", item)
-            continue
-        if chat_id not in manager_ids:
-            manager_ids.append(chat_id)
-
-    return manager_ids
-
-
-def parse_telegram_barber_master_map(raw: str) -> dict[int, int]:
-    barber_master_map: dict[int, int] = {}
-
-    for item in raw.split(","):
-        item = item.strip()
-        if not item:
-            continue
-
-        try:
-            raw_chat_id, raw_master_id = item.split(":", maxsplit=1)
-        except ValueError:
-            logger.warning("[NOTIFY] Skipping invalid Telegram barber map value: %s", item)
-            continue
-
-        try:
-            barber_master_map[int(raw_chat_id.strip())] = int(raw_master_id.strip())
-        except ValueError:
-            logger.warning("[NOTIFY] Skipping invalid Telegram barber map value: %s", item)
-
-    return barber_master_map
-
-
 def get_manager_chat_ids() -> list[int]:
-    return parse_telegram_manager_ids(os.getenv("TELEGRAM_MANAGER_IDS", ""))
+    try:
+        with SessionLocal() as db:
+            return list_active_manager_telegram_ids(db)
+    except Exception as exc:
+        logger.warning(
+            "[NOTIFY] Telegram manager routing failed: error=%s",
+            exc.__class__.__name__,
+        )
+        return []
 
 
 def get_barber_chat_ids_for_master(master_id: int) -> list[int]:
-    barber_master_map = parse_telegram_barber_master_map(
-        os.getenv("TELEGRAM_BARBER_MASTER_MAP", "")
-    )
-    return [
-        chat_id
-        for chat_id, mapped_master_id in barber_master_map.items()
-        if mapped_master_id == master_id
-    ]
+    try:
+        with SessionLocal() as db:
+            return list_active_barber_telegram_ids_by_master(db, master_id)
+    except Exception as exc:
+        logger.warning(
+            "[NOTIFY] Telegram barber routing failed: master_id=%s error=%s",
+            master_id,
+            exc.__class__.__name__,
+        )
+        return []
 
 
 def _service_name(booking: Any) -> str:

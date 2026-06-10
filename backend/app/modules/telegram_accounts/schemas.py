@@ -46,3 +46,18 @@ class TelegramAccountUpdate(BaseModel):
     last_name: str | None = None
     master_id: int | None = None
     is_active: bool | None = None
+
+
+class BotTelegramAccountResolve(BaseModel):
+    authorized: bool
+    telegram_id: int | None = None
+    role: TelegramAccountRole | None = None
+    scope: Literal["all", "own_master"] | None = None
+    master_id: int | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+
+
+class BotTelegramBarbersByMaster(BaseModel):
+    master_id: int
+    telegram_ids: list[int]

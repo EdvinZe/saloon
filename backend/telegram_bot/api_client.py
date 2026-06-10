@@ -66,6 +66,38 @@ async def get_admin_bookings(
     return payload
 
 
+async def resolve_telegram_account(telegram_id: int) -> dict:
+    payload = await _request(
+        "GET",
+        "/api/bot/telegram-accounts/resolve",
+        params={"telegram_id": telegram_id},
+    )
+    if not isinstance(payload, dict):
+        raise BackendAPIError("Backend returned an invalid Telegram account response.")
+    return payload
+
+
+async def get_barber_telegram_ids_by_master(master_id: int) -> list[int]:
+    payload = await _request(
+        "GET",
+        f"/api/bot/telegram-accounts/barbers/by-master/{master_id}",
+    )
+    if not isinstance(payload, dict):
+        raise BackendAPIError("Backend returned an invalid barber routing response.")
+
+    telegram_ids = payload.get("telegram_ids")
+    if not isinstance(telegram_ids, list):
+        raise BackendAPIError("Backend returned an invalid barber routing response.")
+
+    result: list[int] = []
+    for telegram_id in telegram_ids:
+        try:
+            result.append(int(telegram_id))
+        except (TypeError, ValueError):
+            continue
+    return result
+
+
 async def get_admin_schedule(from_date: str, to_date: str) -> dict:
     payload = await _request(
         "GET",

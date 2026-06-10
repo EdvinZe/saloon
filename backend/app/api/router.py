@@ -16,6 +16,9 @@ from app.modules.services.router import router as services_router
 from app.modules.telegram_accounts.admin_router import (
     router as admin_telegram_accounts_router,
 )
+from app.modules.telegram_accounts.bot_router import (
+    router as bot_telegram_accounts_router,
+)
 
 
 def register_routers(app: FastAPI) -> None:
@@ -89,4 +92,10 @@ def register_routers(app: FastAPI) -> None:
         admin_telegram_accounts_router,
         prefix="/api/admin/telegram-accounts",
         tags=["Admin Telegram Accounts"],
+    )
+
+    app.include_router(
+        bot_telegram_accounts_router,
+        prefix="/api/bot/telegram-accounts",
+        tags=["Bot Telegram Accounts"],
     )

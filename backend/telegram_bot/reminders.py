@@ -7,7 +7,11 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError
 
-from telegram_bot.api_client import BackendAPIError, get_admin_bookings
+from telegram_bot.api_client import (
+    BackendAPIError,
+    get_admin_bookings,
+    get_barber_telegram_ids_by_master,
+)
 from telegram_bot.config import load_config
 from telegram_bot.formatters import format_barber_appointment_reminder
 
@@ -85,12 +89,20 @@ async def check_and_send_barber_reminders(bot: Bot) -> None:
             )
             continue
 
-        chat_ids = get_barber_chat_ids_for_master(master_id)
+        try:
+            chat_ids = await get_barber_chat_ids_for_master(master_id)
+        except BackendAPIError as exc:
+            logger.warning(
+                "[BOT] Barber reminder routing failed: master_id=%s error=%s",
+                master_id,
+                exc,
+            )
+            continue
         if not chat_ids:
             logger.debug(
                 "[BOT] Barber reminder skipped: booking_id=%s reason=%s",
                 booking_id,
-                "no_barber_mapping",
+                "no_active_barber_accounts",
             )
             continue
 
@@ -125,13 +137,8 @@ async def check_and_send_barber_reminders(bot: Bot) -> None:
             sent_reminders.add(reminder_key)
 
 
-def get_barber_chat_ids_for_master(master_id: int) -> list[int]:
-    config = load_config()
-    return [
-        chat_id
-        for chat_id, mapped_master_id in config.barber_master_map.items()
-        if mapped_master_id == master_id
-    ]
+async def get_barber_chat_ids_for_master(master_id: int) -> list[int]:
+    return await get_barber_telegram_ids_by_master(master_id)
 
 
 def should_send_reminder(booking: dict, now: datetime) -> bool:
