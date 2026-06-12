@@ -1,4 +1,5 @@
 import os
+import secrets
 
 from dotenv import load_dotenv
 
@@ -25,6 +26,16 @@ PUBLIC_FRONTEND_URL = (
     os.getenv("PUBLIC_FRONTEND_URL", "http://localhost:5173").strip()
     or "http://localhost:5173"
 )
+APP_ENV = os.getenv("APP_ENV", "development").strip().lower() or "development"
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "").strip()
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
+ADMIN_SESSION_SECRET = os.getenv("ADMIN_SESSION_SECRET", "")
+ADMIN_SESSION_EXPIRE_MINUTES = _parse_int(
+    os.getenv("ADMIN_SESSION_EXPIRE_MINUTES"),
+    1440,
+)
+_DEV_ADMIN_SESSION_SECRET = secrets.token_urlsafe(32)
 
 
 def require_stripe_secret_key() -> str:
@@ -52,3 +63,15 @@ def get_smtp_config() -> dict[str, str | int]:
         "from_email": SMTP_FROM_EMAIL,
         "from_name": SMTP_FROM_NAME,
     }
+
+
+def is_production() -> bool:
+    return APP_ENV in {"production", "prod"}
+
+
+def get_admin_session_secret() -> str:
+    if ADMIN_SESSION_SECRET:
+        return ADMIN_SESSION_SECRET
+    if is_production():
+        raise RuntimeError("ADMIN_SESSION_SECRET is not configured")
+    return _DEV_ADMIN_SESSION_SECRET

@@ -12,7 +12,11 @@ export default function BookingSuccessLoading({ message = 'Loading booking...' }
         <p style={{
           color: '#7a7060',
           fontFamily: 'sans-serif',
-          letterSpacing: '3px',
+          fontSize: '13px',
+          lineHeight: 1.7,
+          letterSpacing: '1px',
+          maxWidth: '360px',
+          margin: '0 auto',
         }}>
           {message}
         </p>

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Navbar from './components/layout/Navbar'
 import HomePage from './pages/HomePage'
@@ -14,6 +14,8 @@ import AdminMastersPage from './pages/admin/AdminMastersPage'
 import AdminBookingsPage from './pages/admin/AdminBookingsPage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
 import AdminTelegramAccountsPage from './pages/admin/AdminTelegramAccountsPage'
+import AdminLoginPage from './pages/admin/AdminLoginPage'
+import ProtectedAdminRoute from './features/admin/auth/components/ProtectedAdminRoute'
 
 const queryClient = new QueryClient()
 
@@ -31,12 +33,63 @@ export default function App() {
             <Route path="/booking/manage" element={<BookingManagePage />} />
             <Route path="/works" element={<WorksPage />} />
             <Route path="/about" element={<AboutPage />} />
-            <Route path="/admin/services" element={<AdminServicesPage />} />
-            <Route path="/admin/masters" element={<AdminMastersPage />} />
-            <Route path="/admin/bookings" element={<AdminBookingsPage />} />
-            <Route path="/admin/schedule" element={<AdminSchedulePage />} />
-            <Route path="/admin/reports" element={<AdminReportsPage />} />
-            <Route path="/admin/telegram-accounts" element={<AdminTelegramAccountsPage />} />
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route
+              path="/admin"
+              element={(
+                <ProtectedAdminRoute>
+                  <Navigate replace to="/admin/services" />
+                </ProtectedAdminRoute>
+              )}
+            />
+            <Route
+              path="/admin/services"
+              element={(
+                <ProtectedAdminRoute>
+                  <AdminServicesPage />
+                </ProtectedAdminRoute>
+              )}
+            />
+            <Route
+              path="/admin/masters"
+              element={(
+                <ProtectedAdminRoute>
+                  <AdminMastersPage />
+                </ProtectedAdminRoute>
+              )}
+            />
+            <Route
+              path="/admin/bookings"
+              element={(
+                <ProtectedAdminRoute>
+                  <AdminBookingsPage />
+                </ProtectedAdminRoute>
+              )}
+            />
+            <Route
+              path="/admin/schedule"
+              element={(
+                <ProtectedAdminRoute>
+                  <AdminSchedulePage />
+                </ProtectedAdminRoute>
+              )}
+            />
+            <Route
+              path="/admin/reports"
+              element={(
+                <ProtectedAdminRoute>
+                  <AdminReportsPage />
+                </ProtectedAdminRoute>
+              )}
+            />
+            <Route
+              path="/admin/telegram-accounts"
+              element={(
+                <ProtectedAdminRoute>
+                  <AdminTelegramAccountsPage />
+                </ProtectedAdminRoute>
+              )}
+            />
             <Route
               path="*"
               element={<BookingErrorPage forcedType="page" forcedReason="not_found" />}

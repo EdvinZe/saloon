@@ -34,7 +34,7 @@ export default function WorksGallery() {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
         <span style={{ color: '#c9a84c', fontFamily: 'sans-serif', fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase' }}>
-          Loading...
+          Loading works...
         </span>
       </div>
     )
@@ -42,22 +42,36 @@ export default function WorksGallery() {
 
   return (
     <div>
-      <div style={{ columns: 3, columnGap: '8px' }}>
-        {allPhotos.map(photo => (
-          <WorksPhoto
-            key={photo.id}
-            photo={photo}
-            masterName={masterMap[photo.master_id] ?? 'Master'}
-          />
-        ))}
-      </div>
+      <style>
+        {`
+          .works-gallery-grid { columns: 3; column-gap: 8px; }
+          @media (max-width: 899px) { .works-gallery-grid { columns: 2; } }
+          @media (max-width: 520px) { .works-gallery-grid { columns: 1; } }
+        `}
+      </style>
+
+      {allPhotos.length === 0 ? (
+        <div style={{ border: '1px solid #2a2218', background: '#141008', padding: '28px 24px', textAlign: 'center', color: '#7a7060', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: 1.7 }}>
+          No work photos are available right now. Please check back soon.
+        </div>
+      ) : (
+        <div className="works-gallery-grid">
+          {allPhotos.map(photo => (
+            <WorksPhoto
+              key={photo.id}
+              photo={photo}
+              masterName={masterMap[photo.master_id] ?? 'Master'}
+            />
+          ))}
+        </div>
+      )}
 
       <div ref={sentinelRef} style={{ height: '1px' }} />
 
       <div style={{ textAlign: 'center', padding: '40px 0 16px' }}>
         {isFetchingNextPage && (
           <span style={{ color: '#c9a84c', fontFamily: 'sans-serif', fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase' }}>
-            Loading...
+            Loading more works...
           </span>
         )}
         {!hasNextPage && allPhotos.length > 0 && !isFetchingNextPage && (

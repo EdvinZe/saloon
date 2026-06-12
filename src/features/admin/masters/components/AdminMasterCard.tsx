@@ -23,9 +23,9 @@ export default function AdminMasterCard({
             <div className="flex h-11 w-11 items-center justify-center border border-[#2a2218] bg-[#0f0f0f] text-sm uppercase tracking-[0.16em] text-[#c9a84c]">
               {master.initials}
             </div>
-            <div>
-              <h2 className="text-xl text-[#e8e0d0]">{master.name}</h2>
-              <p className="text-sm text-[#7a7060]">{master.role}</p>
+            <div className="min-w-0">
+              <h2 className="break-words text-xl text-[#e8e0d0]">{master.name}</h2>
+              <p className="break-words text-sm text-[#7a7060]">{master.role}</p>
             </div>
             <span
               className={`border px-2 py-1 text-[11px] uppercase tracking-[0.16em] ${
@@ -37,7 +37,7 @@ export default function AdminMasterCard({
               {master.is_active ? 'Active' : 'Inactive'}
             </span>
           </div>
-          <p className="mt-3 text-sm text-[#7a7060]">{master.bio || 'No bio'}</p>
+          <p className="mt-3 break-words text-sm text-[#7a7060]">{master.bio || 'No bio'}</p>
         </div>
 
         <div className="flex flex-wrap gap-2">

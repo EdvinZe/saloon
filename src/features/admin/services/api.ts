@@ -3,6 +3,7 @@ import type {
   AdminServiceCreateInput,
   AdminServiceUpdateInput,
 } from './types'
+import { adminFetch } from '../auth/api'
 
 const API_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_URL
 
@@ -24,7 +25,7 @@ async function buildApiError(response: Response, fallbackMessage: string) {
 }
 
 export async function getAdminServices(): Promise<AdminService[]> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/services`)
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/services`)
 
   if (!response.ok) {
     throw await buildApiError(response, 'Failed to fetch admin services')
@@ -34,7 +35,7 @@ export async function getAdminServices(): Promise<AdminService[]> {
 }
 
 export async function getAdminService(id: number): Promise<AdminService> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/services/${id}`)
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/services/${id}`)
 
   if (!response.ok) {
     throw await buildApiError(response, 'Failed to fetch admin service')
@@ -46,7 +47,7 @@ export async function getAdminService(id: number): Promise<AdminService> {
 export async function createAdminService(
   payload: AdminServiceCreateInput,
 ): Promise<AdminService> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/services`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/services`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -63,7 +64,7 @@ export async function updateAdminService(
   id: number,
   payload: AdminServiceUpdateInput,
 ): Promise<AdminService> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/services/${id}`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/services/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -77,7 +78,7 @@ export async function updateAdminService(
 }
 
 export async function activateAdminService(id: number): Promise<AdminService> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/services/${id}/activate`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/services/${id}/activate`, {
     method: 'POST',
   })
 
@@ -89,7 +90,7 @@ export async function activateAdminService(id: number): Promise<AdminService> {
 }
 
 export async function deactivateAdminService(id: number): Promise<AdminService> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/services/${id}/deactivate`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/services/${id}/deactivate`, {
     method: 'POST',
   })
 

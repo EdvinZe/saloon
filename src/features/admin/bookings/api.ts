@@ -3,6 +3,7 @@ import type {
   AdminBookingActionResponse,
   AdminBookingListParams,
 } from './types'
+import { adminFetch } from '../auth/api'
 
 const API_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_URL
 
@@ -34,7 +35,7 @@ export async function getAdminBookings(
   if (params.serviceId) searchParams.set('service_id', String(params.serviceId))
 
   const query = searchParams.toString()
-  const response = await fetch(`${API_BASE_URL}/api/admin/bookings${query ? `?${query}` : ''}`)
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/bookings${query ? `?${query}` : ''}`)
 
   if (!response.ok) {
     throw await buildApiError(response, 'Failed to fetch admin bookings')
@@ -44,7 +45,7 @@ export async function getAdminBookings(
 }
 
 export async function getAdminBooking(id: number): Promise<AdminBooking> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/bookings/${id}`)
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/bookings/${id}`)
 
   if (!response.ok) {
     throw await buildApiError(response, 'Failed to fetch admin booking')
@@ -54,7 +55,7 @@ export async function getAdminBooking(id: number): Promise<AdminBooking> {
 }
 
 export async function completeAdminBooking(id: number): Promise<AdminBookingActionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/bookings/${id}/complete`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/bookings/${id}/complete`, {
     method: 'POST',
   })
 
@@ -66,7 +67,7 @@ export async function completeAdminBooking(id: number): Promise<AdminBookingActi
 }
 
 export async function noShowAdminBooking(id: number): Promise<AdminBookingActionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/bookings/${id}/no-show`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/bookings/${id}/no-show`, {
     method: 'POST',
   })
 
@@ -78,7 +79,7 @@ export async function noShowAdminBooking(id: number): Promise<AdminBookingAction
 }
 
 export async function cancelAdminBooking(id: number): Promise<AdminBookingActionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/bookings/${id}/cancel`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/bookings/${id}/cancel`, {
     method: 'POST',
   })
 

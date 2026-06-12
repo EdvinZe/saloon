@@ -53,7 +53,7 @@ export const ERROR_MAP: Record<string, ErrorConfig> = {
   },
   'payment_result.processing_timeout': {
     title: 'Confirmation delayed',
-    sub: 'Payment was received, but booking confirmation is taking longer than expected. Please contact support.',
+    sub: 'Payment received. We are confirming your booking. Please refresh in a moment or contact support if this continues.',
     btn: 'Back to home →',
     btnHref: '/',
   },

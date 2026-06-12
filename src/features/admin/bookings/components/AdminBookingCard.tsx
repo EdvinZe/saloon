@@ -41,19 +41,19 @@ export default function AdminBookingCard({
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl text-[#e8e0d0]">{formatDateTimeRange(booking)}</h2>
+            <h2 className="break-words text-xl text-[#e8e0d0]">{formatDateTimeRange(booking)}</h2>
             <AdminBookingStatusBadge status={booking.status} />
             <span className="border border-[#2a2218] bg-[#0f0f0f] px-2 py-1 text-[11px] uppercase tracking-[0.16em] text-[#7a7060]">
               {booking.deposit_status}
             </span>
           </div>
-          <p className="mt-3 text-sm text-[#e8e0d0]">
+          <p className="mt-3 break-words text-sm text-[#e8e0d0]">
             {booking.service_name ?? `Service #${booking.service_id}`} with {booking.master_name ?? `Master #${booking.master_id}`}
           </p>
-          <p className="mt-1 text-sm text-[#7a7060]">
+          <p className="mt-1 break-words text-sm text-[#7a7060]">
             {customerName} · {booking.customer_phone} · {booking.customer_email}
           </p>
-          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[#5a5040]">
+          <p className="mt-1 break-words text-xs uppercase tracking-[0.16em] text-[#5a5040]">
             {booking.booking_code ?? `Booking #${booking.id}`} · {formatPrice(booking.deposit_amount_cents, booking.currency)}
           </p>
         </div>

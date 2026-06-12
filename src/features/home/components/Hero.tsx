@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 export default function Hero() {
   return (
     <section style={{
-      padding: '100px 48px 80px',
+      padding: 'clamp(72px, 12vw, 100px) clamp(20px, 6vw, 48px) clamp(56px, 10vw, 80px)',
       textAlign: 'center',
       borderBottom: '1px solid #2a2218',
     }}>
@@ -20,7 +20,7 @@ export default function Hero() {
       </p>
 
       <h1 style={{
-        fontSize: '62px',
+        fontSize: 'clamp(40px, 9vw, 62px)',
         lineHeight: 1.1,
         color: '#e8e0d0',
         fontWeight: 400,
@@ -48,14 +48,16 @@ export default function Hero() {
           background: 'transparent',
           color: '#c9a84c',
           border: '1px solid #c9a84c',
-          padding: '20px 64px',
+          padding: '18px clamp(28px, 12vw, 64px)',
           fontSize: '13px',
-          letterSpacing: '5px',
+          letterSpacing: 'clamp(3px, 1vw, 5px)',
           textTransform: 'uppercase',
           cursor: 'pointer',
           fontFamily: 'Georgia, serif',
           fontWeight: 400,
           transition: 'all 0.2s',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
         }}
         onMouseEnter={e => {
           e.currentTarget.style.background = 'rgba(201,168,76,0.08)'
@@ -76,6 +78,7 @@ export default function Hero() {
         gap: '20px',
         margin: '64px auto 0',
         maxWidth: '400px',
+        width: '100%',
       }}>
         <div style={{ flex: 1, height: '1px', background: '#2a2218' }} />
         <span style={{

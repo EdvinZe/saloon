@@ -3,6 +3,7 @@ import type {
   AdminTelegramAccountCreateInput,
   AdminTelegramAccountUpdateInput,
 } from './types'
+import { adminFetch } from '../auth/api'
 
 const API_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_URL
 
@@ -24,7 +25,7 @@ async function buildApiError(response: Response, fallbackMessage: string) {
 }
 
 export async function getAdminTelegramAccounts(): Promise<AdminTelegramAccount[]> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/telegram-accounts`)
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/telegram-accounts`)
 
   if (!response.ok) {
     throw await buildApiError(response, 'Failed to fetch Telegram accounts')
@@ -34,7 +35,7 @@ export async function getAdminTelegramAccounts(): Promise<AdminTelegramAccount[]
 }
 
 export async function getAdminTelegramAccount(id: number): Promise<AdminTelegramAccount> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/telegram-accounts/${id}`)
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/telegram-accounts/${id}`)
 
   if (!response.ok) {
     throw await buildApiError(response, 'Failed to fetch Telegram account')
@@ -46,7 +47,7 @@ export async function getAdminTelegramAccount(id: number): Promise<AdminTelegram
 export async function createAdminTelegramAccount(
   payload: AdminTelegramAccountCreateInput,
 ): Promise<AdminTelegramAccount> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/telegram-accounts`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/telegram-accounts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -63,7 +64,7 @@ export async function updateAdminTelegramAccount(
   id: number,
   payload: AdminTelegramAccountUpdateInput,
 ): Promise<AdminTelegramAccount> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/telegram-accounts/${id}`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/telegram-accounts/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -77,7 +78,7 @@ export async function updateAdminTelegramAccount(
 }
 
 export async function activateAdminTelegramAccount(id: number): Promise<AdminTelegramAccount> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/telegram-accounts/${id}/activate`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/telegram-accounts/${id}/activate`, {
     method: 'POST',
   })
 
@@ -89,7 +90,7 @@ export async function activateAdminTelegramAccount(id: number): Promise<AdminTel
 }
 
 export async function deactivateAdminTelegramAccount(id: number): Promise<AdminTelegramAccount> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/telegram-accounts/${id}/deactivate`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/telegram-accounts/${id}/deactivate`, {
     method: 'POST',
   })
 

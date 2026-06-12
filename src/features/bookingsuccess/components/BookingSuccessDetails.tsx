@@ -11,6 +11,8 @@ const rowStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'baseline',
+  gap: '12px',
+  flexWrap: 'wrap',
   padding: '10px 0',
 }
 
@@ -77,6 +79,8 @@ export default function BookingSuccessDetails({ booking }: Props) {
             fontSize: '13px',
             color: '#e8e0d0',
             fontFamily: 'sans-serif',
+            textAlign: 'right',
+            overflowWrap: 'anywhere',
           }}>
             {row.value}
           </span>

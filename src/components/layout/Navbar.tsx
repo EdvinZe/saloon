@@ -26,7 +26,7 @@ export default function Navbar() {
         .navbar-mobile-button { display: none; }
         .navbar-mobile-menu { display: none; }
 
-        @media (max-width: 767px) {
+        @media (max-width: 899px) {
           .navbar-root { padding: 18px 20px !important; }
           .navbar-desktop { display: none !important; }
           .navbar-mobile-button { display: block !important; }
@@ -49,7 +49,7 @@ export default function Navbar() {
       >
         <Link to="/" style={{
           fontSize: '20px',
-          letterSpacing: '8px',
+          letterSpacing: 'clamp(5px, 1.7vw, 8px)',
           color: '#c9a84c',
           fontWeight: 400,
           textTransform: 'uppercase',
@@ -59,8 +59,8 @@ export default function Navbar() {
           Saloon
         </Link>
 
-        <div className="navbar-desktop" style={{ alignItems: 'center', gap: '40px', marginLeft: '80px' }}>
-          <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
+        <div className="navbar-desktop" style={{ alignItems: 'center', gap: 'clamp(24px, 4vw, 40px)', marginLeft: 'clamp(32px, 6vw, 80px)' }}>
+          <div style={{ display: 'flex', gap: 'clamp(20px, 3vw, 32px)', alignItems: 'center' }}>
             {NAV_ITEMS.map(item =>
               item.kind === 'section' ? (
                 <a

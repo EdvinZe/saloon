@@ -180,7 +180,7 @@ export default function BookingManagePage() {
     return (
       <div style={{ background: '#0f0f0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ color: '#5a5040', fontFamily: 'sans-serif', fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase' }}>
-          Loading...
+          Loading booking...
         </div>
       </div>
     )

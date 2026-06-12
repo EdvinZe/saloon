@@ -25,7 +25,7 @@ export default function AdminServiceCard({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl text-[#e8e0d0]">{service.name}</h2>
+            <h2 className="break-words text-xl text-[#e8e0d0]">{service.name}</h2>
             <span
               className={`border px-2 py-1 text-[11px] uppercase tracking-[0.16em] ${
                 service.is_active
@@ -36,7 +36,7 @@ export default function AdminServiceCard({
               {service.is_active ? 'Active' : 'Inactive'}
             </span>
           </div>
-          <p className="mt-2 text-sm text-[#7a7060]">{service.description || 'No description'}</p>
+          <p className="mt-2 break-words text-sm text-[#7a7060]">{service.description || 'No description'}</p>
         </div>
 
         <div className="flex gap-2">

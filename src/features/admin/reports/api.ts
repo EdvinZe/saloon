@@ -1,4 +1,5 @@
 import type { AdminReportSummary, AdminReportSummaryParams } from './types'
+import { adminFetch } from '../auth/api'
 
 const API_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_URL
 
@@ -31,7 +32,7 @@ export async function getAdminReportSummary(
     searchParams.set('master_id', String(params.masterId))
   }
 
-  const response = await fetch(
+  const response = await adminFetch(
     `${API_BASE_URL}/api/admin/reports/summary?${searchParams.toString()}`,
   )
 

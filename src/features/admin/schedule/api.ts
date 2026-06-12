@@ -5,6 +5,7 @@ import type {
   AdminScheduleRangeUpsert,
   AdminScheduleResponse,
 } from './types'
+import { adminFetch } from '../auth/api'
 
 const API_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_URL
 
@@ -33,7 +34,7 @@ export async function getAdminSchedule(params: {
     from_date: params.fromDate,
     to_date: params.toDate,
   })
-  const response = await fetch(`${API_BASE_URL}/api/admin/schedule/?${searchParams.toString()}`)
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/schedule/?${searchParams.toString()}`)
 
   if (!response.ok) {
     throw await buildApiError(response, 'Failed to fetch admin schedule')
@@ -45,7 +46,7 @@ export async function getAdminSchedule(params: {
 export async function updateAdminScheduleDay(
   payload: AdminScheduleDayUpsert,
 ): Promise<AdminScheduleDay> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/schedule/day`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/schedule/day`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -61,7 +62,7 @@ export async function updateAdminScheduleDay(
 export async function updateAdminScheduleRange(
   payload: AdminScheduleRangeUpsert,
 ): Promise<AdminScheduleRangeResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/admin/schedule/range`, {
+  const response = await adminFetch(`${API_BASE_URL}/api/admin/schedule/range`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

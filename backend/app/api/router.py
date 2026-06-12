@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
+from app.modules.admin_auth.router import router as admin_auth_router
+from app.modules.admin_auth.service import require_admin_user
 from app.modules.availability.router import router as availability_router
 from app.modules.bookings.admin_router import router as admin_bookings_router
 from app.modules.bookings.router import router as bookings_router
@@ -29,9 +31,16 @@ def register_routers(app: FastAPI) -> None:
     )
 
     app.include_router(
+        admin_auth_router,
+        prefix="/api/admin/auth",
+        tags=["Admin Auth"],
+    )
+
+    app.include_router(
         admin_services_router,
         prefix="/api/admin/services",
         tags=["Admin Services"],
+        dependencies=[Depends(require_admin_user)],
     )
 
     app.include_router(
@@ -62,36 +71,42 @@ def register_routers(app: FastAPI) -> None:
         admin_masters_router,
         prefix="/api/admin/masters",
         tags=["Admin Masters"],
+        dependencies=[Depends(require_admin_user)],
     )
 
     app.include_router(
         admin_master_shifts_router,
         prefix="/api/admin/master-shifts",
         tags=["Admin Master Shifts"],
+        dependencies=[Depends(require_admin_user)],
     )
 
     app.include_router(
         admin_schedule_router,
         prefix="/api/admin/schedule",
         tags=["Admin Schedule"],
+        dependencies=[Depends(require_admin_user)],
     )
 
     app.include_router(
         admin_bookings_router,
         prefix="/api/admin/bookings",
         tags=["Admin Bookings"],
+        dependencies=[Depends(require_admin_user)],
     )
 
     app.include_router(
         admin_reports_router,
         prefix="/api/admin/reports",
         tags=["Admin Reports"],
+        dependencies=[Depends(require_admin_user)],
     )
 
     app.include_router(
         admin_telegram_accounts_router,
         prefix="/api/admin/telegram-accounts",
         tags=["Admin Telegram Accounts"],
+        dependencies=[Depends(require_admin_user)],
     )
 
     app.include_router(
