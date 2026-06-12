@@ -2,6 +2,7 @@ import logging
 import re
 import secrets
 from datetime import date, datetime, time, timedelta
+from typing import Callable
 
 from fastapi import HTTPException, status as http_status
 from sqlalchemy import select
@@ -151,6 +152,7 @@ def create_confirmed_booking(
     currency: str = "EUR",
     stripe_checkout_session_id: str | None = None,
     stripe_payment_intent_id: str | None = None,
+    on_created: Callable[[Booking], None] | None = None,
 ) -> Booking:
     if source not in VALID_SOURCES:
         raise HTTPException(
@@ -201,6 +203,8 @@ def create_confirmed_booking(
     )
 
     notify_new_same_day_booking(booking)
+    if on_created is not None:
+        on_created(booking)
 
     return booking
 

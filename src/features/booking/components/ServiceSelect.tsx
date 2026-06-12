@@ -22,8 +22,17 @@ export default function ServiceSelect({ selected, onSelect }: Props) {
         </h2>
       </div>
 
-      <Carousel visible={3}>
-        {services.map(svc => {
+      {isLoading ? (
+        <div style={{ color: '#5a5040', fontFamily: 'sans-serif', fontSize: '13px', textAlign: 'center', padding: 'clamp(24px, 6vw, 36px) clamp(20px, 5vw, 28px)', background: '#141008', boxSizing: 'border-box', minWidth: 0 }}>
+          Loading services...
+        </div>
+      ) : services.length === 0 ? (
+        <div style={{ color: '#7a7060', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: 1.7, textAlign: 'center', padding: 'clamp(24px, 6vw, 36px) clamp(20px, 5vw, 28px)', background: '#141008', border: '1px solid #2a2218', boxSizing: 'border-box', minWidth: 0 }}>
+          No services are available right now. Please check back later.
+        </div>
+      ) : (
+        <Carousel visible={3}>
+          {services.map(svc => {
           const sel = selected?.id === svc.id
 
           return (
@@ -111,8 +120,9 @@ export default function ServiceSelect({ selected, onSelect }: Props) {
               )}
             </div>
           )
-        })}
-      </Carousel>
+          })}
+        </Carousel>
+      )}
     </div>
   )
 }

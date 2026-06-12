@@ -10,6 +10,9 @@ class BotUserContext:
     role: str
     master_id: int | None
     scope: str
+    first_name: str | None = None
+    last_name: str | None = None
+    master_name: str | None = None
 
 
 async def resolve_bot_user(user_id: int) -> BotUserContext | None:
@@ -25,6 +28,9 @@ async def resolve_bot_user(user_id: int) -> BotUserContext | None:
     role = payload.get("role")
     scope = payload.get("scope")
     master_id = payload.get("master_id")
+    first_name = _optional_text(payload.get("first_name"))
+    last_name = _optional_text(payload.get("last_name"))
+    master_name = _optional_text(payload.get("master_name"))
 
     if role == "manager" and scope == "all":
         return BotUserContext(
@@ -32,6 +38,9 @@ async def resolve_bot_user(user_id: int) -> BotUserContext | None:
             role="manager",
             master_id=None,
             scope="all",
+            first_name=first_name,
+            last_name=last_name,
+            master_name=master_name,
         )
 
     if role == "barber" and scope == "own_master" and master_id is not None:
@@ -44,9 +53,19 @@ async def resolve_bot_user(user_id: int) -> BotUserContext | None:
             role="barber",
             master_id=parsed_master_id,
             scope="own_master",
+            first_name=first_name,
+            last_name=last_name,
+            master_name=master_name,
         )
 
     return None
+
+
+def _optional_text(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    return text or None
 
 
 def _resolve_bot_user_from_env(user_id: int) -> BotUserContext | None:

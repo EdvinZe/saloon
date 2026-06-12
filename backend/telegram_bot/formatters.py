@@ -1,6 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 from typing import Any
+
+if TYPE_CHECKING:
+    from telegram_bot.auth import BotUserContext
 
 
 def _parse_datetime(value: Any) -> datetime | None:
@@ -37,6 +41,62 @@ def _full_name(first_name: Any, last_name: Any) -> str:
 
 def format_bookings_header(label: str, date: str) -> str:
     return f"{label} ({date})"
+
+
+def format_user_display_name(ctx: "BotUserContext") -> str:
+    name = f"{ctx.first_name or ''} {ctx.last_name or ''}".strip()
+    return name
+
+
+def format_role_label(ctx: "BotUserContext") -> str:
+    if ctx.role == "barber":
+        return "Barber"
+    if ctx.role == "manager":
+        return "Manager"
+    return str(ctx.role or "").strip().title() or "Unknown"
+
+
+def format_welcome_message(ctx: "BotUserContext") -> str:
+    display_name = format_user_display_name(ctx)
+    lines = [f"Welcome, {display_name}." if display_name else "Welcome.", ""]
+    lines.append(f"Role: {format_role_label(ctx)}")
+
+    if ctx.role == "barber":
+        if ctx.master_name:
+            lines.append(f"Master: {ctx.master_name}")
+        elif ctx.master_id is not None:
+            lines.append(f"Master ID: {ctx.master_id}")
+        lines.extend(
+            [
+                "",
+                "Commands:",
+                "/menu - show main menu",
+                "/today - your bookings today",
+                "/tomorrow - your bookings tomorrow",
+                "/now - your current status",
+                "/next - upcoming reservations, coming soon",
+            ]
+        )
+        return "\n".join(lines)
+
+    lines.extend(
+        [
+            "",
+            "Commands:",
+            "/menu - show main menu",
+            "/today - all bookings today",
+            "/tomorrow - all bookings tomorrow",
+            "/now - current salon status",
+            "/next - upcoming reservations, coming soon",
+            "/today_summary - today's summary",
+            "/yesterday_summary - yesterday's summary",
+            "/this_week_summary - this week's summary",
+            "/last_week_summary - last week's summary",
+            "/this_month_summary - this month's summary",
+            "/last_month_summary - last month's summary",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def format_booking_message(booking: dict) -> str:

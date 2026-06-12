@@ -2,44 +2,11 @@ from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import CallbackQuery, Message
 
+from telegram_bot.formatters import format_welcome_message
 from telegram_bot.handlers.common import get_authorized_context
 from telegram_bot.keyboards import barber_start_keyboard, manager_start_keyboard
 
 router = Router()
-
-
-def get_manager_menu_text() -> str:
-    return "\n".join(
-        [
-            "Welcome, manager.",
-            "Commands:",
-            "/menu - show main menu",
-            "/today - all bookings today",
-            "/tomorrow - all bookings tomorrow",
-            "/now - current salon status",
-            "/next - upcoming reservations, coming soon",
-            "/today_summary - today's summary",
-            "/yesterday_summary - yesterday's summary",
-            "/this_week_summary - this week's summary",
-            "/last_week_summary - last week's summary",
-            "/this_month_summary - this month's summary",
-            "/last_month_summary - last month's summary",
-        ]
-    )
-
-
-def get_barber_menu_text() -> str:
-    return "\n".join(
-        [
-            "Welcome.",
-            "Commands:",
-            "/menu - show main menu",
-            "/today - your bookings today",
-            "/tomorrow - your bookings tomorrow",
-            "/now - your current status",
-            "/next - upcoming reservations, coming soon",
-        ]
-    )
 
 
 async def send_main_menu(target: Message | CallbackQuery) -> None:
@@ -48,11 +15,11 @@ async def send_main_menu(target: Message | CallbackQuery) -> None:
         return
 
     if ctx.role == "barber":
-        text = get_barber_menu_text()
         reply_markup = barber_start_keyboard()
     else:
-        text = get_manager_menu_text()
         reply_markup = manager_start_keyboard()
+
+    text = format_welcome_message(ctx)
 
     if isinstance(target, CallbackQuery):
         if target.message is not None:

@@ -57,6 +57,12 @@ export const ERROR_MAP: Record<string, ErrorConfig> = {
     btn: 'Back to home →',
     btnHref: '/',
   },
+  'payment_result.recovery_failed': {
+    title: 'Payment received',
+    sub: 'Your payment went through, but we could not confirm the booking automatically. Please contact support so we can help you.',
+    btn: 'Back to home →',
+    btnHref: '/',
+  },
   'payment_result.not_found': {
     title: 'Booking not found',
     sub: 'We could not find a confirmed booking for this payment.',

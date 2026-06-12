@@ -13,6 +13,7 @@ dist-ssr
 .env
 .env.local
 backend/.env
+frontend/.env
 *.local
 
 # Editor directories and files
@@ -30,6 +31,9 @@ __pycache__/
 pycache__/
 *.pyc
 *.db
+*.sqlite
+*.sqlite3
+backend/saloon.db
 
 .codex/
 .claude/

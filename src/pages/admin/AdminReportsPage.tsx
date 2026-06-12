@@ -138,9 +138,6 @@ export default function AdminReportsPage() {
           </>
         ) : null}
 
-        <div className="sr-only">
-          TODO: add CSV and PDF export for admin reports in a future iteration.
-        </div>
       </div>
     </AdminLayout>
   )

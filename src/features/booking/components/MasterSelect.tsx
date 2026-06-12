@@ -32,7 +32,11 @@ export default function MasterSelect({ service, date, time, selected, onSelect }
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1px', background: '#2a2218', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
         {isLoading ? (
           <div style={{ color: '#5a5040', fontFamily: 'sans-serif', fontSize: '13px', textAlign: 'center', padding: 'clamp(24px, 6vw, 36px) clamp(20px, 5vw, 28px)', background: '#141008', boxSizing: 'border-box', minWidth: 0 }}>
-            Loading...
+            Loading available barbers...
+          </div>
+        ) : masters.length === 0 ? (
+          <div style={{ color: '#7a7060', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: 1.7, textAlign: 'center', padding: 'clamp(24px, 6vw, 36px) clamp(20px, 5vw, 28px)', background: '#141008', boxSizing: 'border-box', minWidth: 0 }}>
+            No barbers are available for this time. Please choose another time.
           </div>
         ) : masters.map(master => {
           const sel = selected?.id === master.id

@@ -25,67 +25,73 @@ export default function MastersCarousel({ masters }: MastersCarouselProps) {
         </h2>
       </div>
 
-      <Carousel visible={3}>
-        {masters.map(master => (
-          <div
-            key={master.id}
-            style={{
-              background: '#141008',
-              padding: '40px 32px',
-              textAlign: 'center',
-              height: '100%',
-            }}
-          >
-            <div style={{
-              width: '72px',
-              height: '72px',
-              borderRadius: '50%',
-              border: '1px solid #3a3020',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '22px',
-              color: '#c9a84c',
-              fontFamily: 'sans-serif',
-              margin: '0 auto 24px',
-            }}>
-              {master.initials}
-            </div>
+      {masters.length === 0 ? (
+        <div style={{ maxWidth: '560px', margin: '0 auto', border: '1px solid #2a2218', background: '#141008', padding: '28px 24px', textAlign: 'center', color: '#7a7060', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: 1.7 }}>
+          Barber profiles are being updated. Please check back soon.
+        </div>
+      ) : (
+        <Carousel visible={3}>
+          {masters.map(master => (
+            <div
+              key={master.id}
+              style={{
+                background: '#141008',
+                padding: '40px 32px',
+                textAlign: 'center',
+                height: '100%',
+              }}
+            >
+              <div style={{
+                width: '72px',
+                height: '72px',
+                borderRadius: '50%',
+                border: '1px solid #3a3020',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '22px',
+                color: '#c9a84c',
+                fontFamily: 'sans-serif',
+                margin: '0 auto 24px',
+              }}>
+                {master.initials}
+              </div>
 
-            <div style={{ fontSize: '18px', color: '#e8e0d0', marginBottom: '6px' }}>
-              {master.name}
-            </div>
+              <div style={{ fontSize: '18px', color: '#e8e0d0', marginBottom: '6px' }}>
+                {master.name}
+              </div>
 
-            <div style={{
-              fontSize: '10px',
-              color: '#c9a84c',
-              letterSpacing: '3px',
-              textTransform: 'uppercase',
-              fontFamily: 'sans-serif',
-              marginBottom: '16px',
-            }}>
-              {master.role}
-            </div>
+              <div style={{
+                fontSize: '10px',
+                color: '#c9a84c',
+                letterSpacing: '3px',
+                textTransform: 'uppercase',
+                fontFamily: 'sans-serif',
+                marginBottom: '16px',
+              }}>
+                {master.role}
+              </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              {master.services.map(service => (
-                <span
-                  key={service.id}
-                  style={{
-                    fontSize: '10px',
-                    color: '#7a7060',
-                    fontFamily: 'sans-serif',
-                    border: '1px solid #2a2218',
-                    padding: '4px 10px',
-                  }}
-                >
-                  {service.name}
-                </span>
-              ))}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                {master.services.map(service => (
+                  <span
+                    key={service.id}
+                    style={{
+                      fontSize: '10px',
+                      color: '#7a7060',
+                      fontFamily: 'sans-serif',
+                      border: '1px solid #2a2218',
+                      padding: '4px 10px',
+                    }}
+                  >
+                    {service.name}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </Carousel>
+          ))}
+        </Carousel>
+      )}
     </section>
   )
 }

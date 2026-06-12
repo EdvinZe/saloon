@@ -183,8 +183,13 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
               <div style={{ fontSize: '10px', color: '#7a7060', fontFamily: 'sans-serif', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '20px' }}>
                 {format(new Date(pickedDate + 'T12:00:00'), 'EEEE, MMM d')}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: '8px' }}>
-                {slots.map(slot => {
+              {slots.length === 0 ? (
+                <div style={{ color: '#5a5040', fontFamily: 'sans-serif', fontSize: '13px', lineHeight: 1.7, textAlign: 'center', padding: '36px 12px' }}>
+                  No available times for this date. Please choose another day.
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: '8px' }}>
+                  {slots.map(slot => {
                   const isTaken = slot.status === 'taken'
                   const isTooShort = slot.status === 'tooShort'
                   const isFree = slot.status === 'free'
@@ -229,8 +234,9 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
                       {slot.time}
                     </div>
                   )
-                })}
-              </div>
+                  })}
+                </div>
+              )}
             </>
           )}
         </div>

@@ -139,7 +139,6 @@ export default function PaymentForm({ service, date, time, master }: Props) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isChecking, setIsChecking] = useState(false)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
   const isStartPaymentDisabled =
     isChecking ||
     Boolean(clientSecret) ||
@@ -154,7 +153,6 @@ export default function PaymentForm({ service, date, time, master }: Props) {
 
   const clearPaymentIntent = () => {
     setClientSecret(null)
-    setPaymentIntentId(null)
     setSuccessMessage(null)
   }
 
@@ -291,7 +289,7 @@ export default function PaymentForm({ service, date, time, master }: Props) {
 
     if (!stripePublishableKey) {
       console.error('[BookingPayment] Stripe publishable key is not configured')
-      setErrorMessage('Stripe publishable key is not configured')
+      setErrorMessage('Payment is temporarily unavailable. Please try again later.')
       return
     }
 
@@ -312,7 +310,6 @@ export default function PaymentForm({ service, date, time, master }: Props) {
 
       const depositIntent = await createBookingDepositIntent(payload)
       setClientSecret(depositIntent.client_secret)
-      setPaymentIntentId(depositIntent.payment_intent_id)
       setSuccessMessage('Secure payment form is ready.')
     } catch (error) {
       logPaymentStartError(error)

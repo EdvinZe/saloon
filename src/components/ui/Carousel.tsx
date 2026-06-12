@@ -1,4 +1,4 @@
-import { Children, useState, type ReactNode } from 'react'
+import { Children, useEffect, useState, type ReactNode } from 'react'
 
 interface Props {
   children: ReactNode
@@ -7,14 +7,31 @@ interface Props {
 
 export default function Carousel({ children, visible = 3 }: Props) {
   const items = Children.toArray(children)
-
   const [current, setCurrent] = useState(0)
+  const [responsiveVisible, setResponsiveVisible] = useState(visible)
+
+  useEffect(() => {
+    const updateVisible = () => {
+      if (window.innerWidth < 640) {
+        setResponsiveVisible(1)
+      } else if (window.innerWidth < 900) {
+        setResponsiveVisible(Math.min(2, visible))
+      } else {
+        setResponsiveVisible(visible)
+      }
+    }
+
+    updateVisible()
+    window.addEventListener('resize', updateVisible)
+    return () => window.removeEventListener('resize', updateVisible)
+  }, [visible])
 
   if (items.length === 0) {
     return null
   }
 
-  const pages = Math.max(1, items.length - visible + 1)
+  const visibleCount = Math.min(responsiveVisible, items.length)
+  const pages = Math.max(1, items.length - visibleCount + 1)
 
   const go = (index: number) => {
     setCurrent(Math.max(0, Math.min(index, pages - 1)))
@@ -23,7 +40,7 @@ export default function Carousel({ children, visible = 3 }: Props) {
   const canPrev = current > 0
   const canNext = current < pages - 1
 
-  const offset = current * (100 / visible)
+  const offset = current * (100 / visibleCount)
 
   return (
     <div style={{ position: 'relative' }}>
@@ -68,7 +85,7 @@ export default function Carousel({ children, visible = 3 }: Props) {
             <div
               key={index}
               style={{
-                flex: `0 0 calc(${100 / visible}% - 1px)`,
+                flex: `0 0 calc(${100 / visibleCount}% - 1px)`,
                 minWidth: 0,
               }}
             >

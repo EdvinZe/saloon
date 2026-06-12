@@ -109,7 +109,13 @@ export interface BookingDepositIntentResponse {
   payment_intent_id: string
 }
 
-export type BookingPaymentResultStatus = 'confirmed' | 'processing' | 'not_found'
+export type BookingPaymentResultStatus =
+  | 'confirmed'
+  | 'processing'
+  | 'failed'
+  | 'not_found'
+  | 'lookup_failed'
+  | 'recovery_failed'
 
 export interface BookingPaymentResult {
   status: BookingPaymentResultStatus

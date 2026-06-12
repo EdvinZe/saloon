@@ -52,11 +52,17 @@ export function useBookingSuccess() {
   const isConfirmedWithoutBooking =
     query.data?.status === 'confirmed' && !query.data.booking
   const isNotFound = query.data?.status === 'not_found'
+  const isPaymentFailed = query.data?.status === 'failed'
+  const isLookupFailed = query.data?.status === 'lookup_failed'
+  const isRecoveryFailed = query.data?.status === 'recovery_failed'
   const isError =
     isMissingPaymentIntent ||
     hasInvalidRedirectStatus ||
     isConfirmedWithoutBooking ||
     isNotFound ||
+    isPaymentFailed ||
+    isLookupFailed ||
+    isRecoveryFailed ||
     isProcessingTimeout ||
     query.isError
 
@@ -72,12 +78,18 @@ export function useBookingSuccess() {
         ? redirectStatus === 'canceled' || redirectStatus === 'cancelled'
           ? 'cancelled'
           : 'failed'
-        : isProcessingTimeout
-          ? 'processing_timeout'
-          : isNotFound
-            ? 'not_found'
-            : query.isError || isConfirmedWithoutBooking
-              ? 'lookup_failed'
-              : null,
+          : isProcessingTimeout
+            ? 'processing_timeout'
+            : isNotFound
+              ? 'not_found'
+              : isPaymentFailed
+                ? 'failed'
+                : isLookupFailed
+                  ? 'lookup_failed'
+                  : isRecoveryFailed
+                    ? 'recovery_failed'
+                    : query.isError || isConfirmedWithoutBooking
+                      ? 'lookup_failed'
+                      : null,
   }
 }

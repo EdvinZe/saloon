@@ -105,6 +105,10 @@ export default function ManageTimeSlots({ service, selectedDate, selectedTime, o
           <div style={{ fontSize: '11px', color: '#5a5040', fontFamily: 'sans-serif', letterSpacing: '2px', padding: '12px 0' }}>
             Loading slots...
           </div>
+        ) : slots.length === 0 ? (
+          <div style={{ fontSize: '12px', color: '#5a5040', fontFamily: 'sans-serif', lineHeight: 1.6, padding: '12px 0 18px' }}>
+            No available times for this date. Please choose another day.
+          </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(64px, 1fr))', gap: '6px', marginBottom: '16px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
             {slots.map(slot => {

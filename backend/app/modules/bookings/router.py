@@ -20,9 +20,11 @@ from app.modules.bookings.service import (
     check_booking_availability,
     create_confirmed_booking,
     get_booking_by_manage_token,
-    get_booking_by_payment_intent,
     reschedule_booking_by_manage_token,
     validate_booking_creation,
+)
+from app.modules.payments.confirmation_service import (
+    confirm_paid_payment_intent_and_create_booking,
 )
 from app.modules.payments.stripe_service import create_booking_deposit_payment_intent
 
@@ -77,18 +79,11 @@ def get_booking_payment_result_endpoint(
             booking=None,
         )
 
-    booking = get_booking_by_payment_intent(db, payment_intent)
-    if booking is not None:
-        return BookingPaymentResultResponse(
-            status="confirmed",
-            message="Booking confirmed",
-            booking=booking,
-        )
-
+    result = confirm_paid_payment_intent_and_create_booking(db, payment_intent)
     return BookingPaymentResultResponse(
-        status="processing",
-        message="Payment received. Booking is still being confirmed.",
-        booking=None,
+        status=result.status,
+        message=result.message,
+        booking=result.booking,
     )
 
 

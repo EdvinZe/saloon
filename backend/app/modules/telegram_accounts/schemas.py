@@ -56,6 +56,7 @@ class BotTelegramAccountResolve(BaseModel):
     master_id: int | None = None
     first_name: str | None = None
     last_name: str | None = None
+    master_name: str | None = None
 
 
 class BotTelegramBarbersByMaster(BaseModel):

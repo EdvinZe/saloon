@@ -120,7 +120,9 @@ def resolve_telegram_account(
     telegram_id: int,
 ) -> BotTelegramAccountResolve:
     account = db.scalar(
-        select(TelegramAccount).where(TelegramAccount.telegram_id == telegram_id)
+        select(TelegramAccount)
+        .where(TelegramAccount.telegram_id == telegram_id)
+        .options(selectinload(TelegramAccount.master))
     )
     if account is None:
         logger.info(
@@ -147,6 +149,7 @@ def resolve_telegram_account(
             master_id=None,
             first_name=account.first_name,
             last_name=account.last_name,
+            master_name=None,
         )
 
     if account.role == "barber":
@@ -167,6 +170,7 @@ def resolve_telegram_account(
             master_id=account.master_id,
             first_name=account.first_name,
             last_name=account.last_name,
+            master_name=_format_master_name(account.master),
         )
 
     logger.warning(
@@ -188,6 +192,13 @@ def list_active_manager_telegram_ids(db: Session) -> list[int]:
         .order_by(TelegramAccount.id.asc())
     )
     return [int(telegram_id) for telegram_id in db.scalars(statement).all()]
+
+
+def _format_master_name(master: Master | None) -> str | None:
+    if master is None:
+        return None
+    name = f"{master.first_name or ''} {master.last_name or ''}".strip()
+    return name or None
 
 
 def list_active_barber_telegram_ids_by_master(
