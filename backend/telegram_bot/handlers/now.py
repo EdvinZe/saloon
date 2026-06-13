@@ -39,11 +39,16 @@ async def _send_now(target: Message | CallbackQuery) -> None:
     now = datetime.now()
 
     try:
-        schedule = await get_admin_schedule(from_date=today, to_date=today)
+        schedule = await get_admin_schedule(
+            from_date=today,
+            to_date=today,
+            telegram_id=ctx.telegram_user_id,
+        )
         bookings = await get_admin_bookings(
             date=today,
             status="confirmed",
             master_id=master_id,
+            telegram_id=ctx.telegram_user_id,
         )
     except BackendAPIError as exc:
         logger.warning("Could not load current salon status: %s", exc)

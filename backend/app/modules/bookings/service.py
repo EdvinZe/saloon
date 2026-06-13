@@ -34,6 +34,7 @@ VALID_DEPOSIT_STATUSES = {"paid", "refunded", "retained"}
 VALID_SOURCES = {"online", "manager_panel", "telegram_bot"}
 BLOCKING_BOOKING_STATUSES = ("confirmed",)
 AVAILABLE_SHIFT_STATUSES = ("working", "extra_day")
+CLIENT_MANAGE_CUTOFF_HOURS = 2
 
 
 def generate_manage_token() -> str:
@@ -429,6 +430,8 @@ def cancel_booking_by_manage_token(db: Session, token: str) -> Booking:
             detail="Booking not found",
         )
 
+    _assert_manage_action_allowed(booking)
+
     return cancel_booking_with_refund(
         db=db,
         booking=booking,
@@ -542,6 +545,8 @@ def reschedule_booking_by_manage_token(
             status_code=http_status.HTTP_400_BAD_REQUEST,
             detail="Only confirmed bookings can be rescheduled",
         )
+
+    _assert_manage_action_allowed(booking)
 
     validation_data = BookingCreate(
         service_id=booking.service_id,
@@ -673,6 +678,18 @@ def _admin_booking_action_response(
         message=message,
         booking=_booking_to_admin_read(booking),
     )
+
+
+def _assert_manage_action_allowed(booking: Booking) -> None:
+    cutoff_at = datetime.now() + timedelta(hours=CLIENT_MANAGE_CUTOFF_HOURS)
+    if booking.start_at <= cutoff_at:
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Bookings can only be changed more than "
+                f"{CLIENT_MANAGE_CUTOFF_HOURS} hours before the appointment"
+            ),
+        )
 
 
 def _fits_any_shift(

@@ -42,6 +42,7 @@ async def _send_bookings(target: Message | CallbackQuery, label: str, target_dat
             date=date_text,
             status="confirmed",
             master_id=master_id,
+            telegram_id=ctx.telegram_user_id,
         )
     except BackendAPIError as exc:
         logger.warning("Could not load %s bookings: %s", label.lower(), exc)

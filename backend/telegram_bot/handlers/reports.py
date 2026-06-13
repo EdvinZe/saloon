@@ -73,6 +73,7 @@ async def send_manager_report_summary(
         report = await get_admin_report_summary(
             from_date=from_date,
             to_date=to_date,
+            telegram_id=ctx.telegram_user_id,
         )
     except BackendAPIError as exc:
         logger.warning("Could not load %s: %s", log_label, exc)

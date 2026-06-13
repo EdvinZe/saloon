@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import is_production
 from app.core.database import get_db
 from app.modules.bookings.schemas import (
     BookingAvailabilityCheckResponse,
@@ -157,5 +158,11 @@ def create_confirmed_booking_endpoint(
     data: BookingCreate,
     db: Session = Depends(get_db),
 ):
-    # Development/simple flow. Stripe checkout endpoint will be added later.
+    if is_production():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not found",
+        )
+
+    # Development/simple flow for local smoke testing only.
     return create_confirmed_booking(db, data, source="online")

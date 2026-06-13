@@ -1,3 +1,12 @@
+import {
+  adminFilterButtonActiveClassName,
+  adminFilterButtonBaseClassName,
+  adminFilterButtonInactiveClassName,
+  adminFilterGroupClassName,
+  adminToolbarActionsClassName,
+  adminToolbarClassName,
+} from '../../layout/adminStyles'
+
 export type AdminServicesFilter = 'all' | 'active' | 'inactive'
 
 type AdminServicesToolbarProps = {
@@ -18,23 +27,23 @@ export default function AdminServicesToolbar({
   onAddService,
 }: AdminServicesToolbarProps) {
   return (
-    <div className="flex flex-col gap-4 border border-[#2a2218] bg-[#141008] p-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className={adminToolbarClassName}>
       <div>
         <p className="text-xs uppercase tracking-[0.24em] text-[#c9a84c]">Services</p>
         <h1 className="mt-2 text-2xl text-[#e8e0d0]">Manage services, prices and durations</h1>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex border border-[#2a2218]">
+      <div className={adminToolbarActionsClassName}>
+        <div className={adminFilterGroupClassName}>
           {filters.map(item => (
             <button
               key={item.value}
               type="button"
               onClick={() => onFilterChange(item.value)}
-              className={`px-4 py-2 text-xs uppercase tracking-[0.18em] ${
+              className={`${adminFilterButtonBaseClassName} ${
                 filter === item.value
-                  ? 'bg-[#c9a84c] text-[#0f0f0f]'
-                  : 'bg-[#0f0f0f] text-[#7a7060] hover:text-[#e8e0d0]'
+                  ? adminFilterButtonActiveClassName
+                  : adminFilterButtonInactiveClassName
               }`}
             >
               {item.label}

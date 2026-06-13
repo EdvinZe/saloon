@@ -44,8 +44,8 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] px-5 py-16">
-      <div className="mx-auto w-full max-w-md border border-[#2a2218] bg-[#141008] p-6 shadow-2xl">
+    <div className="flex min-h-[calc(100vh-74px)] items-center justify-center bg-[#0f0f0f] px-4 pb-20 pt-8 sm:px-6 sm:pb-28 sm:pt-12">
+      <div className="w-full max-w-[440px] border border-[#2a2218]/80 bg-[#0f0f0f]/70 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:-translate-y-[3vh]">
         <p className="text-xs uppercase tracking-[0.24em] text-[#c9a84c]">Admin access</p>
         <h1 className="mt-3 text-2xl font-normal text-[#e8e0d0]">Sign in to manage bookings</h1>
 

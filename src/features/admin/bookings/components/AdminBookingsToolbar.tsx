@@ -1,6 +1,7 @@
 import type { AdminBookingStatus } from '../types'
 import type { AdminMaster } from '../../masters/types'
 import type { AdminService } from '../../services/types'
+import { adminStackedToolbarClassName } from '../../layout/adminStyles'
 
 type AdminBookingsToolbarProps = {
   date: string
@@ -38,13 +39,13 @@ export default function AdminBookingsToolbar({
   onClearFilters,
 }: AdminBookingsToolbarProps) {
   return (
-    <div className="flex flex-col gap-4 border border-[#2a2218] bg-[#141008] p-4">
+    <div className={adminStackedToolbarClassName}>
       <div>
         <p className="text-xs uppercase tracking-[0.24em] text-[#c9a84c]">Bookings</p>
         <h1 className="mt-2 text-2xl text-[#e8e0d0]">Manage appointments and booking statuses</h1>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-5">
         <label className="grid gap-1 text-xs uppercase tracking-[0.16em] text-[#7a7060]">
           Date
           <input

@@ -27,11 +27,12 @@ async def _request(method: str, path: str, **kwargs: Any) -> Any:
     config = load_config()
     url = f"{config.backend_api_url}{path}"
     timeout = httpx.Timeout(10.0)
+    headers = dict(kwargs.pop("headers", {}) or {})
+    headers.setdefault("X-Telegram-Bot-Token", config.telegram_bot_token)
 
-    # TODO: When admin auth is enabled, send ADMIN_API_TOKEN as an auth header.
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.request(method, url, **kwargs)
+            response = await client.request(method, url, headers=headers, **kwargs)
     except httpx.TimeoutException as exc:
         raise BackendAPIError("Backend is unavailable. Please try again later.") from exc
     except httpx.HTTPError as exc:
@@ -51,14 +52,17 @@ async def get_admin_bookings(
     date: str,
     status: str = "confirmed",
     master_id: int | None = None,
+    telegram_id: int | None = None,
 ) -> list[dict]:
     params: dict[str, str | int] = {"date": date, "status": status}
     if master_id is not None:
         params["master_id"] = master_id
+    if telegram_id is not None:
+        params["telegram_id"] = telegram_id
 
     payload = await _request(
         "GET",
-        "/api/admin/bookings",
+        "/api/bot/telegram-accounts/bookings",
         params=params,
     )
     if not isinstance(payload, list):
@@ -98,11 +102,19 @@ async def get_barber_telegram_ids_by_master(master_id: int) -> list[int]:
     return result
 
 
-async def get_admin_schedule(from_date: str, to_date: str) -> dict:
+async def get_admin_schedule(
+    from_date: str,
+    to_date: str,
+    telegram_id: int,
+) -> dict:
     payload = await _request(
         "GET",
-        "/api/admin/schedule/",
-        params={"from_date": from_date, "to_date": to_date},
+        "/api/bot/telegram-accounts/schedule",
+        params={
+            "telegram_id": telegram_id,
+            "from_date": from_date,
+            "to_date": to_date,
+        },
     )
     if not isinstance(payload, dict):
         raise BackendAPIError("Backend returned an invalid schedule response.")
@@ -112,9 +124,11 @@ async def get_admin_schedule(from_date: str, to_date: str) -> dict:
 async def get_admin_report_summary(
     from_date: str,
     to_date: str,
+    telegram_id: int,
     master_id: int | None = None,
 ) -> dict:
     params: dict[str, str | int] = {
+        "telegram_id": telegram_id,
         "from_date": from_date,
         "to_date": to_date,
     }
@@ -123,7 +137,7 @@ async def get_admin_report_summary(
 
     payload = await _request(
         "GET",
-        "/api/admin/reports/summary",
+        "/api/bot/telegram-accounts/reports/summary",
         params=params,
     )
     if not isinstance(payload, dict):
@@ -131,22 +145,34 @@ async def get_admin_report_summary(
     return payload
 
 
-async def get_admin_booking(booking_id: int) -> dict:
-    payload = await _request("GET", f"/api/admin/bookings/{booking_id}")
+async def get_admin_booking(booking_id: int, telegram_id: int) -> dict:
+    payload = await _request(
+        "GET",
+        f"/api/bot/telegram-accounts/bookings/{booking_id}",
+        params={"telegram_id": telegram_id},
+    )
     if not isinstance(payload, dict):
         raise BackendAPIError("Backend returned an invalid booking response.")
     return payload
 
 
-async def complete_booking(booking_id: int) -> dict:
-    payload = await _request("POST", f"/api/admin/bookings/{booking_id}/complete")
+async def complete_booking(booking_id: int, telegram_id: int) -> dict:
+    payload = await _request(
+        "POST",
+        f"/api/bot/telegram-accounts/bookings/{booking_id}/complete",
+        params={"telegram_id": telegram_id},
+    )
     if not isinstance(payload, dict):
         raise BackendAPIError("Backend returned an invalid action response.")
     return payload
 
 
-async def mark_booking_no_show(booking_id: int) -> dict:
-    payload = await _request("POST", f"/api/admin/bookings/{booking_id}/no-show")
+async def mark_booking_no_show(booking_id: int, telegram_id: int) -> dict:
+    payload = await _request(
+        "POST",
+        f"/api/bot/telegram-accounts/bookings/{booking_id}/no-show",
+        params={"telegram_id": telegram_id},
+    )
     if not isinstance(payload, dict):
         raise BackendAPIError("Backend returned an invalid action response.")
     return payload

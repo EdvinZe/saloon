@@ -37,10 +37,10 @@ async def _handle_action(callback: CallbackQuery, action: str) -> None:
 
     try:
         if action == "complete":
-            await complete_booking(booking_id)
+            await complete_booking(booking_id, ctx.telegram_user_id)
             confirmation = "Booking marked as completed."
         else:
-            await mark_booking_no_show(booking_id)
+            await mark_booking_no_show(booking_id, ctx.telegram_user_id)
             confirmation = "Booking marked as no-show."
     except BackendAPIError as exc:
         logger.warning("Could not update booking %s: %s", booking_id, exc)

@@ -1,3 +1,8 @@
+import {
+  adminToolbarActionsEndClassName,
+  adminToolbarClassName,
+} from '../../layout/adminStyles'
+
 type AdminScheduleToolbarProps = {
   fromDate: string
   toDate: string
@@ -26,14 +31,14 @@ export default function AdminScheduleToolbar({
   onOpenRangeModal,
 }: AdminScheduleToolbarProps) {
   return (
-    <div className="flex flex-col gap-4 border border-[#2a2218] bg-[#141008] p-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className={adminToolbarClassName}>
       <div>
         <p className="text-xs uppercase tracking-[0.24em] text-[#c9a84c]">Schedule</p>
         <h1 className="mt-2 text-2xl text-[#e8e0d0]">Master shifts</h1>
         <p className="mt-1 text-sm text-[#7a7060]">{fromDate} to {toDate}</p>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div className={adminToolbarActionsEndClassName}>
         <button type="button" className="btn-gold px-4 py-2 text-xs" onClick={onPreviousWeek}>
           Previous week
         </button>

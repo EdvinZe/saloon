@@ -1,4 +1,11 @@
 import type { AdminMaster } from '../../masters/types'
+import {
+  adminFilterButtonActiveClassName,
+  adminFilterButtonBaseClassName,
+  adminFilterButtonInactiveClassName,
+  adminFilterGroupClassName,
+  adminStackedToolbarClassName,
+} from '../../layout/adminStyles'
 
 export type ReportPresetKey =
   | 'today'
@@ -43,22 +50,22 @@ export default function AdminReportsToolbar({
   onMasterChange,
 }: AdminReportsToolbarProps) {
   return (
-    <div className="grid gap-4 border border-[#2a2218] bg-[#141008] p-4">
+    <div className={adminStackedToolbarClassName}>
       <div>
         <p className="text-xs uppercase tracking-[0.24em] text-[#c9a84c]">Reports</p>
         <h1 className="mt-2 text-2xl text-[#e8e0d0]">Business summary</h1>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className={adminFilterGroupClassName}>
         {presetButtons.map(preset => (
           <button
             key={preset.key}
             type="button"
             onClick={() => onPresetSelect(preset.key)}
-            className={`border px-3 py-2 text-xs uppercase tracking-[0.12em] ${
+            className={`${adminFilterButtonBaseClassName} ${
               activePreset === preset.key
-                ? 'border-[#c9a84c] bg-[#c9a84c]/10 text-[#e8e0d0]'
-                : 'border-[#2a2218] bg-[#0f0f0f] text-[#7a7060] hover:text-[#e8e0d0]'
+                ? `${adminFilterButtonActiveClassName} bg-[#c9a84c]/10 text-[#e8e0d0]`
+                : adminFilterButtonInactiveClassName
             }`}
           >
             {preset.label}
@@ -66,7 +73,7 @@ export default function AdminReportsToolbar({
         ))}
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         <label className="grid gap-1 text-xs uppercase tracking-[0.16em] text-[#7a7060]">
           From date
           <input
