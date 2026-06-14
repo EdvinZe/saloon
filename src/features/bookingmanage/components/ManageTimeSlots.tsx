@@ -13,7 +13,7 @@ interface Props {
 
 export default function ManageTimeSlots({ service, selectedDate, selectedTime, onSelect, disabled = false }: Props) {
   const today = startOfDay(new Date())
-  const days = Array.from({ length: 7 }, (_, i) => addDays(today, i))
+  const days = Array.from({ length: 10 }, (_, i) => addDays(today, i))
   const [pickedDate, setPickedDate] = useState(() => format(today, 'yyyy-MM-dd'))
 
   const { data: slots = [], isLoading } = useManageAvailableSlots(pickedDate, service.id)
@@ -31,13 +31,22 @@ export default function ManageTimeSlots({ service, selectedDate, selectedTime, o
       <style>
         {`
           .manage-date-carousel {
-            scrollbar-width: none;
-            -ms-overflow-style: none;
+            scrollbar-width: thin;
+            scrollbar-color: #3a3020 transparent;
             -webkit-overflow-scrolling: touch;
           }
 
           .manage-date-carousel::-webkit-scrollbar {
-            display: none;
+            height: 6px;
+          }
+
+          .manage-date-carousel::-webkit-scrollbar-track {
+            background: transparent;
+          }
+
+          .manage-date-carousel::-webkit-scrollbar-thumb {
+            background: #3a3020;
+            border-radius: 999px;
           }
         `}
       </style>
@@ -49,16 +58,14 @@ export default function ManageTimeSlots({ service, selectedDate, selectedTime, o
         Step 2 — Time
       </p>
 
-      {/* Date picker row — 7 days forward */}
+      {/* Date picker row */}
       <div
         className="manage-date-carousel"
         style={{
-          display: 'flex',
-          gap: '10px',
           marginBottom: '16px',
           overflowX: 'auto',
           overflowY: 'hidden',
-          paddingBottom: '2px',
+          paddingBottom: '8px',
           width: '100%',
           maxWidth: '100%',
           boxSizing: 'border-box',
@@ -66,37 +73,39 @@ export default function ManageTimeSlots({ service, selectedDate, selectedTime, o
           overscrollBehaviorX: 'contain',
         }}
       >
-        {days.map(day => {
-          const ds = format(day, 'yyyy-MM-dd')
-          const sel = pickedDate === ds
-          return (
-            <div
-              key={ds}
-              onClick={() => { if (!disabled) setPickedDate(ds) }}
-              style={{
-                flex: '0 0 auto',
-                minWidth: '62px',
-                padding: '9px 8px',
-                textAlign: 'center',
-                cursor: disabled ? 'not-allowed' : 'pointer',
-                border: sel ? '1px solid #c9a84c' : '1px solid #2a2218',
-                background: sel ? 'rgba(201,168,76,0.06)' : '#0f0f0f',
-                transition: 'all 0.15s',
-                userSelect: 'none',
-                boxSizing: 'border-box',
-              }}
-              onMouseEnter={e => { if (!disabled && !sel) (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
-              onMouseLeave={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}
-            >
-              <div style={{ fontSize: '9px', color: '#7a7060', fontFamily: 'sans-serif', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>
-                {format(day, 'EEE')}
+        <div style={{ display: 'flex', gap: '10px', minWidth: 'max-content' }}>
+          {days.map(day => {
+            const ds = format(day, 'yyyy-MM-dd')
+            const sel = pickedDate === ds
+            return (
+              <div
+                key={ds}
+                onClick={() => { if (!disabled) setPickedDate(ds) }}
+                style={{
+                  flex: '0 0 auto',
+                  minWidth: '62px',
+                  padding: '9px 8px',
+                  textAlign: 'center',
+                  cursor: disabled ? 'not-allowed' : 'pointer',
+                  border: sel ? '1px solid #c9a84c' : '1px solid #2a2218',
+                  background: sel ? 'rgba(201,168,76,0.06)' : '#0f0f0f',
+                  transition: 'all 0.15s',
+                  userSelect: 'none',
+                  boxSizing: 'border-box',
+                }}
+                onMouseEnter={e => { if (!disabled && !sel) (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c' }}
+                onMouseLeave={e => { if (!sel) (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2218' }}
+              >
+                <div style={{ fontSize: '9px', color: '#7a7060', fontFamily: 'sans-serif', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>
+                  {format(day, 'EEE')}
+                </div>
+                <div style={{ fontSize: '14px', color: sel ? '#c9a84c' : '#e8e0d0', fontFamily: 'sans-serif' }}>
+                  {format(day, 'd')}
+                </div>
               </div>
-              <div style={{ fontSize: '14px', color: sel ? '#c9a84c' : '#e8e0d0', fontFamily: 'sans-serif' }}>
-                {format(day, 'd')}
-              </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
 
       {/* Slot grid */}

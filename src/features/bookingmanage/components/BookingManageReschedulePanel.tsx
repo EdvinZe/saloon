@@ -7,7 +7,7 @@ import ManageMasterSelect from './ManageMasterSelect'
 const revealStyle = (visible: boolean): CSSProperties => ({
   maxHeight: visible ? '2000px' : '0',
   opacity: visible ? 1 : 0,
-  overflow: 'hidden',
+  overflow: visible ? 'visible' : 'hidden',
   transition: 'max-height 0.6s ease, opacity 0.5s ease',
   scrollMarginTop: '24px',
 })
