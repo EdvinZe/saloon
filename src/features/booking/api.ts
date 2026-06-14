@@ -7,11 +7,10 @@ import { MOCK_EXISTING, TODAY_STR } from './mock/bookingMockData'
 import { isMasterBusyAt as checkMasterBusyAt } from './utils/availability'
 import { getMasters, type Master } from '../masters/api'
 
-const BASE_URL = (import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL ?? 'http://localhost:8000'
 const API_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_URL
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _api = axios.create({ baseURL: BASE_URL })
+const _api = axios.create({ baseURL: API_BASE_URL })
 
 async function buildApiError(response: Response, fallbackMessage: string) {
   const responseText = await response.text()

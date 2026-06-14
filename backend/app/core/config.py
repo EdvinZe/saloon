@@ -26,6 +26,11 @@ PUBLIC_FRONTEND_URL = (
     os.getenv("PUBLIC_FRONTEND_URL", "http://localhost:5173").strip()
     or "http://localhost:5173"
 )
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+    if origin.strip()
+]
 APP_ENV = os.getenv("APP_ENV", "development").strip().lower() or "development"
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "").strip()
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
@@ -52,6 +57,10 @@ def require_stripe_webhook_secret() -> str:
 
 def get_public_frontend_url() -> str:
     return PUBLIC_FRONTEND_URL.rstrip("/")
+
+
+def get_cors_allowed_origins() -> list[str]:
+    return CORS_ALLOWED_ORIGINS or ["http://localhost:5173"]
 
 
 def get_smtp_config() -> dict[str, str | int]:
