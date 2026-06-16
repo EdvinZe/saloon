@@ -59,7 +59,9 @@ def get_public_frontend_url() -> str:
 
 
 def get_cors_allowed_origins() -> list[str]:
-    return CORS_ALLOWED_ORIGINS or ["http://localhost:5173"]
+    return [origin for origin in CORS_ALLOWED_ORIGINS if origin != "*"] or [
+        "http://localhost:5173"
+    ]
 
 
 def get_smtp_config() -> dict[str, str | int]:

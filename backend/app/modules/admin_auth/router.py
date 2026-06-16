@@ -1,6 +1,10 @@
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
-from app.core.config import ADMIN_SESSION_EXPIRE_MINUTES, is_production
+from app.core.config import (
+    ADMIN_SESSION_EXPIRE_MINUTES,
+    get_cors_allowed_origins,
+    is_production,
+)
 from app.modules.admin_auth.schemas import AdminAuthResponse, AdminLoginRequest
 from app.modules.admin_auth.service import (
     ADMIN_ROLE,
@@ -11,6 +15,18 @@ from app.modules.admin_auth.service import (
 )
 
 router = APIRouter()
+
+
+def _admin_cookie_settings() -> dict[str, object]:
+    deployed_cross_origin = any(
+        origin.startswith("https://")
+        and "localhost" not in origin
+        and "127.0.0.1" not in origin
+        for origin in get_cors_allowed_origins()
+    )
+    if is_production() or deployed_cross_origin:
+        return {"secure": True, "samesite": "none"}
+    return {"secure": False, "samesite": "lax"}
 
 
 @router.post("/login", response_model=AdminAuthResponse)
@@ -28,8 +44,7 @@ def login_admin(data: AdminLoginRequest, response: Response):
         value=token,
         max_age=max(1, ADMIN_SESSION_EXPIRE_MINUTES) * 60,
         httponly=True,
-        secure=is_production(),
-        samesite="lax",
+        **_admin_cookie_settings(),
         path="/",
     )
     return AdminAuthResponse(
@@ -59,7 +74,6 @@ def logout_admin(response: Response):
     response.delete_cookie(
         key=ADMIN_SESSION_COOKIE,
         path="/",
-        secure=is_production(),
-        samesite="lax",
+        **_admin_cookie_settings(),
     )
     return AdminAuthResponse(authenticated=False, role=ADMIN_ROLE)
