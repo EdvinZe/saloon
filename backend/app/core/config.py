@@ -34,7 +34,6 @@ CORS_ALLOWED_ORIGINS = [
 APP_ENV = os.getenv("APP_ENV", "development").strip().lower() or "development"
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "").strip()
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
-ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
 ADMIN_SESSION_SECRET = os.getenv("ADMIN_SESSION_SECRET", "")
 ADMIN_SESSION_EXPIRE_MINUTES = _parse_int(
     os.getenv("ADMIN_SESSION_EXPIRE_MINUTES"),

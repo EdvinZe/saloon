@@ -1,4 +1,3 @@
-import hashlib
 import hmac
 import logging
 from dataclasses import dataclass
@@ -10,7 +9,6 @@ from fastapi import HTTPException, Request, status
 
 from app.core.config import (
     ADMIN_PASSWORD,
-    ADMIN_PASSWORD_HASH,
     ADMIN_SESSION_EXPIRE_MINUTES,
     ADMIN_USERNAME,
     get_admin_session_secret,
@@ -31,22 +29,19 @@ class AdminUserContext:
 
 def authenticate_admin(username: str, password: str) -> AdminUserContext | None:
     configured_username = ADMIN_USERNAME
-    if not configured_username:
-        logger.warning("[ADMIN_AUTH] Login unavailable: admin username missing")
+    configured_password = ADMIN_PASSWORD
+    if not configured_username or not configured_password:
+        logger.warning(
+            "[ADMIN_AUTH] Login unavailable: ADMIN_USERNAME and ADMIN_PASSWORD must be configured"
+        )
         return None
 
     if not hmac.compare_digest(username, configured_username):
         return None
 
-    if ADMIN_PASSWORD_HASH:
-        if _verify_password_hash(password, ADMIN_PASSWORD_HASH):
-            return AdminUserContext(username=configured_username)
-        return None
-
-    if ADMIN_PASSWORD and hmac.compare_digest(password, ADMIN_PASSWORD):
+    if hmac.compare_digest(password, configured_password):
         return AdminUserContext(username=configured_username)
 
-    logger.warning("[ADMIN_AUTH] Login unavailable: admin password missing")
     return None
 
 
@@ -92,15 +87,6 @@ def require_admin_user(request: Request) -> AdminUserContext:
             detail="Admin authentication required",
         )
     return user
-
-
-def _verify_password_hash(password: str, password_hash: str) -> bool:
-    normalized = password_hash.strip()
-    if normalized.startswith("sha256$"):
-        expected = normalized.removeprefix("sha256$")
-        actual = hashlib.sha256(password.encode("utf-8")).hexdigest()
-        return hmac.compare_digest(actual, expected)
-    return False
 
 
 def _payload_text(payload: dict[str, Any], key: str) -> str | None:
