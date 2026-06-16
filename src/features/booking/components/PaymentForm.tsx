@@ -649,6 +649,37 @@ function DepositPaymentElement({
 
   return (
     <div>
+      <div
+        style={{
+          marginBottom: '16px',
+          padding: '14px 16px',
+          border: '1px solid rgba(201, 168, 76, 0.42)',
+          background: 'rgba(201, 168, 76, 0.08)',
+          color: '#e8e0d0',
+        }}
+      >
+        <p
+          style={{
+            margin: '0 0 8px',
+            color: '#c9a84c',
+            fontFamily: 'Georgia, serif',
+            fontSize: '11px',
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
+          }}
+        >
+          Demo payment
+        </p>
+        <p style={{ margin: '0 0 4px', fontSize: '14px', lineHeight: 1.5 }}>
+          Card number: 4242 4242 4242 4242
+        </p>
+        <p style={{ margin: '0 0 4px', color: '#b8ac96', fontSize: '13px', lineHeight: 1.5 }}>
+          Expiration date: 12/34 - Security code: 123 - Country: any country
+        </p>
+        <p style={{ margin: 0, color: '#b8ac96', fontSize: '13px', lineHeight: 1.5 }}>
+          No real payment will be charged.
+        </p>
+      </div>
       <PaymentElement options={paymentElementOptions} />
       <button
         style={{

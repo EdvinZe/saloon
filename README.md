@@ -370,12 +370,16 @@ https://backend-url/api/stripe/webhook
 
 The public demo focuses on the customer booking flow and Stripe test payment. The admin panel is protected and is not intended to be publicly shared. The Telegram bot is protected by Telegram ID and role-based account records. Admin and bot workflows can be demonstrated by video or screen share.
 
-Stripe test card:
+### Demo Payment / Stripe Test Card
+
+The deployed demo uses Stripe test mode for portfolio/demo payments. Use the following Stripe test payment details; no real money is charged.
 
 ```text
-4242 4242 4242 4242
-any future expiry
-any CVC
+Card number: 4242 4242 4242 4242
+Expiry date: any future date, for example 12/34
+CVC: any 3 digits, for example 123
+ZIP/postal code: any valid value, for example 12345
+Payment mode: Stripe test mode / demo only
 ```
 
 Emails are sent through the configured demo SMTP sender. SQLite is used for demo simplicity; PostgreSQL with backups is recommended for real production deployments.
