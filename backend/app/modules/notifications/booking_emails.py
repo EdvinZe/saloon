@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 def send_booking_confirmation_email(booking: Any) -> None:
     booking_id = getattr(booking, "id", None)
+    booking_code = getattr(booking, "booking_code", None)
     to_email = str(getattr(booking, "customer_email", "") or "").strip()
     if not to_email:
         logger.info(
@@ -67,10 +68,14 @@ def send_booking_confirmation_email(booking: Any) -> None:
             html_body=html_body,
         )
     except Exception as exc:
-        logger.error(
-            "[EMAIL] Booking confirmation failed: booking_id=%s error=%s",
+        logger.exception(
+            "[EMAIL] Booking confirmation failed: booking_id=%s booking_code=%s to=%s "
+            "error_class=%s error=%r",
             booking_id,
+            booking_code,
+            to_email or None,
             exc.__class__.__name__,
+            exc,
         )
         return
 
