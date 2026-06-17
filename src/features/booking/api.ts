@@ -1,20 +1,14 @@
-import axios from 'axios'
 import { addDays, format } from 'date-fns'
 import type { Service } from '../services/api'
 import { getServices } from '../services/api'
 import { getAvailableMastersForSlot, getAvailableSlotsForService, type AvailableSlotStatus } from '../bookingavailability/api'
-import { MOCK_EXISTING, TODAY_STR } from './mock/bookingMockData'
-import { isMasterBusyAt as checkMasterBusyAt } from './utils/availability'
 import { getMasters, type Master } from '../masters/api'
 
 const API_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_URL
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _api = axios.create({ baseURL: API_BASE_URL })
-
 async function buildApiError(response: Response, fallbackMessage: string) {
   const responseText = await response.text()
-  let responseBody: unknown = responseText
+  let responseBody: unknown
 
   try {
     responseBody = responseText ? JSON.parse(responseText) : null
@@ -60,8 +54,7 @@ export async function getAvailableMasters(date: string, time: string, serviceId:
 }
 
 export async function getNearestAvailableSlot(serviceId: number): Promise<NearestAvailableSlot | null> {
-  // Replace with FastAPI endpoint: return _api.get(`/api/v1/bookings/nearest-slot?service_id=${serviceId}`).then(r => r.data)
-  const today = new Date(TODAY_STR + 'T12:00:00')
+  const today = new Date()
 
   for (let offset = 0; offset < 30; offset += 1) {
     const date = format(addDays(today, offset), 'yyyy-MM-dd')
@@ -74,17 +67,6 @@ export async function getNearestAvailableSlot(serviceId: number): Promise<Neares
   }
 
   return null
-}
-
-export interface BookingPayload {
-  service_id: number
-  master_id: number
-  date: string
-  time: string
-  customer_first_name: string
-  customer_last_name: string
-  customer_phone: string
-  customer_email: string
 }
 
 export interface BookingCheckPayload {
@@ -138,10 +120,6 @@ export interface BookingPaymentResult {
     deposit_amount_cents: number
     currency: string
   } | null
-}
-
-export async function createBooking(data: BookingPayload) {
-  return _api.post('/bookings', data).then(r => r.data)
 }
 
 export async function checkBookingAvailability(
@@ -260,10 +238,6 @@ interface ApiManagedBookingRescheduleResponse {
   booking: ApiManagedBooking
 }
 
-export function isMasterBusyAt(masterId: number, date: string, startTime: string, durationMin: number): boolean {
-  return checkMasterBusyAt(MOCK_EXISTING, masterId, date, startTime, durationMin)
-}
-
 export async function getBookingByToken(token: string): Promise<ManagedBooking> {
   if (!token.trim()) {
     throw Object.assign(new Error('Booking token is required'), { status: 400 })
@@ -365,26 +339,5 @@ async function mapManagedBooking(booking: ApiManagedBooking): Promise<ManagedBoo
 }
 
 export async function getSlotsForService(date: string, serviceId: number): Promise<ManagedSlotStatus[]> {
-  // Replace with: return _api.get(`/api/v1/bookings/slots?date=${date}&service_id=${serviceId}`).then(r => r.data)
   return getAvailableSlotsForService({ date, serviceId })
-}
-
-export interface ReschedulePayload {
-  token: string
-  serviceId: number
-  date: string
-  time: string
-  masterId: number
-}
-
-export async function rescheduleBooking(data: ReschedulePayload): Promise<{ success: boolean }> {
-  // Replace with: return _api.post('/api/v1/bookings/reschedule', data).then(r => r.data)
-  void data
-  return Promise.resolve({ success: true })
-}
-
-export async function cancelBooking(token: string): Promise<{ success: boolean }> {
-  // Replace with: return _api.post('/api/v1/bookings/cancel', { token }).then(r => r.data)
-  void token
-  return Promise.resolve({ success: true })
 }
