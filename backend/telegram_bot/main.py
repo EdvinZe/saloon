@@ -1,16 +1,16 @@
 import asyncio
-import logging
 from contextlib import suppress
 
 from aiogram import Bot, Dispatcher
 
+from app.core.logging import setup_logging
 from telegram_bot.config import load_config
 from telegram_bot.handlers import actions, bookings, next, now, reports, start
 from telegram_bot.reminders import reminder_loop
 
 
 async def main() -> None:
-    logging.basicConfig(level=logging.INFO)
+    setup_logging()
     config = load_config()
 
     bot = Bot(token=config.telegram_bot_token)

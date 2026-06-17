@@ -151,8 +151,11 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 
 ```env
 APP_ENV=development
+LOG_LEVEL=INFO
 DATABASE_URL=sqlite:///./saloon.db
+AUTO_CREATE_TABLES=true
 PUBLIC_FRONTEND_URL=http://localhost:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5173
 BACKEND_API_URL=http://127.0.0.1:8000
 
 STRIPE_SECRET_KEY=sk_test_...
@@ -164,11 +167,8 @@ EMAIL_FROM_NAME=Saloon Booking
 
 ADMIN_USERNAME=
 ADMIN_PASSWORD=
-ADMIN_PASSWORD_HASH=
 ADMIN_SESSION_SECRET=
 ADMIN_SESSION_EXPIRE_MINUTES=1440
-
-CLIENT_MANAGE_CUTOFF_HOURS=
 
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_AUTH_SOURCE=db
@@ -302,12 +302,16 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 
 ```env
 DATABASE_URL=sqlite:////data/saloon.db
+APP_ENV=production
+LOG_LEVEL=INFO
+AUTO_CREATE_TABLES=true
 PUBLIC_FRONTEND_URL=https://frontend-url
+CORS_ALLOWED_ORIGINS=https://frontend-url
 BACKEND_API_URL=https://backend-url
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 ADMIN_USERNAME=
-ADMIN_PASSWORD_HASH=
+ADMIN_PASSWORD=
 ADMIN_SESSION_SECRET=
 RESEND_API_KEY=your_resend_api_key
 EMAIL_FROM=onboarding@resend.dev
@@ -376,7 +380,7 @@ ZIP/postal code: any valid value, for example 12345
 Payment mode: Stripe test mode / demo only
 ```
 
-Emails are sent through the configured Resend transactional email API over HTTPS. Configure real Resend values in Railway service variables; no email provider secrets are committed. Email delivery is treated as a notification side effect, so a provider failure is logged but does not block booking creation or payment confirmation. SQLite is used for demo simplicity; PostgreSQL with backups is recommended for real production deployments.
+Emails are sent through the configured Resend transactional email API over HTTPS. Configure real Resend values in Railway service variables; no email provider secrets are committed. Email delivery is treated as a notification side effect, so a provider failure is logged but does not block booking creation or payment confirmation. SQLite is used for demo simplicity; `AUTO_CREATE_TABLES=true` lets the demo ensure tables at startup until migrations are added. PostgreSQL with migrations and backups is recommended for real production deployments.
 
 ## Smoke Test Checklist
 

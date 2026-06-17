@@ -29,6 +29,11 @@ CORS_ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 APP_ENV = os.getenv("APP_ENV", "development").strip().lower() or "development"
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").strip().upper() or "INFO"
+AUTO_CREATE_TABLES = (
+    os.getenv("AUTO_CREATE_TABLES", "true").strip().lower()
+    in {"1", "true", "yes", "on"}
+)
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "").strip()
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_SESSION_SECRET = os.getenv("ADMIN_SESSION_SECRET", "")
@@ -71,6 +76,14 @@ def get_email_config() -> dict[str, str]:
 
 def is_production() -> bool:
     return APP_ENV in {"production", "prod"}
+
+
+def get_log_level() -> str:
+    return LOG_LEVEL
+
+
+def should_auto_create_tables() -> bool:
+    return AUTO_CREATE_TABLES
 
 
 def get_admin_session_secret() -> str:
