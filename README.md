@@ -209,6 +209,16 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
+### Backend Tests
+
+```bash
+cd backend
+source .venv/bin/activate
+pytest
+```
+
+The backend tests use temporary SQLite databases and mock external notification/payment edges; they do not use Railway data or call Stripe, Resend, or Telegram.
+
 ### Telegram Bot
 
 ```bash
