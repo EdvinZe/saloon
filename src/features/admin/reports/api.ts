@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.VITE_API_BASE_UR
 
 async function buildApiError(response: Response, fallbackMessage: string) {
   const responseText = await response.text()
-  let responseBody: unknown = responseText
+  let responseBody: unknown
 
   try {
     responseBody = responseText ? JSON.parse(responseText) : null

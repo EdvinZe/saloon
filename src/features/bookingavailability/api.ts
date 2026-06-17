@@ -26,7 +26,6 @@ export type AvailableSlotStatus = {
 export interface AvailableSlotsParams {
   date: string
   serviceId: number
-  excludeBookingToken?: string
 }
 
 function mapMaster(apiMaster: ApiMaster): Master {
@@ -65,8 +64,6 @@ export async function getAvailableMastersForSlot(
 export async function getAvailableSlotsForService(
   params: AvailableSlotsParams
 ): Promise<AvailableSlotStatus[]> {
-  void params.excludeBookingToken
-
   const searchParams = new URLSearchParams({
     service_id: String(params.serviceId),
     date: params.date,
