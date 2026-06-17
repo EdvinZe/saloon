@@ -77,7 +77,7 @@ The current deployment target is a portfolio/demo environment on Railway using D
 - SQLite
 - PyJWT admin sessions
 - Stripe Python SDK
-- SMTP email
+- Resend transactional email API
 
 ### Bot
 
@@ -103,7 +103,7 @@ Customer Browser
   -> FastAPI Backend
   -> SQLite
   -> Stripe API
-  -> SMTP Email
+  -> Resend Email API
   -> Telegram Bot API
 
 Stripe
@@ -158,12 +158,9 @@ BACKEND_API_URL=http://127.0.0.1:8000
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=
-SMTP_PASSWORD=
-SMTP_FROM_EMAIL=
-SMTP_FROM_NAME=Salon Booking
+RESEND_API_KEY=your_resend_api_key
+EMAIL_FROM=onboarding@resend.dev
+EMAIL_FROM_NAME=Saloon Booking
 
 ADMIN_USERNAME=
 ADMIN_PASSWORD=
@@ -312,12 +309,9 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ADMIN_USERNAME=
 ADMIN_PASSWORD_HASH=
 ADMIN_SESSION_SECRET=
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=
-SMTP_PASSWORD=
-SMTP_FROM_EMAIL=
-SMTP_FROM_NAME=Salon Booking
+RESEND_API_KEY=your_resend_api_key
+EMAIL_FROM=onboarding@resend.dev
+EMAIL_FROM_NAME=Saloon Booking
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_AUTH_SOURCE=db
 BOT_TIMEZONE=Europe/Vilnius
@@ -382,7 +376,7 @@ ZIP/postal code: any valid value, for example 12345
 Payment mode: Stripe test mode / demo only
 ```
 
-Emails are sent through the configured demo SMTP sender. SQLite is used for demo simplicity; PostgreSQL with backups is recommended for real production deployments.
+Emails are sent through the configured Resend transactional email API over HTTPS. Configure real Resend values in Railway service variables; no email provider secrets are committed. Email delivery is treated as a notification side effect, so a provider failure is logged but does not block booking creation or payment confirmation. SQLite is used for demo simplicity; PostgreSQL with backups is recommended for real production deployments.
 
 ## Smoke Test Checklist
 
@@ -407,7 +401,7 @@ Emails are sent through the configured demo SMTP sender. SQLite is used for demo
 - Do not commit `saloon.db` or other local database files.
 - Rotate any token or key that was ever exposed.
 - Use Stripe live keys only for a real production deployment.
-- Use a production email provider and verified sending domain for a real client.
+- Use a verified sending domain with the transactional email provider for a real client.
 - Use PostgreSQL and backups for production data.
 - Use a persistent volume if running the SQLite demo on Railway.
 - Admin sessions use an HTTP-only cookie.
