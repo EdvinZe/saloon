@@ -35,7 +35,8 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
 
   useEffect(() => {
     if (selectedDate === null) {
-      setPickedDate(null)
+      const timeoutId = window.setTimeout(() => setPickedDate(null), 0)
+      return () => window.clearTimeout(timeoutId)
     }
   }, [selectedDate])
 

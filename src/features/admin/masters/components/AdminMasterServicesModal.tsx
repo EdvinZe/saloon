@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAdminServices } from '../../services/hooks/useAdminServices'
 import type { AdminMaster } from '../types'
 
@@ -28,10 +28,6 @@ export default function AdminMasterServicesModal({
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>(
     master.services.map(service => service.id),
   )
-
-  useEffect(() => {
-    setSelectedServiceIds(master.services.map(service => service.id))
-  }, [master])
 
   const toggleService = (serviceId: number) => {
     setSelectedServiceIds(current => (

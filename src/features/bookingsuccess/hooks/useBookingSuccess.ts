@@ -17,7 +17,8 @@ export function useBookingSuccess() {
   const canCheckPaymentResult = Boolean(paymentIntentId) && !hasInvalidRedirectStatus
 
   useEffect(() => {
-    setPaymentResultAttempts(0)
+    const timeoutId = window.setTimeout(() => setPaymentResultAttempts(0), 0)
+    return () => window.clearTimeout(timeoutId)
   }, [paymentIntentId, redirectStatus])
 
   const query = useQuery({

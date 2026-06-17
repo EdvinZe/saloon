@@ -17,7 +17,8 @@ export default function ManageMasterSelect({ service, date, time, selected, onSe
   const [showChooseAvailableMessage, setShowChooseAvailableMessage] = useState(false)
 
   useEffect(() => {
-    setShowChooseAvailableMessage(false)
+    const timeoutId = window.setTimeout(() => setShowChooseAvailableMessage(false), 0)
+    return () => window.clearTimeout(timeoutId)
   }, [date, time])
 
   useEffect(() => {
@@ -25,8 +26,11 @@ export default function ManageMasterSelect({ service, date, time, selected, onSe
 
     const selectedIsAvailable = masters.some(master => master.id === selected.id)
     if (!selectedIsAvailable) {
-      setShowChooseAvailableMessage(true)
-      onSelect(null)
+      const timeoutId = window.setTimeout(() => {
+        setShowChooseAvailableMessage(true)
+        onSelect(null)
+      }, 0)
+      return () => window.clearTimeout(timeoutId)
     }
   }, [isLoading, masters, selected, onSelect])
 

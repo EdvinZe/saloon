@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type {
   AdminEditableScheduleStatus,
   AdminScheduleDay,
@@ -47,14 +47,6 @@ export default function AdminScheduleDayModal({
   const [endTime, setEndTime] = useState(selected.day.end_time ?? '20:00')
   const [note, setNote] = useState(selected.day.note ?? '')
   const usesTime = status === 'working' || status === 'extra_day'
-
-  useEffect(() => {
-    const nextStatus = selected.day.status === 'not_set' ? 'working' : selected.day.status
-    setStatus(nextStatus)
-    setStartTime(selected.day.start_time ?? '10:00')
-    setEndTime(selected.day.end_time ?? '20:00')
-    setNote(selected.day.note ?? '')
-  }, [selected])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">

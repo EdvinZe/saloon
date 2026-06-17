@@ -12,17 +12,17 @@ export default function LoadableSection({
   id,
   minHeight = '300px',
 }: Props) {
-  const view = useInView<HTMLDivElement>()
+  const { ref, hasBeenVisible } = useInView<HTMLDivElement>()
 
   return (
     <div
       id={id}
-      ref={view.ref}
+      ref={ref}
       style={{
-        minHeight: view.hasBeenVisible ? undefined : minHeight,
+        minHeight: hasBeenVisible ? undefined : minHeight,
       }}
     >
-      {view.hasBeenVisible && children}
+      {hasBeenVisible && children}
     </div>
   )
 }

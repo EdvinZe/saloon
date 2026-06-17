@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { AdminMaster, AdminMasterCreateInput, AdminMasterUpdateInput } from '../types'
 
 type AdminMasterFormModalProps = {
@@ -28,18 +28,6 @@ export default function AdminMasterFormModal({
   const [isActive, setIsActive] = useState(master?.is_active ?? true)
   const [sortOrder, setSortOrder] = useState(String(master?.sort_order ?? 0))
   const [validationError, setValidationError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setFirstName(master?.first_name ?? '')
-    setLastName(master?.last_name ?? '')
-    setRole(master?.role ?? '')
-    setBio(master?.bio ?? '')
-    setInitials(master?.initials ?? '')
-    setBirthDate(master?.birth_date ?? '')
-    setIsActive(master?.is_active ?? true)
-    setSortOrder(String(master?.sort_order ?? 0))
-    setValidationError(null)
-  }, [master])
 
   const submitForm = () => {
     const normalizedFirstName = firstName.trim()

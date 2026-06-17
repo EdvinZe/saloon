@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { AdminService, AdminServiceCreateInput, AdminServiceUpdateInput } from '../types'
 
 type AdminServiceFormModalProps = {
@@ -35,17 +35,6 @@ export default function AdminServiceFormModal({
   const [isActive, setIsActive] = useState(service?.is_active ?? true)
   const [sortOrder, setSortOrder] = useState(String(service?.sort_order ?? 0))
   const [validationError, setValidationError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setName(service?.name ?? '')
-    setDescription(service?.description ?? '')
-    setPrice(service ? centsToEuroString(service.price_cents) : '0.00')
-    setDurationMinutes(String(service?.duration_minutes ?? 30))
-    setCleanupMinutes(String(service?.cleanup_time_minutes ?? 15))
-    setIsActive(service?.is_active ?? true)
-    setSortOrder(String(service?.sort_order ?? 0))
-    setValidationError(null)
-  }, [service])
 
   const submitForm = () => {
     const normalizedName = name.trim()

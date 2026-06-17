@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { AdminMaster } from '../../masters/types'
 import type {
   AdminTelegramAccount,
@@ -34,16 +34,6 @@ export default function AdminTelegramAccountFormModal({
   const [masterId, setMasterId] = useState(account?.master_id ? String(account.master_id) : '')
   const [isActive, setIsActive] = useState(account?.is_active ?? true)
   const [validationError, setValidationError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setTelegramId(String(account?.telegram_id ?? ''))
-    setRole(account?.role ?? 'manager')
-    setFirstName(account?.first_name ?? '')
-    setLastName(account?.last_name ?? '')
-    setMasterId(account?.master_id ? String(account.master_id) : '')
-    setIsActive(account?.is_active ?? true)
-    setValidationError(null)
-  }, [account])
 
   const submitForm = () => {
     const normalizedTelegramId = telegramId.trim()
