@@ -215,9 +215,19 @@ uvicorn app.main:app --reload
 cd backend
 source .venv/bin/activate
 pytest
+python -m compileall app telegram_bot
 ```
 
-The backend tests use temporary SQLite databases and mock external notification/payment edges; they do not use Railway data or call Stripe, Resend, or Telegram.
+The backend test suite includes FastAPI HTTP integration tests. Tests use temporary SQLite databases and mock external notification/payment edges; they do not use Railway data or call Stripe, Resend, or Telegram.
+
+### Frontend Checks
+
+```bash
+npm run lint
+npm run build
+```
+
+GitHub Actions runs the frontend lint/build checks and backend pytest/compile checks on pushes and pull requests to `main` and `master`.
 
 ### Telegram Bot
 
@@ -435,12 +445,12 @@ Emails are sent through the configured Resend transactional email API over HTTPS
 
 - PostgreSQL.
 - Alembic migrations.
-- Automated tests.
+- Expand automated test coverage.
 - Persistent notification logs.
 - Production transactional email provider.
 - Custom domain.
 - Monitoring and log masking.
-- CI/CD.
+- Deployment automation.
 - Role-based admin users.
 - Mobile app client.
 
