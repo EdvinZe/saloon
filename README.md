@@ -158,7 +158,7 @@ PUBLIC_FRONTEND_URL=http://localhost:5173
 CORS_ALLOWED_ORIGINS=http://localhost:5173
 BACKEND_API_URL=http://127.0.0.1:8000
 CLIENT_MANAGE_CUTOFF_HOURS=12
-MAX_REQUEST_BODY_BYTES=1048576
+RATE_LIMIT_ENABLED=true
 
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
@@ -332,7 +332,6 @@ PUBLIC_FRONTEND_URL=https://frontend-url
 CORS_ALLOWED_ORIGINS=https://frontend-url
 BACKEND_API_URL=https://backend-url
 CLIENT_MANAGE_CUTOFF_HOURS=12
-MAX_REQUEST_BODY_BYTES=1048576
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 ADMIN_USERNAME=
@@ -437,7 +436,8 @@ Emails are sent through the configured Resend transactional email API over HTTPS
 - Client manage-link cancel/reschedule cutoffs are enforced by the backend and configurable with `CLIENT_MANAGE_CUTOFF_HOURS`.
 - Basic security headers are applied by the backend. A strict CSP is a future hardening item because Stripe/frontend integration needs careful testing.
 - CORS is configured from `CORS_ALLOWED_ORIGINS`; production does not allow wildcard origins.
-- Request bodies are limited by `MAX_REQUEST_BODY_BYTES`, defaulting to 1MB.
+- The backend applies a 1MB request body limit as a default security safeguard.
+- Risk-based in-memory rate limiting is enabled by default for public availability, payment, manage-token, admin login, and Telegram bot endpoints. It applies per client IP, uses demo-safe limits defined in code, and can be disabled with `RATE_LIMIT_ENABLED=false` for local debugging. For multi-instance production deployments, Redis or another shared limiter would be the next upgrade.
 - Bot endpoints are protected by bot token checks and `TelegramAccount` authorization.
 - Manage tokens should be treated as private links and should not be publicly exposed.
 

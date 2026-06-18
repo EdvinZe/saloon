@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
-from app.core.config import (
-    ADMIN_SESSION_EXPIRE_MINUTES,
-    get_cors_allowed_origins,
-    is_production,
+from app.core import config
+from app.core.rate_limit import (
+    ADMIN_LOGIN_RATE_LIMIT,
+    admin_login_limiter,
+    client_ip_from_request,
 )
 from app.modules.admin_auth.schemas import AdminAuthResponse, AdminLoginRequest
 from app.modules.admin_auth.service import (
@@ -22,15 +23,27 @@ def _admin_cookie_settings() -> dict[str, object]:
         origin.startswith("https://")
         and "localhost" not in origin
         and "127.0.0.1" not in origin
-        for origin in get_cors_allowed_origins()
+        for origin in config.get_cors_allowed_origins()
     )
-    if is_production() or deployed_cross_origin:
+    if config.is_production() or deployed_cross_origin:
         return {"secure": True, "samesite": "none"}
     return {"secure": False, "samesite": "lax"}
 
 
 @router.post("/login", response_model=AdminAuthResponse)
-def login_admin(data: AdminLoginRequest, response: Response):
+def login_admin(data: AdminLoginRequest, request: Request, response: Response):
+    login_key = client_ip_from_request(request)
+    if config.RATE_LIMIT_ENABLED and not admin_login_limiter.allow(
+        login_key,
+        ADMIN_LOGIN_RATE_LIMIT.bucket,
+        ADMIN_LOGIN_RATE_LIMIT.limit,
+        ADMIN_LOGIN_RATE_LIMIT.window_seconds,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed login attempts. Please try again later.",
+        )
+
     user = authenticate_admin(data.username.strip(), data.password)
     if user is None:
         raise HTTPException(
@@ -38,11 +51,12 @@ def login_admin(data: AdminLoginRequest, response: Response):
             detail="Invalid username or password",
         )
 
+    admin_login_limiter.reset(login_key, ADMIN_LOGIN_RATE_LIMIT.bucket)
     token = create_admin_session_token(user)
     response.set_cookie(
         key=ADMIN_SESSION_COOKIE,
         value=token,
-        max_age=max(1, ADMIN_SESSION_EXPIRE_MINUTES) * 60,
+        max_age=max(1, config.ADMIN_SESSION_EXPIRE_MINUTES) * 60,
         httponly=True,
         **_admin_cookie_settings(),
         path="/",

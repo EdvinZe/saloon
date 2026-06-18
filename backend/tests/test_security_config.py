@@ -5,6 +5,7 @@ from httpx import AsyncClient
 from sqlalchemy.orm import Session
 
 from app.core import config
+from app.core.middleware import REQUEST_BODY_LIMIT_BYTES
 from app.modules.admin_auth.passwords import hash_admin_password
 from tests.conftest import create_booking
 
@@ -142,7 +143,7 @@ async def test_security_headers_are_applied(client: AsyncClient):
 async def test_large_request_body_returns_413(client: AsyncClient):
     response = await client.post(
         "/api/bookings/check-availability",
-        content=b"x" * (config.MAX_REQUEST_BODY_BYTES + 1),
+        content=b"x" * (REQUEST_BODY_LIMIT_BYTES + 1),
         headers={"content-type": "application/json"},
     )
 

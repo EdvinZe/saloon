@@ -1,6 +1,10 @@
 from collections.abc import Awaitable
 
+from app.core.rate_limit import RateLimitMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+
+REQUEST_BODY_LIMIT_BYTES = 1_048_576
 
 
 class SecurityHeadersMiddleware:
@@ -38,7 +42,11 @@ class SecurityHeadersMiddleware:
 
 
 class RequestBodySizeLimitMiddleware:
-    def __init__(self, app: ASGIApp, max_body_bytes: int) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        max_body_bytes: int = REQUEST_BODY_LIMIT_BYTES,
+    ) -> None:
         self.app = app
         self.max_body_bytes = max(1, max_body_bytes)
 

@@ -15,6 +15,7 @@ os.environ.setdefault("STRIPE_SECRET_KEY", "sk_test_placeholder")
 os.environ.setdefault("STRIPE_WEBHOOK_SECRET", "whsec_placeholder")
 
 from app.core.database import Base, get_db  # noqa: E402
+from app.core.rate_limit import admin_login_limiter, rate_limiter  # noqa: E402
 from app.main import app  # noqa: E402
 from app.modules.bookings.models import Booking  # noqa: E402
 from app.modules.master_shifts.models import MasterShift  # noqa: E402
@@ -25,6 +26,15 @@ from app.modules.services.models import Service  # noqa: E402
 @pytest.fixture()
 def anyio_backend() -> str:
     return "asyncio"
+
+
+@pytest.fixture(autouse=True)
+def clear_rate_limiters():
+    rate_limiter.clear()
+    admin_login_limiter.clear()
+    yield
+    rate_limiter.clear()
+    admin_login_limiter.clear()
 
 
 @pytest.fixture()

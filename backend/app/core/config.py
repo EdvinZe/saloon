@@ -22,6 +22,12 @@ def _parse_int(value: str | None, default: int) -> int:
         return default
 
 
+def _parse_bool(value: str | None, default: bool) -> bool:
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 PUBLIC_FRONTEND_URL = (
     os.getenv("PUBLIC_FRONTEND_URL", "http://localhost:5173").strip()
     or "http://localhost:5173"
@@ -49,10 +55,7 @@ CLIENT_MANAGE_CUTOFF_HOURS = max(
     0,
     _parse_int(os.getenv("CLIENT_MANAGE_CUTOFF_HOURS"), 12),
 )
-MAX_REQUEST_BODY_BYTES = max(
-    1,
-    _parse_int(os.getenv("MAX_REQUEST_BODY_BYTES"), 1048576),
-)
+RATE_LIMIT_ENABLED = _parse_bool(os.getenv("RATE_LIMIT_ENABLED"), True)
 _DEV_ADMIN_SESSION_SECRET = secrets.token_urlsafe(32)
 
 
@@ -89,10 +92,6 @@ def get_cors_allowed_origins() -> list[str]:
 
 def get_client_manage_cutoff_hours() -> int:
     return CLIENT_MANAGE_CUTOFF_HOURS
-
-
-def get_max_request_body_bytes() -> int:
-    return MAX_REQUEST_BODY_BYTES
 
 
 def get_email_config() -> dict[str, str]:
