@@ -7,9 +7,10 @@ React + FastAPI + Stripe + Admin Dashboard + Telegram Bot
 Live Demo: https://frontend-production-4bd7.up.railway.app/
 GitHub: https://github.com/EdvinZe/saloon
 
-A deployed full-stack booking and operations platform for salons/barbershops built with React, FastAPI, Stripe, an admin dashboard, and a Telegram staff bot. FastAPI is the source of truth for availability, booking rules, payment confirmation, admin actions, and staff workflows.
+A deployed full-stack booking and operations platform for salons/barbershops.
+The system includes customer booking flow, Stripe test payments, webhook/fallback confirmation, customer manage booking flow, protected admin APIs, Telegram staff operations, backend tests, CI, and practical security hardening.
 
-This is more than a landing page. It automates the real booking workflow: customers select a service, master, date, and available time slot; the backend validates availability and creates a Stripe PaymentIntent; confirmed payments create bookings; customers receive a manage link; and staff can operate through the admin panel or Telegram bot.
+FastAPI is the source of truth for availability, booking rules, payment confirmation, admin actions, and staff workflows.
 
 The current deployment target is a portfolio/demo environment on Railway using Docker, Stripe test mode, and SQLite with a persistent volume. For real production use, the same architecture can be extended with PostgreSQL, migrations, queue-backed notifications, monitoring, and production email infrastructure.
 
