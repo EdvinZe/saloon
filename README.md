@@ -433,7 +433,7 @@ Implemented safeguards:
 - Slot availability is checked before creating a Stripe PaymentIntent and re-validated before final booking confirmation.
 - Stripe webhooks verify signatures, duplicate webhook deliveries do not create duplicate bookings, and booking creation is idempotent by Stripe PaymentIntent ID.
 - The payment-result fallback verifies a PaymentIntent directly with Stripe if the webhook is delayed or unavailable.
-- Manage-token booking access is separated from admin APIs. Manage responses do not echo the raw `manage_token` unnecessarily, and cancel/reschedule actions enforce backend cutoff rules.
+- Manage-token booking access is separated from admin APIs. Manage endpoints do not echo the raw `manage_token` back in manage responses, and cancel/reschedule actions enforce backend cutoff rules.
 - Admin authentication supports hashed password verification and HTTP-only session cookies. Admin routes are protected behind the session check.
 - Telegram bot backend endpoints require the bot secret header and apply `TelegramAccount` authorization rules. Barber accounts are scoped to their own bookings, while manager accounts can see all bookings.
 - Risk-based in-memory rate limiting applies per client IP and bucket for public availability, payment, manage-token, admin login, and Telegram bot endpoints. This is suitable for the demo/single-instance deployment; Redis or another shared limiter would be the next upgrade for multi-instance production.
