@@ -18,6 +18,30 @@ from tests.conftest import booking_payload, create_booking
 pytestmark = pytest.mark.anyio
 
 
+def _paid_payment_intent(
+    seeded_salon,
+    *,
+    payment_intent_id: str,
+    amount: int = 1000,
+    currency: str = "eur",
+    metadata_overrides: dict[str, str] | None = None,
+) -> dict[str, object]:
+    payload = booking_payload(seeded_salon)
+    metadata = {
+        **{key: str(value) for key, value in payload.items()},
+        "deposit_amount_cents": "1000",
+        "currency": "EUR",
+        **(metadata_overrides or {}),
+    }
+    return {
+        "id": payment_intent_id,
+        "status": "succeeded",
+        "amount": amount,
+        "currency": currency,
+        "metadata": metadata,
+    }
+
+
 async def test_payment_result_returns_existing_booking(
     client: AsyncClient,
     db_session: Session,
@@ -64,6 +88,140 @@ async def test_payment_result_unknown_payment_intent_returns_not_found(
     payload = response.json()
     assert payload["status"] == "not_found"
     assert payload["booking"] is None
+
+
+async def test_payment_result_fallback_creates_booking_when_webhook_did_not_arrive(
+    client: AsyncClient,
+    db_session: Session,
+    seeded_salon,
+    monkeypatch,
+):
+    payment_intent = _paid_payment_intent(
+        seeded_salon,
+        payment_intent_id="pi_test_fallback_creates_booking",
+    )
+    monkeypatch.setattr(
+        "app.modules.payments.confirmation_service.retrieve_payment_intent",
+        lambda payment_intent_id: payment_intent,
+    )
+
+    response = await client.get(
+        "/api/bookings/payment-result",
+        params={"payment_intent": "pi_test_fallback_creates_booking"},
+    )
+
+    booking = db_session.scalar(
+        select(Booking).where(
+            Booking.stripe_payment_intent_id == "pi_test_fallback_creates_booking"
+        )
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "confirmed"
+    assert booking is not None
+    assert booking.stripe_payment_intent_id == "pi_test_fallback_creates_booking"
+
+
+async def test_payment_result_rejects_wrong_amount(
+    client: AsyncClient,
+    db_session: Session,
+    seeded_salon,
+    monkeypatch,
+):
+    payment_intent = _paid_payment_intent(
+        seeded_salon,
+        payment_intent_id="pi_test_wrong_amount",
+        amount=500,
+    )
+    monkeypatch.setattr(
+        "app.modules.payments.confirmation_service.retrieve_payment_intent",
+        lambda payment_intent_id: payment_intent,
+    )
+
+    response = await client.get(
+        "/api/bookings/payment-result",
+        params={"payment_intent": "pi_test_wrong_amount"},
+    )
+
+    booking = db_session.scalar(
+        select(Booking).where(Booking.stripe_payment_intent_id == "pi_test_wrong_amount")
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "recovery_failed"
+    assert booking is None
+
+
+async def test_payment_result_rejects_wrong_currency(
+    client: AsyncClient,
+    db_session: Session,
+    seeded_salon,
+    monkeypatch,
+):
+    payment_intent = _paid_payment_intent(
+        seeded_salon,
+        payment_intent_id="pi_test_wrong_currency",
+        currency="usd",
+    )
+    monkeypatch.setattr(
+        "app.modules.payments.confirmation_service.retrieve_payment_intent",
+        lambda payment_intent_id: payment_intent,
+    )
+
+    response = await client.get(
+        "/api/bookings/payment-result",
+        params={"payment_intent": "pi_test_wrong_currency"},
+    )
+
+    booking = db_session.scalar(
+        select(Booking).where(
+            Booking.stripe_payment_intent_id == "pi_test_wrong_currency"
+        )
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "recovery_failed"
+    assert booking is None
+
+
+async def test_payment_result_booking_conflict_after_payment_does_not_create_duplicate(
+    client: AsyncClient,
+    db_session: Session,
+    seeded_salon,
+    monkeypatch,
+):
+    existing_booking = create_booking(
+        db_session,
+        seeded_salon,
+        payment_intent_id="pi_test_existing_conflict",
+    )
+    payment_intent = _paid_payment_intent(
+        seeded_salon,
+        payment_intent_id="pi_test_conflicting_paid_intent",
+    )
+    monkeypatch.setattr(
+        "app.modules.payments.confirmation_service.retrieve_payment_intent",
+        lambda payment_intent_id: payment_intent,
+    )
+
+    response = await client.get(
+        "/api/bookings/payment-result",
+        params={"payment_intent": "pi_test_conflicting_paid_intent"},
+    )
+
+    bookings_at_slot = db_session.scalars(
+        select(Booking).where(
+            Booking.master_id == existing_booking.master_id,
+            Booking.start_at == existing_booking.start_at,
+            Booking.status == "confirmed",
+        )
+    ).all()
+    conflicting_booking = db_session.scalar(
+        select(Booking).where(
+            Booking.stripe_payment_intent_id == "pi_test_conflicting_paid_intent"
+        )
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "recovery_failed"
+    assert conflicting_booking is None
+    assert len(bookings_at_slot) == 1
 
 
 def test_duplicate_payment_intent_does_not_create_second_booking(
@@ -136,24 +294,51 @@ def test_create_confirmed_booking_is_idempotent_for_existing_payment_intent(
     assert len(bookings) == 1
 
 
+async def test_successful_stripe_webhook_creates_booking(
+    client: AsyncClient,
+    db_session: Session,
+    seeded_salon,
+    monkeypatch,
+):
+    payment_intent = _paid_payment_intent(
+        seeded_salon,
+        payment_intent_id="pi_test_webhook_creates_booking",
+    )
+    event = {
+        "type": "payment_intent.succeeded",
+        "data": {"object": payment_intent},
+    }
+    monkeypatch.setattr(
+        "app.modules.payments.webhook_router.stripe.Webhook.construct_event",
+        lambda payload, sig_header, secret: event,
+    )
+
+    response = await client.post(
+        "/api/stripe/webhook",
+        content=b"{}",
+        headers={"Stripe-Signature": "test_signature"},
+    )
+
+    booking = db_session.scalar(
+        select(Booking).where(
+            Booking.stripe_payment_intent_id == "pi_test_webhook_creates_booking"
+        )
+    )
+    assert response.status_code == 200
+    assert response.json() == {"received": True}
+    assert booking is not None
+
+
 async def test_stripe_webhook_duplicate_payment_intent_is_idempotent(
     client: AsyncClient,
     db_session: Session,
     seeded_salon,
     monkeypatch,
 ):
-    payload = booking_payload(seeded_salon)
-    payment_intent = {
-        "id": "pi_test_webhook_duplicate",
-        "status": "succeeded",
-        "amount": 1000,
-        "currency": "eur",
-        "metadata": {
-            **{key: str(value) for key, value in payload.items()},
-            "deposit_amount_cents": "1000",
-            "currency": "EUR",
-        },
-    }
+    payment_intent = _paid_payment_intent(
+        seeded_salon,
+        payment_intent_id="pi_test_webhook_duplicate",
+    )
     event = {
         "type": "payment_intent.succeeded",
         "data": {"object": payment_intent},
