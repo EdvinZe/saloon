@@ -61,6 +61,26 @@ class BookingPublic(BaseModel):
         return f"/booking/manage?token={self.manage_token}"
 
 
+class ManagedBookingPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    booking_code: str | None
+    service_id: int
+    master_id: int
+    customer_first_name: str
+    customer_last_name: str
+    customer_phone: str
+    customer_email: str
+    start_at: datetime
+    end_at: datetime
+    status: str
+    deposit_status: str
+    source: str
+    deposit_amount_cents: int
+    currency: str
+
+
 class BookingPaymentResultResponse(BaseModel):
     status: str
     message: str
@@ -70,13 +90,13 @@ class BookingPaymentResultResponse(BaseModel):
 class BookingCancelResponse(BaseModel):
     success: bool
     message: str
-    booking: BookingPublic
+    booking: ManagedBookingPublic
 
 
 class BookingRescheduleResponse(BaseModel):
     success: bool
     message: str
-    booking: BookingPublic
+    booking: ManagedBookingPublic
 
 
 class BookingAdmin(BookingPublic):

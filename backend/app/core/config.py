@@ -1,9 +1,12 @@
+import logging
 import os
 import secrets
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
@@ -35,11 +38,20 @@ AUTO_CREATE_TABLES = (
     in {"1", "true", "yes", "on"}
 )
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "").strip()
+ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "").strip()
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_SESSION_SECRET = os.getenv("ADMIN_SESSION_SECRET", "")
 ADMIN_SESSION_EXPIRE_MINUTES = _parse_int(
     os.getenv("ADMIN_SESSION_EXPIRE_MINUTES"),
     1440,
+)
+CLIENT_MANAGE_CUTOFF_HOURS = max(
+    0,
+    _parse_int(os.getenv("CLIENT_MANAGE_CUTOFF_HOURS"), 12),
+)
+MAX_REQUEST_BODY_BYTES = max(
+    1,
+    _parse_int(os.getenv("MAX_REQUEST_BODY_BYTES"), 1048576),
 )
 _DEV_ADMIN_SESSION_SECRET = secrets.token_urlsafe(32)
 
@@ -61,9 +73,26 @@ def get_public_frontend_url() -> str:
 
 
 def get_cors_allowed_origins() -> list[str]:
-    return [origin for origin in CORS_ALLOWED_ORIGINS if origin != "*"] or [
-        "http://localhost:5173"
-    ]
+    allowed_origins = [origin for origin in CORS_ALLOWED_ORIGINS if origin != "*"]
+    if allowed_origins:
+        return allowed_origins
+
+    if is_production():
+        logger.warning(
+            "[CONFIG] CORS_ALLOWED_ORIGINS is empty or unsafe in production; "
+            "cross-origin browser requests will be denied"
+        )
+        return []
+
+    return ["http://localhost:5173"]
+
+
+def get_client_manage_cutoff_hours() -> int:
+    return CLIENT_MANAGE_CUTOFF_HOURS
+
+
+def get_max_request_body_bytes() -> int:
+    return MAX_REQUEST_BODY_BYTES
 
 
 def get_email_config() -> dict[str, str]:

@@ -9,10 +9,12 @@ from fastapi import HTTPException, Request, status
 
 from app.core.config import (
     ADMIN_PASSWORD,
+    ADMIN_PASSWORD_HASH,
     ADMIN_SESSION_EXPIRE_MINUTES,
     ADMIN_USERNAME,
     get_admin_session_secret,
 )
+from app.modules.admin_auth.passwords import verify_admin_password
 
 logger = logging.getLogger(__name__)
 
@@ -29,17 +31,24 @@ class AdminUserContext:
 
 def authenticate_admin(username: str, password: str) -> AdminUserContext | None:
     configured_username = ADMIN_USERNAME
+    configured_password_hash = ADMIN_PASSWORD_HASH
     configured_password = ADMIN_PASSWORD
-    if not configured_username or not configured_password:
+    if not configured_username or not (configured_password_hash or configured_password):
         logger.warning(
-            "[ADMIN_AUTH] Login unavailable: ADMIN_USERNAME and ADMIN_PASSWORD must be configured"
+            "[ADMIN_AUTH] Login unavailable: ADMIN_USERNAME and ADMIN_PASSWORD_HASH "
+            "or ADMIN_PASSWORD must be configured"
         )
         return None
 
     if not hmac.compare_digest(username, configured_username):
         return None
 
-    if hmac.compare_digest(password, configured_password):
+    if configured_password_hash:
+        if verify_admin_password(password, configured_password_hash):
+            return AdminUserContext(username=configured_username)
+        return None
+
+    if configured_password and hmac.compare_digest(password, configured_password):
         return AdminUserContext(username=configured_username)
 
     return None

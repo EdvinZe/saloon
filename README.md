@@ -157,6 +157,8 @@ AUTO_CREATE_TABLES=true
 PUBLIC_FRONTEND_URL=http://localhost:5173
 CORS_ALLOWED_ORIGINS=http://localhost:5173
 BACKEND_API_URL=http://127.0.0.1:8000
+CLIENT_MANAGE_CUTOFF_HOURS=12
+MAX_REQUEST_BODY_BYTES=1048576
 
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
@@ -166,6 +168,7 @@ EMAIL_FROM=onboarding@resend.dev
 EMAIL_FROM_NAME=Saloon Booking
 
 ADMIN_USERNAME=
+ADMIN_PASSWORD_HASH=
 ADMIN_PASSWORD=
 ADMIN_SESSION_SECRET=
 ADMIN_SESSION_EXPIRE_MINUTES=1440
@@ -328,10 +331,12 @@ AUTO_CREATE_TABLES=true
 PUBLIC_FRONTEND_URL=https://frontend-url
 CORS_ALLOWED_ORIGINS=https://frontend-url
 BACKEND_API_URL=https://backend-url
+CLIENT_MANAGE_CUTOFF_HOURS=12
+MAX_REQUEST_BODY_BYTES=1048576
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 ADMIN_USERNAME=
-ADMIN_PASSWORD=
+ADMIN_PASSWORD_HASH=
 ADMIN_SESSION_SECRET=
 RESEND_API_KEY=your_resend_api_key
 EMAIL_FROM=onboarding@resend.dev
@@ -428,7 +433,11 @@ Emails are sent through the configured Resend transactional email API over HTTPS
 - Use a verified sending domain with the transactional email provider for a real client.
 - Use PostgreSQL and backups for production data.
 - Use a persistent volume if running the SQLite demo on Railway.
-- Admin sessions use an HTTP-only cookie.
+- Admin authentication uses hashed password verification and HTTP-only session cookies. Generate a hash with `python -m app.modules.admin_auth.passwords '<password>'` from the `backend` directory.
+- Client manage-link cancel/reschedule cutoffs are enforced by the backend and configurable with `CLIENT_MANAGE_CUTOFF_HOURS`.
+- Basic security headers are applied by the backend. A strict CSP is a future hardening item because Stripe/frontend integration needs careful testing.
+- CORS is configured from `CORS_ALLOWED_ORIGINS`; production does not allow wildcard origins.
+- Request bodies are limited by `MAX_REQUEST_BODY_BYTES`, defaulting to 1MB.
 - Bot endpoints are protected by bot token checks and `TelegramAccount` authorization.
 - Manage tokens should be treated as private links and should not be publicly exposed.
 

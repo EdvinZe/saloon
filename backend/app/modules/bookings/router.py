@@ -11,6 +11,7 @@ from app.modules.bookings.schemas import (
     BookingCancelResponse,
     BookingCreate,
     BookingDepositIntentResponse,
+    ManagedBookingPublic,
     BookingPaymentResultResponse,
     BookingPublic,
     BookingRescheduleRequest,
@@ -90,7 +91,7 @@ def get_booking_payment_result_endpoint(
 
 @router.get(
     "/manage",
-    response_model=BookingPublic,
+    response_model=ManagedBookingPublic,
 )
 def get_booking_manage_endpoint(
     token: str = "",

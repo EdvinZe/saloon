@@ -8,6 +8,7 @@ from fastapi import HTTPException, status as http_status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.config import get_client_manage_cutoff_hours
 from app.modules.bookings.models import Booking
 from app.modules.bookings.schemas import (
     AdminBookingActionResponse,
@@ -34,7 +35,6 @@ VALID_DEPOSIT_STATUSES = {"paid", "refunded", "retained"}
 VALID_SOURCES = {"online", "manager_panel", "telegram_bot"}
 BLOCKING_BOOKING_STATUSES = ("confirmed",)
 AVAILABLE_SHIFT_STATUSES = ("working", "extra_day")
-CLIENT_MANAGE_CUTOFF_HOURS = 2
 
 
 def generate_manage_token() -> str:
@@ -681,13 +681,14 @@ def _admin_booking_action_response(
 
 
 def _assert_manage_action_allowed(booking: Booking) -> None:
-    cutoff_at = datetime.now() + timedelta(hours=CLIENT_MANAGE_CUTOFF_HOURS)
+    cutoff_hours = get_client_manage_cutoff_hours()
+    cutoff_at = datetime.now() + timedelta(hours=cutoff_hours)
     if booking.start_at <= cutoff_at:
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=(
                 "Bookings can only be changed more than "
-                f"{CLIENT_MANAGE_CUTOFF_HOURS} hours before the appointment"
+                f"{cutoff_hours} hours before the appointment"
             ),
         )
 
