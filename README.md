@@ -423,23 +423,25 @@ Emails are sent through the configured Resend transactional email API over HTTPS
 - Running fallback confirmation without webhook creates the booking.
 - Manage cancel and reschedule respect backend cutoff rules.
 
-## Security / Production Notes
+## Security & Production Hardening
 
-- Do not commit `.env` files.
-- Do not commit `saloon.db` or other local database files.
-- Rotate any token or key that was ever exposed.
-- Use Stripe live keys only for a real production deployment.
-- Use a verified sending domain with the transactional email provider for a real client.
-- Use PostgreSQL and backups for production data.
-- Use a persistent volume if running the SQLite demo on Railway.
-- Admin authentication uses hashed password verification and HTTP-only session cookies. Generate a hash with `python -m app.modules.admin_auth.passwords '<password>'` from the `backend` directory.
-- Client manage-link cancel/reschedule cutoffs are enforced by the backend and configurable with `CLIENT_MANAGE_CUTOFF_HOURS`.
-- Basic security headers are applied by the backend. A strict CSP is a future hardening item because Stripe/frontend integration needs careful testing.
-- CORS is configured from `CORS_ALLOWED_ORIGINS`; production does not allow wildcard origins.
-- The backend applies a 1MB request body limit as a default security safeguard.
-- Risk-based in-memory rate limiting is enabled by default for public availability, payment, manage-token, admin login, and Telegram bot endpoints. It applies per client IP, uses demo-safe limits defined in code, and can be disabled with `RATE_LIMIT_ENABLED=false` for local debugging. For multi-instance production deployments, Redis or another shared limiter would be the next upgrade.
-- Bot endpoints are protected by bot token checks and `TelegramAccount` authorization.
-- Manage tokens should be treated as private links and should not be publicly exposed.
+The FastAPI backend is the source of truth for booking, payment, admin, and staff workflows. The frontend and Telegram bot are clients; they do not own availability, pricing, payment confirmation, authorization, or booking state transitions.
+
+Implemented safeguards:
+
+- Booking and payment logic are enforced server-side, including service duration, master/service compatibility, schedule rules, slot conflicts, and deposit amount calculation.
+- Slot availability is checked before creating a Stripe PaymentIntent and re-validated before final booking confirmation.
+- Stripe webhooks verify signatures, duplicate webhook deliveries do not create duplicate bookings, and booking creation is idempotent by Stripe PaymentIntent ID.
+- The payment-result fallback verifies a PaymentIntent directly with Stripe if the webhook is delayed or unavailable.
+- Manage-token booking access is separated from admin APIs. Manage responses do not echo the raw `manage_token` unnecessarily, and cancel/reschedule actions enforce backend cutoff rules.
+- Admin authentication supports hashed password verification and HTTP-only session cookies. Admin routes are protected behind the session check.
+- Telegram bot backend endpoints require the bot secret header and apply `TelegramAccount` authorization rules. Barber accounts are scoped to their own bookings, while manager accounts can see all bookings.
+- Risk-based in-memory rate limiting applies per client IP and bucket for public availability, payment, manage-token, admin login, and Telegram bot endpoints. This is suitable for the demo/single-instance deployment; Redis or another shared limiter would be the next upgrade for multi-instance production.
+- Basic security headers, strict CORS configuration, and a 1MB request body limit are applied by the backend.
+- Secrets and deployment-specific settings are environment-based. Do not commit `.env` files, `saloon.db`, or real provider credentials.
+- Backend tests use isolated temporary SQLite databases and mock external Stripe, email, and Telegram edges. GitHub Actions checks backend tests/compile plus frontend lint/build.
+
+Future production upgrades would include PostgreSQL with Alembic migrations, database-backed admin/staff accounts with roles, queue-backed notifications, monitoring/log redaction, production email infrastructure, and shared rate limiting.
 
 ## Known Demo Limitations
 
