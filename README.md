@@ -5,6 +5,7 @@ React + FastAPI + Stripe + Admin Dashboard + Telegram Bot
 ## Live Demo
 
 Live Demo: https://frontend-production-4bd7.up.railway.app/
+
 GitHub: https://github.com/EdvinZe/saloon
 
 A deployed full-stack booking and operations platform for salons/barbershops.
