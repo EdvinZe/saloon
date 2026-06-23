@@ -22,5 +22,6 @@ export interface AIChatMessage {
   role: AIChatRole
   text: string
   createdAt: string
+  action?: 'book_manually'
   metadata?: BookingIntentResponse
 }

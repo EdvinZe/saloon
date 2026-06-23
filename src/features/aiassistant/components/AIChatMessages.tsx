@@ -4,6 +4,7 @@ import type { AIChatMessage } from '../types'
 interface AIChatMessagesProps {
   messages: AIChatMessage[]
   isLoading: boolean
+  onBookManually: () => void
 }
 
 function formatChatTime(createdAt: string): string {
@@ -14,7 +15,11 @@ function formatChatTime(createdAt: string): string {
   return `${hours}:${minutes}`
 }
 
-export default function AIChatMessages({ messages, isLoading }: AIChatMessagesProps) {
+export default function AIChatMessages({
+  messages,
+  isLoading,
+  onBookManually,
+}: AIChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -29,6 +34,15 @@ export default function AIChatMessages({ messages, isLoading }: AIChatMessagesPr
           className={`ai-chat-message ai-chat-message-${message.role}`}
         >
           <div className="ai-chat-bubble">{message.text}</div>
+          {message.action === 'book_manually' && (
+            <button
+              type="button"
+              className="ai-chat-message-action"
+              onClick={onBookManually}
+            >
+              Book manually
+            </button>
+          )}
           <time className="ai-chat-message-meta" dateTime={message.createdAt}>
             {formatChatTime(message.createdAt)}
           </time>

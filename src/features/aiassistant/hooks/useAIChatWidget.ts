@@ -2,19 +2,21 @@ import { useCallback, useEffect, useState } from 'react'
 import { sendAIMessage } from '../api/aiAssistantApi'
 import type { AIChatContextMessage, AIChatMessage, BookingIntentResponse } from '../types'
 
-const unavailableMessage = 'AI assistant is temporarily unavailable. Please try again in a moment.'
+const unavailableMessage = 'AI assistant is temporarily unavailable right now, but the booking system is still working normally. You can continue by using the booking form.'
 const maxContextMessages = 8
 
 function createMessage(
   role: AIChatMessage['role'],
   text: string,
-  metadata?: BookingIntentResponse
+  metadata?: BookingIntentResponse,
+  action?: AIChatMessage['action']
 ): AIChatMessage {
   return {
     id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     role,
     text,
     createdAt: new Date().toISOString(),
+    action,
     metadata,
   }
 }
@@ -67,7 +69,10 @@ export function useAIChatWidget() {
         createMessage('assistant', response.assistant_message, response),
       ])
     } catch {
-      setMessages(prev => [...prev, createMessage('assistant', unavailableMessage)])
+      setMessages(prev => [
+        ...prev,
+        createMessage('assistant', unavailableMessage, undefined, 'book_manually'),
+      ])
     } finally {
       setIsLoading(false)
     }
