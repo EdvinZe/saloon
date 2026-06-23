@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AIChatMessage } from '../types'
+import { useCallback, useEffect, useState } from 'react'
+import { sendAIMessage } from '../api/aiAssistantApi'
+import type { AIChatMessage, BookingIntentResponse } from '../types'
 
 const initialMessages: AIChatMessage[] = [
   {
@@ -34,19 +35,19 @@ const initialMessages: AIChatMessage[] = [
   },
 ]
 
-const mockAssistantReply: AIChatMessage = {
-  id: 'assistant-mock-reply',
-  role: 'assistant',
-  text: "Thanks. I'll keep this ready for booking options once AI search is connected.",
-  timestamp: 'Now',
-}
+const unavailableMessage = 'AI assistant is temporarily unavailable. Please try again in a moment.'
 
-function createMessage(role: AIChatMessage['role'], text: string): AIChatMessage {
+function createMessage(
+  role: AIChatMessage['role'],
+  text: string,
+  metadata?: BookingIntentResponse
+): AIChatMessage {
   return {
     id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     role,
     text,
     timestamp: 'Now',
+    metadata,
   }
 }
 
@@ -55,12 +56,11 @@ export function useAIChatWidget() {
   const [messages, setMessages] = useState<AIChatMessage[]>(initialMessages)
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const responseTimeoutRef = useRef<number | null>(null)
 
   const closeWidget = useCallback(() => setIsOpen(false), [])
   const toggleWidget = useCallback(() => setIsOpen(prev => !prev), [])
 
-  const sendMessage = useCallback(() => {
+  const sendMessage = useCallback(async () => {
     const nextMessage = inputValue.trim()
 
     if (!nextMessage || isLoading) return
@@ -69,17 +69,17 @@ export function useAIChatWidget() {
     setInputValue('')
     setIsLoading(true)
 
-    responseTimeoutRef.current = window.setTimeout(() => {
+    try {
+      const response = await sendAIMessage(nextMessage)
       setMessages(prev => [
         ...prev,
-        {
-          ...mockAssistantReply,
-          id: `assistant-${Date.now()}`,
-        },
+        createMessage('assistant', response.assistant_message, response),
       ])
+    } catch {
+      setMessages(prev => [...prev, createMessage('assistant', unavailableMessage)])
+    } finally {
       setIsLoading(false)
-      responseTimeoutRef.current = null
-    }, 650)
+    }
   }, [inputValue, isLoading])
 
   useEffect(() => {
@@ -94,9 +94,6 @@ export function useAIChatWidget() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
 
-      if (responseTimeoutRef.current !== null) {
-        window.clearTimeout(responseTimeoutRef.current)
-      }
     }
   }, [closeWidget])
 
