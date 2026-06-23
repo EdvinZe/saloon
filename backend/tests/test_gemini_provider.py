@@ -2,7 +2,8 @@ import pytest
 
 from app.ai.client import AIProviderQuotaError
 from app.ai.providers import gemini_provider
-from app.ai.providers.gemini_provider import GeminiProvider, _parse_json_object
+from app.ai.providers.common import parse_json_object
+from app.ai.providers.gemini_provider import GeminiProvider
 
 
 class FakeGeminiError(Exception):
@@ -108,6 +109,6 @@ def test_gemini_provider_does_not_retry_quota_errors(monkeypatch: pytest.MonkeyP
 
 
 def test_parse_json_object_handles_fenced_json():
-    assert _parse_json_object('```json\n{"intent":"greeting"}\n```') == {
+    assert parse_json_object('```json\n{"intent":"greeting"}\n```') == {
         "intent": "greeting",
     }

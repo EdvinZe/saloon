@@ -69,6 +69,10 @@ class AIClient:
             from app.ai.providers.gemini_provider import GeminiProvider
 
             return GeminiProvider()
+        if provider_name == "groq":
+            from app.ai.providers.groq_provider import GroqProvider
+
+            return GroqProvider()
         raise AIDisabledError(f"Unsupported AI provider: {provider_name}")
 
     def _check_daily_limit(self, today: date) -> None:

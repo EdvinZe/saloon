@@ -64,8 +64,10 @@ CLIENT_MANAGE_CUTOFF_HOURS = max(
 )
 RATE_LIMIT_ENABLED = _parse_bool(os.getenv("RATE_LIMIT_ENABLED"), True)
 AI_ENABLED = _parse_bool(os.getenv("AI_ENABLED"), True)
-AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini").strip().lower() or "gemini"
-AI_MODEL = os.getenv("AI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+AI_PROVIDER = os.getenv("AI_PROVIDER", "groq").strip().lower() or "groq"
+AI_MODEL = os.getenv("AI_MODEL", "").strip()
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "").strip()
+GROQ_MODEL = os.getenv("GROQ_MODEL", "").strip()
 AI_MAX_OUTPUT_TOKENS = max(
     1,
     _parse_int(os.getenv("AI_MAX_OUTPUT_TOKENS"), 350),
@@ -80,6 +82,7 @@ AI_DAILY_REQUEST_LIMIT = max(
     _parse_int(os.getenv("AI_DAILY_REQUEST_LIMIT"), 50),
 )
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 _DEV_ADMIN_SESSION_SECRET = secrets.token_urlsafe(32)
 
 
@@ -130,6 +133,14 @@ def get_ai_model() -> str:
     return AI_MODEL
 
 
+def get_gemini_model() -> str:
+    return GEMINI_MODEL or AI_MODEL or "gemini-2.5-flash"
+
+
+def get_groq_model() -> str:
+    return GROQ_MODEL or AI_MODEL or "llama-3.1-8b-instant"
+
+
 def get_ai_max_output_tokens() -> int:
     return AI_MAX_OUTPUT_TOKENS
 
@@ -148,6 +159,10 @@ def get_ai_daily_request_limit() -> int:
 
 def get_gemini_api_key() -> str:
     return GEMINI_API_KEY
+
+
+def get_groq_api_key() -> str:
+    return GROQ_API_KEY
 
 
 def get_email_config() -> dict[str, str]:
