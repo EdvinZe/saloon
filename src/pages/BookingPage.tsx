@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Footer from '../components/layout/Footer'
 import BookingPageHeader from '../features/booking/components/BookingPageHeader'
 import BookingProgress from '../features/booking/components/BookingProgress'
@@ -7,12 +9,76 @@ import DateTimePicker from '../features/booking/components/DateTimePicker'
 import MasterSelect from '../features/booking/components/MasterSelect'
 import PaymentForm from '../features/booking/components/PaymentForm'
 import { useBookingStore } from '../features/booking/hooks/useBookingStore'
+import { useAvailableMasters } from '../features/booking/hooks/useAvailableMasters'
+import { useBookingServices } from '../features/booking/hooks/useBookingServices'
 import { useBookingStepScroll } from '../features/booking/hooks/useBookingStepScroll'
 
 
 export default function BookingPage() {
   const { step, service, date, time, master, setService, setDateTime, setMaster } = useBookingStore()
   const { step2Ref, step3Ref, step4Ref } = useBookingStepScroll(step)
+  const [searchParams] = useSearchParams()
+  const prefillAppliedRef = useRef({
+    service: false,
+    dateTime: false,
+    master: false,
+  })
+  const serviceIdParam = parsePositiveInt(searchParams.get('serviceId'))
+  const masterIdParam = parsePositiveInt(searchParams.get('masterId'))
+  const prefillDate = searchParams.get('date')
+  const prefillTime = searchParams.get('time')
+  const { data: services = [] } = useBookingServices()
+  const { data: availableMasters = [] } = useAvailableMasters(
+    prefillDate,
+    prefillTime,
+    serviceIdParam,
+  )
+
+  useEffect(() => {
+    if (prefillAppliedRef.current.service || serviceIdParam === null || services.length === 0) {
+      return
+    }
+
+    const prefilledService = services.find(item => item.id === serviceIdParam)
+    if (!prefilledService) return
+
+    setService(prefilledService)
+    prefillAppliedRef.current.service = true
+  }, [serviceIdParam, services, setService])
+
+  useEffect(() => {
+    if (
+      prefillAppliedRef.current.dateTime ||
+      !service ||
+      !prefillDate ||
+      !prefillTime ||
+      serviceIdParam !== service.id
+    ) {
+      return
+    }
+
+    setDateTime(prefillDate, prefillTime)
+    prefillAppliedRef.current.dateTime = true
+  }, [prefillDate, prefillTime, service, serviceIdParam, setDateTime])
+
+  useEffect(() => {
+    if (
+      prefillAppliedRef.current.master ||
+      masterIdParam === null ||
+      !service ||
+      !date ||
+      !time ||
+      availableMasters.length === 0
+    ) {
+      return
+    }
+
+    const prefilledMaster = availableMasters.find(item => item.id === masterIdParam)
+    if (!prefilledMaster) return
+
+    setMaster(prefilledMaster)
+    prefillAppliedRef.current.master = true
+  }, [availableMasters, date, masterIdParam, service, setMaster, time])
 
   return (
     <div style={{ background: '#0f0f0f', minHeight: '100vh', overflowX: 'hidden' }}>
@@ -64,4 +130,11 @@ export default function BookingPage() {
       <Footer />
     </div>
   )
+}
+
+function parsePositiveInt(value: string | null): number | null {
+  if (!value) return null
+
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
 }

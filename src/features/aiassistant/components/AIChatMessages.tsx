@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react'
-import type { AIChatMessage } from '../types'
+import type { AIChatMessage, BookingAssistantAction } from '../types'
 
 interface AIChatMessagesProps {
   messages: AIChatMessage[]
   isLoading: boolean
   onBookManually: () => void
+  onAssistantAction: (action: BookingAssistantAction) => void
 }
 
 function formatChatTime(createdAt: string): string {
@@ -19,6 +20,7 @@ export default function AIChatMessages({
   messages,
   isLoading,
   onBookManually,
+  onAssistantAction,
 }: AIChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
@@ -43,6 +45,16 @@ export default function AIChatMessages({
               Book manually
             </button>
           )}
+          {message.role === 'assistant' && message.metadata?.actions?.map((action, index) => (
+            <button
+              key={`${message.id}-${action.type}-${index}`}
+              type="button"
+              className="ai-chat-message-action"
+              onClick={() => onAssistantAction(action)}
+            >
+              {action.label}
+            </button>
+          ))}
           <time className="ai-chat-message-meta" dateTime={message.createdAt}>
             {formatChatTime(message.createdAt)}
           </time>

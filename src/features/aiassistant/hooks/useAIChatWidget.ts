@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { sendAIMessage } from '../api/aiAssistantApi'
-import type { AIChatContextMessage, AIChatMessage, BookingIntentResponse } from '../types'
+import type { AIChatContextMessage, AIChatMessage, BookingDraft, BookingIntentResponse } from '../types'
 
 const unavailableMessage = 'AI assistant is temporarily unavailable right now, but the booking system is still working normally. You can continue by using the booking form.'
 const maxContextMessages = 8
@@ -48,6 +48,7 @@ export function useAIChatWidget() {
   const [messages, setMessages] = useState<AIChatMessage[]>(createInitialMessages)
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [currentBookingDraft, setCurrentBookingDraft] = useState<BookingDraft | null>(null)
 
   const closeWidget = useCallback(() => setIsOpen(false), [])
   const toggleWidget = useCallback(() => setIsOpen(prev => !prev), [])
@@ -63,7 +64,12 @@ export function useAIChatWidget() {
     setIsLoading(true)
 
     try {
-      const response = await sendAIMessage(nextMessage, conversationContext)
+      const response = await sendAIMessage(
+        nextMessage,
+        conversationContext,
+        currentBookingDraft
+      )
+      setCurrentBookingDraft(response.booking_draft)
       setMessages(prev => [
         ...prev,
         createMessage('assistant', response.assistant_message, response),
@@ -76,7 +82,7 @@ export function useAIChatWidget() {
     } finally {
       setIsLoading(false)
     }
-  }, [inputValue, isLoading, messages])
+  }, [currentBookingDraft, inputValue, isLoading, messages])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

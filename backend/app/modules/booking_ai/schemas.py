@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -6,6 +6,7 @@ from app.ai.schemas import (
     BookingConversationMessage,
     BookingIntent,
     BookingIntentTimePreferenceType,
+    BookingNextAction,
     CurrentBookingDraft,
 )
 
@@ -43,5 +44,37 @@ class BookingIntentResponse(BaseModel):
     time_preference_type: BookingIntentTimePreferenceType | None = None
     time: str | None = None
     master_preference: str | None = None
+    booking_draft: CurrentBookingDraft = Field(default_factory=CurrentBookingDraft)
     missing_fields: list[str] = Field(default_factory=list)
+    next_action: BookingNextAction = BookingNextAction.none
     assistant_message: str
+    requested_time_available: bool | None = None
+    available_options: list["BookingAvailabilityOption"] = Field(default_factory=list)
+    nearest_options: list["BookingNearestAvailabilityOption"] = Field(default_factory=list)
+    actions: list["BookingAssistantAction"] = Field(default_factory=list)
+
+
+class BookingAvailabilityOption(BaseModel):
+    service_id: int
+    service_name: str
+    master_id: int
+    master_name: str
+    date: str
+    time: str
+
+
+class BookingNearestAvailabilityOption(BookingAvailabilityOption):
+    direction: str
+
+
+class BookingAssistantActionPayload(BaseModel):
+    service_id: int
+    master_id: int
+    date: str
+    time: str
+
+
+class BookingAssistantAction(BaseModel):
+    type: Literal["prefill_booking"] = "prefill_booking"
+    label: str
+    payload: BookingAssistantActionPayload

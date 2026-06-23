@@ -8,7 +8,9 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 class BookingIntent(str, Enum):
     find_booking_slot = "find_booking_slot"
     ask_booking_question = "ask_booking_question"
+    check_available_masters = "check_available_masters"
     greeting = "greeting"
+    unsupported = "unsupported"
     unknown = "unknown"
 
 
@@ -20,6 +22,18 @@ class BookingIntentTimePreferenceType(str, Enum):
     afternoon = "afternoon"
     evening = "evening"
     unknown = "unknown"
+
+
+class BookingNextAction(str, Enum):
+    none = "none"
+    ask_service = "ask_service"
+    ask_date = "ask_date"
+    ask_time = "ask_time"
+    ready_to_check_availability = "ready_to_check_availability"
+    availability_found = "availability_found"
+    availability_alternatives = "availability_alternatives"
+    unsupported = "unsupported"
+    ai_unavailable = "ai_unavailable"
 
 
 class BookingConversationRole(str, Enum):
@@ -41,11 +55,25 @@ class BookingConversationMessage(BaseModel):
 
 class CurrentBookingDraft(BaseModel):
     service_query: str | None = None
+    service_id: int | None = None
     date: str | None = None
     time: str | None = None
+    time_preference: str | None = None
+    time_preference_type: BookingIntentTimePreferenceType | None = None
     master_preference: str | None = None
+    master_id: int | None = None
+    master_name: str | None = None
 
-    @field_validator("service_query", "date", "time", "master_preference", mode="before")
+    @field_validator(
+        "service_query",
+        "date",
+        "time",
+        "time_preference",
+        "time_preference_type",
+        "master_preference",
+        "master_name",
+        mode="before",
+    )
     @classmethod
     def trim_optional_text(cls, value: object) -> object:
         if isinstance(value, str):
