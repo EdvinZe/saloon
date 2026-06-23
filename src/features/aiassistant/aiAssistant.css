@@ -201,11 +201,22 @@
 }
 
 .ai-chat-message-meta {
+  display: block;
+  width: 100%;
   color: var(--text-dim);
   font-family: sans-serif;
   font-size: 10px;
   letter-spacing: 0.16em;
+  line-height: 1;
   text-transform: uppercase;
+}
+
+.ai-chat-message-user .ai-chat-message-meta {
+  text-align: right;
+}
+
+.ai-chat-message-assistant .ai-chat-message-meta {
+  text-align: left;
 }
 
 .ai-chat-bubble-loading {

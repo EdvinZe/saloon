@@ -6,6 +6,14 @@ interface AIChatMessagesProps {
   isLoading: boolean
 }
 
+function formatChatTime(createdAt: string): string {
+  const date = new Date(createdAt)
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `${hours}:${minutes}`
+}
+
 export default function AIChatMessages({ messages, isLoading }: AIChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
@@ -21,7 +29,9 @@ export default function AIChatMessages({ messages, isLoading }: AIChatMessagesPr
           className={`ai-chat-message ai-chat-message-${message.role}`}
         >
           <div className="ai-chat-bubble">{message.text}</div>
-          <time className="ai-chat-message-meta">{message.timestamp}</time>
+          <time className="ai-chat-message-meta" dateTime={message.createdAt}>
+            {formatChatTime(message.createdAt)}
+          </time>
         </article>
       ))}
 

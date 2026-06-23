@@ -1,10 +1,11 @@
 import json
 import logging
+import time
 from typing import Any
 
 from pydantic import ValidationError
 
-from app.ai.client import AIDisabledError, AIProviderError
+from app.ai.client import AIDisabledError, AIProviderError, AIProviderQuotaError
 from app.ai.prompts import build_booking_intent_prompt
 from app.ai.schemas import BookingIntentExtractionContext, ExtractedBookingIntent
 from app.core.config import (
@@ -16,6 +17,10 @@ from app.core.config import (
 )
 
 logger = logging.getLogger(__name__)
+
+_MAX_TRANSIENT_RETRIES = 2
+_TRANSIENT_RETRY_DELAYS_SECONDS = (0.5, 1.0)
+_TRANSIENT_STATUS_CODES = {500, 502, 503, 504}
 
 
 class GeminiProvider:
@@ -37,6 +42,8 @@ class GeminiProvider:
             logger.warning("[AI] Gemini returned invalid booking intent JSON: %s", exc)
             raise AIProviderError("AI provider returned invalid output") from exc
         except AIDisabledError:
+            raise
+        except AIProviderQuotaError:
             raise
         except AIProviderError:
             raise
@@ -63,9 +70,9 @@ class GeminiProvider:
             temperature=get_ai_temperature(),
             max_output_tokens=get_ai_max_output_tokens(),
             response_mime_type="application/json",
-            response_schema=ExtractedBookingIntent,
         )
-        response = client.models.generate_content(
+        response = self._generate_content_with_retries(
+            client=client,
             model=self.model,
             contents=build_booking_intent_prompt(context),
             config=config,
@@ -73,7 +80,124 @@ class GeminiProvider:
         text = getattr(response, "text", None)
         if not text:
             raise AIProviderError("AI provider returned an empty response")
-        payload = json.loads(text)
+        payload = _parse_json_object(text)
         if not isinstance(payload, dict):
             raise AIProviderError("AI provider returned a non-object response")
         return payload
+
+    def _generate_content_with_retries(
+        self,
+        *,
+        client: Any,
+        model: str,
+        contents: str,
+        config: Any,
+    ) -> Any:
+        max_attempts = _MAX_TRANSIENT_RETRIES + 1
+
+        for attempt_index in range(max_attempts):
+            try:
+                return client.models.generate_content(
+                    model=model,
+                    contents=contents,
+                    config=config,
+                )
+            except Exception as exc:
+                if _is_quota_provider_error(exc):
+                    logger.warning(
+                        "[AI] Gemini quota/rate limit error: %s",
+                        _describe_provider_error(exc),
+                    )
+                    raise AIProviderQuotaError("AI provider quota is exhausted") from exc
+
+                is_last_attempt = attempt_index == max_attempts - 1
+                if not _is_transient_provider_error(exc) or is_last_attempt:
+                    raise
+
+                delay_seconds = _TRANSIENT_RETRY_DELAYS_SECONDS[attempt_index]
+                logger.warning(
+                    "[AI] Gemini transient error on attempt %s/%s: %s; retrying in %.1fs",
+                    attempt_index + 1,
+                    max_attempts,
+                    _describe_provider_error(exc),
+                    delay_seconds,
+                )
+                time.sleep(delay_seconds)
+
+        raise AIProviderError("AI provider request failed")
+
+
+def _parse_json_object(text: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        stripped = text.strip()
+        if stripped.startswith("```"):
+            stripped = stripped.removeprefix("```json").removeprefix("```").strip()
+            stripped = stripped.removesuffix("```").strip()
+        payload = json.loads(stripped)
+
+    if not isinstance(payload, dict):
+        raise AIProviderError("AI provider returned a non-object response")
+    return payload
+
+
+def _is_quota_provider_error(exc: Exception) -> bool:
+    code = getattr(exc, "code", None)
+    response = getattr(exc, "response", None)
+    status_code = getattr(response, "status_code", None)
+    status = str(getattr(exc, "status", "")).upper()
+    message = str(getattr(exc, "message", "") or exc).lower()
+    return (
+        code == 429
+        or status_code == 429
+        or status == "RESOURCE_EXHAUSTED"
+        or "quota" in message
+        or "resource exhausted" in message
+        or "rate limit" in message
+    )
+
+
+def _is_transient_provider_error(exc: Exception) -> bool:
+    code = getattr(exc, "code", None)
+    if isinstance(code, int) and code in _TRANSIENT_STATUS_CODES:
+        return True
+
+    response = getattr(exc, "response", None)
+    status_code = getattr(response, "status_code", None)
+    if isinstance(status_code, int) and status_code in _TRANSIENT_STATUS_CODES:
+        return True
+
+    status = str(getattr(exc, "status", "")).upper()
+    if status in {"UNAVAILABLE", "DEADLINE_EXCEEDED"}:
+        return True
+
+    message = str(getattr(exc, "message", "") or exc).lower()
+    transient_markers = (
+        "temporarily unavailable",
+        "temporary",
+        "high demand",
+        "timeout",
+        "timed out",
+        "connection reset",
+        "connection aborted",
+    )
+    return any(marker in message for marker in transient_markers)
+
+
+def _describe_provider_error(exc: Exception) -> str:
+    code = getattr(exc, "code", None)
+    status = getattr(exc, "status", None)
+    message = str(getattr(exc, "message", "") or exc).replace("\n", " ").strip()
+    if len(message) > 140:
+        message = f"{message[:137]}..."
+
+    parts = []
+    if code is not None:
+        parts.append(f"code={code}")
+    if status:
+        parts.append(f"status={status}")
+    if message:
+        parts.append(f"reason={message}")
+
+    return ", ".join(parts) or exc.__class__.__name__

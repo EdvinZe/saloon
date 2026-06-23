@@ -1,41 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { sendAIMessage } from '../api/aiAssistantApi'
-import type { AIChatMessage, BookingIntentResponse } from '../types'
-
-const initialMessages: AIChatMessage[] = [
-  {
-    id: 'assistant-1',
-    role: 'assistant',
-    text: "Hi! I'm your booking assistant. How can I help you today?",
-    timestamp: 'Now',
-  },
-  {
-    id: 'user-1',
-    role: 'user',
-    text: "Hi, I'd like to book a haircut.",
-    timestamp: 'Now',
-  },
-  {
-    id: 'assistant-2',
-    role: 'assistant',
-    text: 'Great! What date and time works best for you?',
-    timestamp: 'Now',
-  },
-  {
-    id: 'user-2',
-    role: 'user',
-    text: 'Tomorrow after 3pm.',
-    timestamp: 'Now',
-  },
-  {
-    id: 'assistant-3',
-    role: 'assistant',
-    text: 'I can help you find matching booking options.',
-    timestamp: 'Now',
-  },
-]
+import type { AIChatContextMessage, AIChatMessage, BookingIntentResponse } from '../types'
 
 const unavailableMessage = 'AI assistant is temporarily unavailable. Please try again in a moment.'
+const maxContextMessages = 8
 
 function createMessage(
   role: AIChatMessage['role'],
@@ -46,14 +14,36 @@ function createMessage(
     id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     role,
     text,
-    timestamp: 'Now',
+    createdAt: new Date().toISOString(),
     metadata,
   }
 }
 
+function createInitialMessages(): AIChatMessage[] {
+  return [
+    createMessage('assistant', "Hi! I'm your booking assistant. How can I help you today?"),
+  ]
+}
+
+function buildConversationContext(
+  messages: AIChatMessage[],
+  nextUserMessage: string
+): AIChatContextMessage[] {
+  return [
+    ...messages.map(message => ({
+      role: message.role,
+      content: message.text,
+    })),
+    {
+      role: 'user' as const,
+      content: nextUserMessage,
+    },
+  ].slice(-maxContextMessages)
+}
+
 export function useAIChatWidget() {
   const [isOpen, setIsOpen] = useState(true)
-  const [messages, setMessages] = useState<AIChatMessage[]>(initialMessages)
+  const [messages, setMessages] = useState<AIChatMessage[]>(createInitialMessages)
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -65,12 +55,13 @@ export function useAIChatWidget() {
 
     if (!nextMessage || isLoading) return
 
+    const conversationContext = buildConversationContext(messages, nextMessage)
     setMessages(prev => [...prev, createMessage('user', nextMessage)])
     setInputValue('')
     setIsLoading(true)
 
     try {
-      const response = await sendAIMessage(nextMessage)
+      const response = await sendAIMessage(nextMessage, conversationContext)
       setMessages(prev => [
         ...prev,
         createMessage('assistant', response.assistant_message, response),
@@ -80,7 +71,7 @@ export function useAIChatWidget() {
     } finally {
       setIsLoading(false)
     }
-  }, [inputValue, isLoading])
+  }, [inputValue, isLoading, messages])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -93,7 +84,6 @@ export function useAIChatWidget() {
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
-
     }
   }, [closeWidget])
 

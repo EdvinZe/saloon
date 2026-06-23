@@ -13,4 +13,9 @@ def create_booking_intent(
     data: BookingIntentRequest,
     db: Session = Depends(get_db),
 ) -> BookingIntentResponse:
-    return extract_booking_intent(db, data.message)
+    return extract_booking_intent(
+        db,
+        data.message,
+        data.messages,
+        data.current_booking_draft,
+    )

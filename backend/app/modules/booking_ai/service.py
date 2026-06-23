@@ -3,12 +3,24 @@ from datetime import date
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.ai.client import AIDisabledError, AIProviderError, AIRateLimitError, ai_client
+from app.ai.client import (
+    AIDisabledError,
+    AIProviderError,
+    AIProviderQuotaError,
+    AIRateLimitError,
+    ai_client,
+)
+from app.ai.schemas import BookingConversationMessage, CurrentBookingDraft
 from app.modules.booking_ai.schemas import BookingIntentResponse
 from app.modules.services.service import list_public_services
 
 
-def extract_booking_intent(db: Session, message: str) -> BookingIntentResponse:
+def extract_booking_intent(
+    db: Session,
+    message: str,
+    conversation_messages: list[BookingConversationMessage] | None = None,
+    current_booking_draft: CurrentBookingDraft | None = None,
+) -> BookingIntentResponse:
     normalized_message = message.strip()
     if not normalized_message:
         raise HTTPException(
@@ -24,6 +36,8 @@ def extract_booking_intent(db: Session, message: str) -> BookingIntentResponse:
             user_message=normalized_message,
             today=date.today(),
             service_names=service_names,
+            conversation_messages=conversation_messages or [],
+            current_booking_draft=current_booking_draft,
         )
     except AIDisabledError as exc:
         raise HTTPException(
@@ -34,6 +48,11 @@ def extract_booking_intent(db: Session, message: str) -> BookingIntentResponse:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=str(exc),
+        ) from exc
+    except AIProviderQuotaError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="AI provider quota is temporarily exhausted",
         ) from exc
     except AIProviderError as exc:
         raise HTTPException(

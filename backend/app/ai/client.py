@@ -1,6 +1,11 @@
 from datetime import date
 
-from app.ai.schemas import BookingIntentExtractionContext, ExtractedBookingIntent
+from app.ai.schemas import (
+    BookingConversationMessage,
+    BookingIntentExtractionContext,
+    CurrentBookingDraft,
+    ExtractedBookingIntent,
+)
 from app.core.config import (
     get_ai_daily_request_limit,
     get_ai_provider,
@@ -20,6 +25,10 @@ class AIProviderError(AIError):
     """Raised when the provider fails or returns invalid output."""
 
 
+class AIProviderQuotaError(AIProviderError):
+    """Raised when the upstream AI provider quota is exhausted."""
+
+
 class AIRateLimitError(AIError):
     """Raised when the lightweight daily AI limit is exhausted."""
 
@@ -35,6 +44,8 @@ class AIClient:
         user_message: str,
         today: date,
         service_names: list[str],
+        conversation_messages: list[BookingConversationMessage] | None = None,
+        current_booking_draft: CurrentBookingDraft | None = None,
     ) -> ExtractedBookingIntent:
         if not is_ai_enabled():
             raise AIDisabledError("AI is disabled")
@@ -45,6 +56,8 @@ class AIClient:
             today=today,
             service_names=service_names,
             user_message=user_message,
+            conversation_messages=conversation_messages or [],
+            current_booking_draft=current_booking_draft,
         )
         result = provider.extract_booking_intent(context)
         self._daily_count += 1
