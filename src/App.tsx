@@ -16,6 +16,7 @@ import AdminReportsPage from './pages/admin/AdminReportsPage'
 import AdminTelegramAccountsPage from './pages/admin/AdminTelegramAccountsPage'
 import AdminLoginPage from './pages/admin/AdminLoginPage'
 import ProtectedAdminRoute from './features/admin/auth/components/ProtectedAdminRoute'
+import { AIChatWidget } from './features/aiassistant'
 
 const queryClient = new QueryClient()
 
@@ -95,6 +96,7 @@ export default function App() {
               element={<BookingErrorPage forcedType="page" forcedReason="not_found" />}
             />
           </Routes>
+          <AIChatWidget />
         </div>
       </BrowserRouter>
     </QueryClientProvider>

@@ -3,6 +3,7 @@ from fastapi import Depends, FastAPI
 from app.modules.admin_auth.router import router as admin_auth_router
 from app.modules.admin_auth.service import require_admin_user
 from app.modules.availability.router import router as availability_router
+from app.modules.booking_ai.router import router as booking_ai_router
 from app.modules.bookings.admin_router import router as admin_bookings_router
 from app.modules.bookings.router import router as bookings_router
 from app.modules.master_shifts.admin_router import (
@@ -59,6 +60,12 @@ def register_routers(app: FastAPI) -> None:
         bookings_router,
         prefix="/api/bookings",
         tags=["Bookings"],
+    )
+
+    app.include_router(
+        booking_ai_router,
+        prefix="/api/ai",
+        tags=["AI"],
     )
 
     app.include_router(

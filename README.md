@@ -151,12 +151,16 @@ Vite environment variables are build-time variables. Backend and bot variables a
 
 ### Frontend
 
+Only Vite-exposed, browser-safe variables belong in the root `.env`.
+
 ```env
 VITE_API_BASE_URL=https://backend-url
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 ```
 
 ### Backend
+
+Backend runtime variables and secrets belong in `backend/.env`, not the root `.env`.
 
 ```env
 APP_ENV=development
@@ -168,6 +172,15 @@ CORS_ALLOWED_ORIGINS=http://localhost:5173
 BACKEND_API_URL=http://127.0.0.1:8000
 CLIENT_MANAGE_CUTOFF_HOURS=12
 RATE_LIMIT_ENABLED=true
+
+AI_ENABLED=true
+AI_PROVIDER=gemini
+AI_MODEL=gemini-2.5-flash
+AI_MAX_OUTPUT_TOKENS=350
+AI_TEMPERATURE=0.2
+AI_REQUEST_TIMEOUT_SECONDS=20
+AI_DAILY_REQUEST_LIMIT=50
+GEMINI_API_KEY=your_gemini_api_key
 
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
@@ -184,6 +197,8 @@ ADMIN_SESSION_EXPIRE_MINUTES=1440
 
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_AUTH_SOURCE=db
+TELEGRAM_MANAGER_IDS=
+TELEGRAM_BARBER_MASTER_MAP=
 BOT_TIMEZONE=Europe/Vilnius
 BARBER_REMINDER_MINUTES=15
 BARBER_REMINDER_CHECK_INTERVAL_SECONDS=60
@@ -195,12 +210,20 @@ BARBER_REMINDER_CHECK_INTERVAL_SECONDS=60
 TELEGRAM_BOT_TOKEN=
 BACKEND_API_URL=https://backend-url
 TELEGRAM_AUTH_SOURCE=db
+TELEGRAM_MANAGER_IDS=
+TELEGRAM_BARBER_MASTER_MAP=
 BOT_TIMEZONE=Europe/Vilnius
 BARBER_REMINDER_MINUTES=15
 BARBER_REMINDER_CHECK_INTERVAL_SECONDS=60
 ```
 
 The Stripe webhook secret for a deployed Railway backend is different from the local Stripe CLI webhook secret. Configure each environment with the correct `STRIPE_WEBHOOK_SECRET`.
+
+### AI Booking Intent
+
+The backend includes an internal AI abstraction with Gemini as the first provider. Create a Gemini API key, keep `AI_PROVIDER=gemini`, and set `GEMINI_API_KEY` only in `backend/.env` or backend Railway variables to enable `POST /api/ai/booking-intent`. Never expose `GEMINI_API_KEY` in the frontend root `.env`.
+
+The endpoint accepts a user message and returns structured booking intent JSON. The AI layer is read-only: it does not create bookings, payments, refunds, admin changes, or database mutations. Only the current date, active public service names, the user message, and extraction rules are sent to the provider.
 
 ## Local Development Setup
 
@@ -341,16 +364,29 @@ PUBLIC_FRONTEND_URL=https://frontend-url
 CORS_ALLOWED_ORIGINS=https://frontend-url
 BACKEND_API_URL=https://backend-url
 CLIENT_MANAGE_CUTOFF_HOURS=12
+RATE_LIMIT_ENABLED=true
+AI_ENABLED=true
+AI_PROVIDER=gemini
+AI_MODEL=gemini-2.5-flash
+AI_MAX_OUTPUT_TOKENS=350
+AI_TEMPERATURE=0.2
+AI_REQUEST_TIMEOUT_SECONDS=20
+AI_DAILY_REQUEST_LIMIT=50
+GEMINI_API_KEY=
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 ADMIN_USERNAME=
 ADMIN_PASSWORD_HASH=
+ADMIN_PASSWORD=
 ADMIN_SESSION_SECRET=
+ADMIN_SESSION_EXPIRE_MINUTES=1440
 RESEND_API_KEY=your_resend_api_key
 EMAIL_FROM=onboarding@resend.dev
 EMAIL_FROM_NAME=Saloon Booking
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_AUTH_SOURCE=db
+TELEGRAM_MANAGER_IDS=
+TELEGRAM_BARBER_MASTER_MAP=
 BOT_TIMEZONE=Europe/Vilnius
 BARBER_REMINDER_MINUTES=15
 BARBER_REMINDER_CHECK_INTERVAL_SECONDS=60
@@ -373,6 +409,8 @@ python -m telegram_bot.main
 TELEGRAM_BOT_TOKEN=
 BACKEND_API_URL=https://backend-url
 TELEGRAM_AUTH_SOURCE=db
+TELEGRAM_MANAGER_IDS=
+TELEGRAM_BARBER_MASTER_MAP=
 BOT_TIMEZONE=Europe/Vilnius
 BARBER_REMINDER_MINUTES=15
 BARBER_REMINDER_CHECK_INTERVAL_SECONDS=60

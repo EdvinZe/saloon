@@ -28,6 +28,13 @@ def _parse_bool(value: str | None, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _parse_float(value: str | None, default: float) -> float:
+    try:
+        return float(value or default)
+    except (TypeError, ValueError):
+        return default
+
+
 PUBLIC_FRONTEND_URL = (
     os.getenv("PUBLIC_FRONTEND_URL", "http://localhost:5173").strip()
     or "http://localhost:5173"
@@ -56,6 +63,23 @@ CLIENT_MANAGE_CUTOFF_HOURS = max(
     _parse_int(os.getenv("CLIENT_MANAGE_CUTOFF_HOURS"), 12),
 )
 RATE_LIMIT_ENABLED = _parse_bool(os.getenv("RATE_LIMIT_ENABLED"), True)
+AI_ENABLED = _parse_bool(os.getenv("AI_ENABLED"), True)
+AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini").strip().lower() or "gemini"
+AI_MODEL = os.getenv("AI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+AI_MAX_OUTPUT_TOKENS = max(
+    1,
+    _parse_int(os.getenv("AI_MAX_OUTPUT_TOKENS"), 350),
+)
+AI_TEMPERATURE = _parse_float(os.getenv("AI_TEMPERATURE"), 0.2)
+AI_REQUEST_TIMEOUT_SECONDS = max(
+    1,
+    _parse_int(os.getenv("AI_REQUEST_TIMEOUT_SECONDS"), 20),
+)
+AI_DAILY_REQUEST_LIMIT = max(
+    0,
+    _parse_int(os.getenv("AI_DAILY_REQUEST_LIMIT"), 50),
+)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 _DEV_ADMIN_SESSION_SECRET = secrets.token_urlsafe(32)
 
 
@@ -92,6 +116,38 @@ def get_cors_allowed_origins() -> list[str]:
 
 def get_client_manage_cutoff_hours() -> int:
     return CLIENT_MANAGE_CUTOFF_HOURS
+
+
+def is_ai_enabled() -> bool:
+    return AI_ENABLED
+
+
+def get_ai_provider() -> str:
+    return AI_PROVIDER
+
+
+def get_ai_model() -> str:
+    return AI_MODEL
+
+
+def get_ai_max_output_tokens() -> int:
+    return AI_MAX_OUTPUT_TOKENS
+
+
+def get_ai_temperature() -> float:
+    return AI_TEMPERATURE
+
+
+def get_ai_request_timeout_seconds() -> int:
+    return AI_REQUEST_TIMEOUT_SECONDS
+
+
+def get_ai_daily_request_limit() -> int:
+    return AI_DAILY_REQUEST_LIMIT
+
+
+def get_gemini_api_key() -> str:
+    return GEMINI_API_KEY
 
 
 def get_email_config() -> dict[str, str]:
