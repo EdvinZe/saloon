@@ -363,7 +363,7 @@ async def test_book_manually_returns_open_booking_form_action_without_side_effec
 
     assert response.status_code == 200
     assert response.json()["actions"] == [
-        {"type": "open_booking_form", "label": "Open booking form", "payload": {}}
+        {"type": "open_booking_form", "label": "Book manually", "payload": {}}
     ]
     assert db_session.query(Booking).count() == before_count
 

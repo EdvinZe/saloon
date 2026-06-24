@@ -33,8 +33,15 @@ async def test_booking_intent_ai_disabled_returns_clean_error(
         json={"message": "I want a haircut tomorrow after 3pm"},
     )
 
-    assert response.status_code == 503
-    assert response.json()["detail"] == "AI is disabled"
+    assert response.status_code == 200
+    assert response.json()["assistant_message"] == (
+        "AI assistant is temporarily unavailable right now, but the booking system is still working normally. "
+        "You can continue by using the booking form."
+    )
+    assert response.json()["booking_draft"] == booking_draft_payload()
+    assert response.json()["actions"] == [
+        {"type": "open_booking_form", "label": "Book manually", "payload": {}}
+    ]
 
 
 @pytest.mark.anyio
@@ -231,8 +238,11 @@ async def test_booking_intent_provider_quota_returns_clean_error(
 
     response = await client.post(
         "/api/ai/booking-intent",
-        json={"message": "hello"},
+        json={"message": "I want a haircut"},
     )
 
-    assert response.status_code == 429
-    assert response.json()["detail"] == "AI provider quota is temporarily exhausted"
+    assert response.status_code == 200
+    assert response.json()["assistant_message"].startswith("AI assistant is temporarily unavailable")
+    assert response.json()["actions"] == [
+        {"type": "open_booking_form", "label": "Book manually", "payload": {}}
+    ]

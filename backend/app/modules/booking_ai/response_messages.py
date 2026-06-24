@@ -58,7 +58,7 @@ def build_assistant_message(
     if intent == BookingIntent.unsupported:
         return "I can help with booking questions, but I cannot access private booking, payment, or admin data."
     if intent == BookingIntent.greeting and not has_booking_details(booking_draft):
-        return "Hi! I can help prepare your booking details. What service would you like?"
+        return "Hi! I can help you check services, masters, or available booking times."
 
     if "service" in missing_fields:
         return "What service are you looking for?"
@@ -79,10 +79,12 @@ def build_assistant_message(
         )
 
     if has_booking_details(booking_draft):
-        return (
-            f"I have {format_booking_details(booking_draft)} so far. "
-            "Tell me the missing detail and I can prepare the booking request."
-        )
+        if not booking_draft.service_query:
+            return "What service are you looking for?"
+        if not booking_draft.date:
+            return "What day or date range should I check?"
+        if not booking_draft.time and not booking_draft.time_preference:
+            return "What time should I check?"
 
     return "How can I help with your booking?"
 

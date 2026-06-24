@@ -46,7 +46,7 @@ from app.modules.booking_ai.response_messages import (
     format_service_names,
     format_service_price,
 )
-from app.modules.booking_ai.schemas import BookingIntentResponse
+from app.modules.booking_ai.schemas import BookingAssistantAction, BookingIntentResponse
 from app.modules.booking_ai.master_info import build_master_info_response
 from app.modules.booking_ai.service_matching import (
     is_service_name_match,
@@ -81,6 +81,14 @@ def extract_booking_intent(
         if master.first_name or master.last_name
     ]
 
+    local_response = build_local_pre_ai_response(
+        db=db,
+        user_message=normalized_message,
+        current_draft=current_booking_draft,
+    )
+    if local_response is not None:
+        return local_response
+
     try:
         result = ai_client.extract_booking_intent(
             user_message=normalized_message,
@@ -90,28 +98,89 @@ def extract_booking_intent(
             conversation_messages=conversation_messages or [],
             current_booking_draft=current_booking_draft,
         )
-    except AIDisabledError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(exc),
-        ) from exc
-    except AIRateLimitError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=str(exc),
-        ) from exc
-    except AIProviderQuotaError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="AI provider quota is temporarily exhausted",
-        ) from exc
-    except AIProviderError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI provider is temporarily unavailable",
-        ) from exc
+    except (AIDisabledError, AIRateLimitError, AIProviderQuotaError, AIProviderError):
+        return build_ai_unavailable_response()
 
     return build_booking_intent_response(db, result, current_booking_draft, normalized_message)
+
+
+def build_local_pre_ai_response(
+    *,
+    db: Session,
+    user_message: str,
+    current_draft: CurrentBookingDraft | None,
+) -> BookingIntentResponse | None:
+    if is_greeting_message(user_message):
+        return BookingIntentResponse(
+            intent=BookingIntent.greeting,
+            booking_draft=CurrentBookingDraft(),
+            assistant_message="Hi! I can help you check services, masters, or available booking times.",
+            actions=[],
+        )
+
+    if current_draft is None or not is_pending_flexible_service_question(current_draft):
+        return build_followup_response(
+            db,
+            user_message=user_message,
+            current_draft=current_draft,
+        )
+
+    services = list_public_services(db)
+    service_matches = match_public_services_by_name(services, user_message)
+    if len(service_matches) == 1:
+        service = service_matches[0]
+        updated_draft = CurrentBookingDraft.model_validate({
+            **current_draft.model_dump(),
+            "service_query": service.name,
+            "service_id": service.id,
+        })
+        return build_flexible_availability_response(db, updated_draft)
+
+    if len(service_matches) > 1:
+        return BookingIntentResponse(
+            intent=BookingIntent.flexible_availability_search,
+            booking_draft=current_draft,
+            assistant_message=(
+                f"I found a few matching services: {format_service_names(service_matches)}. "
+                "Which one do you mean?"
+            ),
+            services=build_assistant_services(service_matches),
+            actions=[],
+        )
+
+    return BookingIntentResponse(
+        intent=BookingIntent.flexible_availability_search,
+        booking_draft=current_draft,
+        assistant_message=f"I couldn't find that service. Available services are: {format_service_names(services)}.",
+        services=build_assistant_services(services),
+        actions=[],
+    )
+
+
+def is_pending_flexible_service_question(draft: CurrentBookingDraft) -> bool:
+    return not draft.service_query and has_flexible_search_details(draft)
+
+
+def is_greeting_message(message: str) -> bool:
+    normalized = normalize_text(message)
+    return normalized in {"hi", "hello", "hey", "good morning", "good afternoon", "good evening"}
+
+
+def build_ai_unavailable_response() -> BookingIntentResponse:
+    return BookingIntentResponse(
+        intent=BookingIntent.unknown,
+        booking_draft=CurrentBookingDraft(),
+        assistant_message=(
+            "AI assistant is temporarily unavailable right now, but the booking system is still working normally. "
+            "You can continue by using the booking form."
+        ),
+        actions=[
+            BookingAssistantAction(
+                type="open_booking_form",
+                label="Book manually",
+            )
+        ],
+    )
 
 
 def build_booking_intent_response(

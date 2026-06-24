@@ -31,7 +31,7 @@ def build_followup_response(
             actions=[
                 BookingAssistantAction(
                     type="open_booking_form",
-                    label="Open booking form",
+                    label="Book manually",
                 )
             ],
         )
@@ -92,7 +92,7 @@ def build_followup_response(
             actions=[
                 BookingAssistantAction(
                     type="open_booking_form",
-                    label="Open booking form",
+                    label="Book manually",
                 )
             ],
         )
