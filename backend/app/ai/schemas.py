@@ -9,6 +9,8 @@ class BookingIntent(str, Enum):
     find_booking_slot = "find_booking_slot"
     ask_booking_question = "ask_booking_question"
     check_available_masters = "check_available_masters"
+    service_info = "service_info"
+    list_services = "list_services"
     greeting = "greeting"
     unsupported = "unsupported"
     unknown = "unknown"

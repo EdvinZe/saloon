@@ -51,7 +51,16 @@ class BookingIntentResponse(BaseModel):
     requested_time_available: bool | None = None
     available_options: list["BookingAvailabilityOption"] = Field(default_factory=list)
     nearest_options: list["BookingNearestAvailabilityOption"] = Field(default_factory=list)
+    services: list["BookingAssistantService"] = Field(default_factory=list)
     actions: list["BookingAssistantAction"] = Field(default_factory=list)
+
+
+class BookingAssistantService(BaseModel):
+    id: int
+    name: str
+    description: str = ""
+    duration_minutes: int
+    price: str
 
 
 class BookingAvailabilityOption(BaseModel):
