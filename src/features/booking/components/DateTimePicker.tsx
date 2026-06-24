@@ -38,7 +38,12 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
       const timeoutId = window.setTimeout(() => setPickedDate(null), 0)
       return () => window.clearTimeout(timeoutId)
     }
-  }, [selectedDate])
+    // Sync calendar highlight and month view when selectedDate is set externally
+    // (e.g. query-param prefill from AI assistant). We only run this when selectedDate
+    // changes — intentional omission of pickedDate from deps to avoid fighting manual picks.
+    setPickedDate(selectedDate)
+    setViewMonth(new Date(selectedDate + 'T12:00:00'))
+  }, [selectedDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const days = eachDayOfInterval({ start: startOfMonth(viewMonth), end: endOfMonth(viewMonth) })
   // Monday-first offset: getDay returns 0=Sun…6=Sat, remap to 0=Mon…6=Sun
@@ -73,8 +78,8 @@ export default function DateTimePicker({ service, selectedDate, selectedTime, on
         <h2 style={{ fontSize: '28px', color: '#e8e0d0', fontWeight: 400 }}>Pick a date & time</h2>
       </div>
 
-      {/* Nearest available banner */}
-      {nearestSlot && (
+      {/* Nearest available banner — only shown when no date is pre-selected */}
+      {nearestSlot && !selectedDate && (
         <div
           onClick={handleNearest}
           style={{
