@@ -19,7 +19,7 @@ export default function AIChatWidget() {
     toggleWidget,
     sendMessage,
     sendMessageText,
-    resetDraft,
+    resetChat,
   } = useAIChatWidget()
 
   if (location.pathname.startsWith('/admin')) {
@@ -44,7 +44,7 @@ export default function AIChatWidget() {
     }
 
     if (action.type === 'reset_ai_draft') {
-      resetDraft()
+      resetChat()
       return
     }
 

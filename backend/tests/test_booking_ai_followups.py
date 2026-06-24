@@ -397,6 +397,37 @@ async def test_start_over_returns_reset_action(
     assert response.status_code == 200
     assert response.json()["booking_draft"]["service_query"] is None
     assert response.json()["actions"][0]["type"] == "reset_ai_draft"
+    assert response.json()["actions"][0]["payload"] == {}
+
+
+@pytest.mark.anyio
+async def test_restart_returns_reset_action(
+    client,
+    seeded_salon,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    def fail_ai(**kwargs):
+        raise AssertionError("AI provider should not be called for restart")
+
+    monkeypatch.setattr(
+        "app.modules.booking_ai.service.ai_client.extract_booking_intent",
+        fail_ai,
+    )
+
+    response = await client.post(
+        "/api/ai/booking-intent",
+        json={
+            "message": "restart",
+            "current_booking_draft": {"service_query": "Haircut"},
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["assistant_message"] == "Sure - let's start over."
+    assert response.json()["booking_draft"]["service_query"] is None
+    assert response.json()["actions"] == [
+        {"type": "reset_ai_draft", "label": "Start over", "payload": {}}
+    ]
 
 
 @pytest.mark.anyio

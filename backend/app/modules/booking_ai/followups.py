@@ -2,18 +2,14 @@ from sqlalchemy.orm import Session
 
 from app.ai.schemas import BookingIntent, CurrentBookingDraft
 from app.modules.booking_ai.flexible_availability import build_flexible_availability_response
-from app.modules.booking_ai.schemas import (
-    BookingAssistantAction,
-    BookingAssistantMessageActionPayload,
-    BookingIntentResponse,
-)
+from app.modules.booking_ai.schemas import BookingAssistantAction, BookingIntentResponse
 
 SHOW_MORE_COMMANDS = {"show more", "more options", "another time"}
 LATER_COMMANDS = {"later"}
 EARLIER_COMMANDS = {"earlier"}
 OTHER_MASTER_COMMANDS = {"other master", "another master"}
 BOOK_MANUALLY_COMMANDS = {"book manually", "open booking form"}
-START_OVER_COMMANDS = {"start over", "reset"}
+START_OVER_COMMANDS = {"start over", "reset", "restart"}
 
 
 def build_followup_response(
@@ -39,12 +35,11 @@ def build_followup_response(
         return BookingIntentResponse(
             intent=BookingIntent.unknown,
             booking_draft=CurrentBookingDraft(),
-            assistant_message="Sure - let's start over. What service are you looking for?",
+            assistant_message="Sure - let's start over.",
             actions=[
                 BookingAssistantAction(
                     type="reset_ai_draft",
                     label="Start over",
-                    payload=BookingAssistantMessageActionPayload(message="start over"),
                 )
             ],
         )

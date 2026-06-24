@@ -90,8 +90,11 @@ export function useAIChatWidget() {
     await sendMessageText(inputValue)
   }, [inputValue, sendMessageText])
 
-  const resetDraft = useCallback(() => {
+  const resetChat = useCallback(() => {
+    setMessages(createInitialMessages())
     setCurrentBookingDraft(null)
+    setInputValue('')
+    setIsLoading(false)
   }, [])
 
   useEffect(() => {
@@ -118,6 +121,6 @@ export function useAIChatWidget() {
     toggleWidget,
     sendMessage,
     sendMessageText,
-    resetDraft,
+    resetChat,
   }
 }

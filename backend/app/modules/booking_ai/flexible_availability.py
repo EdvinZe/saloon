@@ -512,7 +512,6 @@ def build_flexible_actions(
         BookingAssistantAction(
             type="reset_ai_draft",
             label="Start over",
-            payload=BookingAssistantMessageActionPayload(message="start over"),
         ),
     ])
     return actions
