@@ -63,6 +63,15 @@ class BookingConversationMessage(BaseModel):
         return value
 
 
+class BookingDraftAvailabilityOption(BaseModel):
+    service_id: int
+    service_name: str
+    master_id: int
+    master_name: str
+    date: str
+    time: str
+
+
 class CurrentBookingDraft(BaseModel):
     service_query: str | None = None
     service_id: int | None = None
@@ -81,6 +90,10 @@ class CurrentBookingDraft(BaseModel):
     master_preference: str | None = None
     master_id: int | None = None
     master_name: str | None = None
+    last_intent: str | None = None
+    last_available_options: list[BookingDraftAvailabilityOption] = Field(default_factory=list)
+    shown_option_count: int = 0
+    excluded_master_ids: list[int] = Field(default_factory=list)
 
     @field_validator(
         "service_query",
@@ -96,6 +109,7 @@ class CurrentBookingDraft(BaseModel):
         "daypart",
         "master_preference",
         "master_name",
+        "last_intent",
         mode="before",
     )
     @classmethod

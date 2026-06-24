@@ -32,6 +32,10 @@ def merge_booking_draft(
         "master_preference",
         "master_id",
         "master_name",
+        "last_intent",
+        "last_available_options",
+        "shown_option_count",
+        "excluded_master_ids",
     ):
         value = getattr(extracted, field_name, None)
         if is_useful_value(value):

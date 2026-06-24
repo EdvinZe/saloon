@@ -2,7 +2,12 @@ from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.ai.schemas import BookingIntent, BookingNextAction, CurrentBookingDraft
+from app.ai.schemas import (
+    BookingDraftAvailabilityOption,
+    BookingIntent,
+    BookingNextAction,
+    CurrentBookingDraft,
+)
 from app.modules.availability.service import list_available_masters, list_available_slots
 from app.modules.booking_ai.availability_actions import minutes_from_hhmm
 from app.modules.booking_ai.master_info import (
@@ -14,6 +19,7 @@ from app.modules.booking_ai.response_messages import format_service_names
 from app.modules.booking_ai.schemas import (
     BookingAssistantAction,
     BookingAssistantActionPayload,
+    BookingAssistantMessageActionPayload,
     BookingAvailabilityOption,
     BookingIntentResponse,
 )
@@ -46,6 +52,10 @@ WEEKDAYS = {
 def build_flexible_availability_response(
     db: Session,
     draft: CurrentBookingDraft,
+    *,
+    offset: int | None = None,
+    direction: str | None = None,
+    exclude_master_ids: list[int] | None = None,
 ) -> BookingIntentResponse:
     services = list_public_services(db)
     service = resolve_service(services, draft.service_query)
@@ -98,15 +108,24 @@ def build_flexible_availability_response(
         )
 
     limit = normalize_limit(draft.limit)
-    options = find_flexible_options(
+    option_offset = draft.shown_option_count if offset is None else offset
+    options, has_more = find_flexible_options(
         db=db,
         service=service,
         dates=dates,
         draft=draft,
         master=master,
         limit=limit,
+        offset=option_offset,
+        direction=direction,
+        exclude_master_ids=exclude_master_ids or [],
     )
-    actions = build_flexible_prefill_actions(options)
+    actions = build_flexible_actions(options, has_more=has_more)
+    last_options = [
+        BookingDraftAvailabilityOption.model_validate(option.model_dump())
+        for option in options
+    ]
+    shown_option_count = option_offset + len(options) if options else draft.shown_option_count
     updated_draft = CurrentBookingDraft.model_validate({
         **draft.model_dump(),
         "service_query": service.name,
@@ -114,6 +133,10 @@ def build_flexible_availability_response(
         "master_query": master_full_name(master) if master else draft.master_query,
         "master_id": master.id if master else draft.master_id,
         "master_name": master_full_name(master) if master else draft.master_name,
+        "last_intent": BookingIntent.flexible_availability_search.value,
+        "last_available_options": last_options,
+        "shown_option_count": shown_option_count,
+        "excluded_master_ids": exclude_master_ids or draft.excluded_master_ids,
     })
 
     return BookingIntentResponse(
@@ -140,6 +163,8 @@ def build_flexible_availability_response(
             service=service,
             draft=updated_draft,
             options=options,
+            direction=direction,
+            offset=option_offset,
         ),
         available_options=options,
         actions=actions,
@@ -236,16 +261,27 @@ def find_flexible_options(
     draft: CurrentBookingDraft,
     master: Master | None,
     limit: int,
-) -> list[BookingAvailabilityOption]:
+    offset: int = 0,
+    direction: str | None = None,
+    exclude_master_ids: list[int] | None = None,
+) -> tuple[list[BookingAvailabilityOption], bool]:
     options: list[BookingAvailabilityOption] = []
+    skipped = 0
+    excluded = set(exclude_master_ids or [])
+    earlier_boundary = None
+    if direction == "earlier" and draft.last_available_options:
+        first_option = draft.last_available_options[0]
+        earlier_boundary = (first_option.date, first_option.time)
+    ordered_dates = list(reversed(dates)) if direction == "earlier" else dates
 
-    for selected_date in dates:
+    for selected_date in ordered_dates:
         slots = list_available_slots(
             db=db,
             service_id=service.id,
             selected_date=selected_date,
         )
-        for slot in slots:
+        slot_list = list(reversed(slots)) if direction == "earlier" else slots
+        for slot in slot_list:
             if slot.status != "free" or not slot_matches_time_filter(slot.time, draft):
                 continue
 
@@ -261,24 +297,37 @@ def find_flexible_options(
                     for available_master in available_masters
                     if available_master.id == master.id
                 ]
+            if excluded:
+                available_masters = [
+                    available_master
+                    for available_master in available_masters
+                    if available_master.id not in excluded
+                ]
             if not available_masters:
                 continue
 
             available_master = available_masters[0]
-            options.append(
-                BookingAvailabilityOption(
-                    service_id=service.id,
-                    service_name=service.name,
-                    master_id=available_master.id,
-                    master_name=master_full_name(available_master),
-                    date=selected_date.isoformat(),
-                    time=slot.time,
-                )
+            option = BookingAvailabilityOption(
+                service_id=service.id,
+                service_name=service.name,
+                master_id=available_master.id,
+                master_name=master_full_name(available_master),
+                date=selected_date.isoformat(),
+                time=slot.time,
             )
+            if earlier_boundary is not None and (option.date, option.time) >= earlier_boundary:
+                continue
+            if skipped < offset:
+                skipped += 1
+                continue
             if len(options) >= limit:
-                return options
+                return (list(reversed(options)) if direction == "earlier" else options), True
 
-    return options
+            options.append(option)
+
+    if direction == "earlier":
+        options = list(reversed(options))
+    return options, False
 
 
 def slot_matches_time_filter(slot_time: str, draft: CurrentBookingDraft) -> bool:
@@ -323,6 +372,31 @@ def normalize_limit(value: int | None) -> int:
     return max(1, min(value, MAX_LIMIT))
 
 
+def build_flexible_actions(
+    options: list[BookingAvailabilityOption],
+    *,
+    has_more: bool = False,
+) -> list[BookingAssistantAction]:
+    actions = build_flexible_prefill_actions(options)
+    if has_more:
+        actions.append(
+            BookingAssistantAction(
+                type="send_message",
+                label="Show more options",
+                payload=BookingAssistantMessageActionPayload(message="show more"),
+            )
+        )
+    actions.extend([
+        BookingAssistantAction(type="open_booking_form", label="Open booking form"),
+        BookingAssistantAction(
+            type="reset_ai_draft",
+            label="Start over",
+            payload=BookingAssistantMessageActionPayload(message="start over"),
+        ),
+    ])
+    return actions
+
+
 def build_flexible_prefill_actions(
     options: list[BookingAvailabilityOption],
 ) -> list[BookingAssistantAction]:
@@ -345,9 +419,15 @@ def build_flexible_availability_message(
     service: Service,
     draft: CurrentBookingDraft,
     options: list[BookingAvailabilityOption],
+    direction: str | None = None,
+    offset: int = 0,
 ) -> str:
     criteria = describe_flexible_criteria(draft)
     if not options:
+        if direction == "earlier":
+            return "I couldn't find earlier matching slots. You can try another date or use the booking form."
+        if offset:
+            return "I don't see more matching slots for that search. You can try another date or use the booking form."
         return (
             f"I couldn't find {service.name} slots{criteria}. "
             "You can try another time or check the booking form."
@@ -357,6 +437,10 @@ def build_flexible_availability_message(
         f"{format_option_date(option.date)} {option.time} - {option.master_name}"
         for option in options
     )
+    if direction == "later" or offset:
+        return f"Here are more {service.name} slots{criteria}: {options_text}."
+    if direction == "earlier":
+        return f"Here are earlier {service.name} slots{criteria}: {options_text}."
     return f"I found these {service.name} slots{criteria}: {options_text}."
 
 
@@ -404,4 +488,5 @@ def format_option_date(value: str) -> str:
 
 
 def format_action_date(value: str) -> str:
-    return format_option_date(value)
+    selected = date.fromisoformat(value)
+    return selected.strftime("%a")

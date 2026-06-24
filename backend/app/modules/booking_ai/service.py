@@ -36,6 +36,7 @@ from app.modules.booking_ai.draft import (
     merge_booking_draft,
 )
 from app.modules.booking_ai.flexible_availability import build_flexible_availability_response
+from app.modules.booking_ai.followups import build_followup_response
 from app.modules.booking_ai.response_actions import build_prefill_actions
 from app.modules.booking_ai.response_messages import (
     build_assistant_message,
@@ -119,6 +120,18 @@ def build_booking_intent_response(
     current_draft: CurrentBookingDraft | None,
     user_message: str,
 ) -> BookingIntentResponse:
+    followup_response = build_followup_response(
+        db,
+        user_message=user_message,
+        current_draft=current_draft,
+    )
+    if followup_response is not None:
+        return followup_response
+
+    booking_draft = merge_booking_draft(current_draft, extracted)
+    if should_route_to_flexible_availability(extracted, current_draft, booking_draft):
+        return build_flexible_availability_response(db, booking_draft)
+
     if extracted.intent in {BookingIntent.list_services, BookingIntent.service_info}:
         return build_service_info_response(db, extracted)
     if extracted.intent in {
@@ -127,10 +140,6 @@ def build_booking_intent_response(
         BookingIntent.master_service_info,
     }:
         return build_master_info_response(db, extracted)
-
-    booking_draft = merge_booking_draft(current_draft, extracted)
-    if should_route_to_flexible_availability(extracted, current_draft, booking_draft):
-        return build_flexible_availability_response(db, booking_draft)
 
     missing_fields = get_missing_fields(booking_draft, extracted.intent)
     next_action = get_next_action(booking_draft, extracted.intent, missing_fields)

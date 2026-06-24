@@ -316,8 +316,11 @@ async def test_flexible_availability_actions_match_options(
 
     assert response.status_code == 200
     body = response.json()
-    assert len(body["actions"]) == len(body["available_options"])
-    for action, option in zip(body["actions"], body["available_options"], strict=True):
+    prefill_actions = [
+        action for action in body["actions"] if action["type"] == "prefill_booking"
+    ]
+    assert len(prefill_actions) == len(body["available_options"])
+    for action, option in zip(prefill_actions, body["available_options"], strict=True):
         assert action["type"] == "prefill_booking"
         assert action["label"].startswith("Use ")
         assert action["payload"] == {
@@ -361,7 +364,10 @@ async def test_flexible_availability_no_results_returns_safe_message(
     assert response.status_code == 200
     body = response.json()
     assert body["available_options"] == []
-    assert body["actions"] == []
+    assert [action["type"] for action in body["actions"]] == [
+        "open_booking_form",
+        "reset_ai_draft",
+    ]
     assert "I couldn't find Beard Trim slots after 19:30 tomorrow" in body["assistant_message"]
     assert "Found one" not in body["assistant_message"]
 

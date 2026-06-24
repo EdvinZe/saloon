@@ -18,6 +18,8 @@ export default function AIChatWidget() {
     closeWidget,
     toggleWidget,
     sendMessage,
+    sendMessageText,
+    resetDraft,
   } = useAIChatWidget()
 
   if (location.pathname.startsWith('/admin')) {
@@ -30,7 +32,29 @@ export default function AIChatWidget() {
   }
 
   const handleAssistantAction = (action: BookingAssistantAction) => {
-    if (action.type !== 'prefill_booking') return
+    if (action.type === 'open_booking_form') {
+      navigate('/booking')
+      closeWidget()
+      return
+    }
+
+    if (action.type === 'send_message' && action.payload.message) {
+      void sendMessageText(action.payload.message)
+      return
+    }
+
+    if (action.type === 'reset_ai_draft') {
+      resetDraft()
+      return
+    }
+
+    if (
+      action.type !== 'prefill_booking' ||
+      action.payload.service_id == null ||
+      action.payload.master_id == null ||
+      !action.payload.date ||
+      !action.payload.time
+    ) return
 
     const params = new URLSearchParams({
       serviceId: String(action.payload.service_id),

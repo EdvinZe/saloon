@@ -23,6 +23,10 @@ def booking_draft_payload(
     master_preference: str | None = None,
     master_id: int | None = None,
     master_name: str | None = None,
+    last_intent: str | None = None,
+    last_available_options: list[dict[str, object]] | None = None,
+    shown_option_count: int = 0,
+    excluded_master_ids: list[int] | None = None,
 ) -> dict[str, object]:
     return {
         "service_query": service_query,
@@ -42,6 +46,10 @@ def booking_draft_payload(
         "master_preference": master_preference,
         "master_id": master_id,
         "master_name": master_name,
+        "last_intent": last_intent,
+        "last_available_options": last_available_options or [],
+        "shown_option_count": shown_option_count,
+        "excluded_master_ids": excluded_master_ids or [],
     }
 
 

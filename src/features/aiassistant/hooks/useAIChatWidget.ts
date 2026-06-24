@@ -53,14 +53,16 @@ export function useAIChatWidget() {
   const closeWidget = useCallback(() => setIsOpen(false), [])
   const toggleWidget = useCallback(() => setIsOpen(prev => !prev), [])
 
-  const sendMessage = useCallback(async () => {
-    const nextMessage = inputValue.trim()
+  const sendMessageText = useCallback(async (messageText: string) => {
+    const nextMessage = messageText.trim()
 
     if (!nextMessage || isLoading) return
 
     const conversationContext = buildConversationContext(messages, nextMessage)
     setMessages(prev => [...prev, createMessage('user', nextMessage)])
-    setInputValue('')
+    if (messageText === inputValue) {
+      setInputValue('')
+    }
     setIsLoading(true)
 
     try {
@@ -83,6 +85,14 @@ export function useAIChatWidget() {
       setIsLoading(false)
     }
   }, [currentBookingDraft, inputValue, isLoading, messages])
+
+  const sendMessage = useCallback(async () => {
+    await sendMessageText(inputValue)
+  }, [inputValue, sendMessageText])
+
+  const resetDraft = useCallback(() => {
+    setCurrentBookingDraft(null)
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -107,5 +117,7 @@ export function useAIChatWidget() {
     closeWidget,
     toggleWidget,
     sendMessage,
+    sendMessageText,
+    resetDraft,
   }
 }

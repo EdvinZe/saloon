@@ -98,7 +98,19 @@ class BookingAssistantActionPayload(BaseModel):
     time: str
 
 
+class BookingAssistantMessageActionPayload(BaseModel):
+    message: str
+
+
+class BookingAssistantEmptyActionPayload(BaseModel):
+    pass
+
+
 class BookingAssistantAction(BaseModel):
-    type: Literal["prefill_booking"] = "prefill_booking"
+    type: Literal["prefill_booking", "open_booking_form", "send_message", "reset_ai_draft"] = "prefill_booking"
     label: str
-    payload: BookingAssistantActionPayload
+    payload: (
+        BookingAssistantActionPayload
+        | BookingAssistantMessageActionPayload
+        | BookingAssistantEmptyActionPayload
+    ) = Field(default_factory=BookingAssistantEmptyActionPayload)
