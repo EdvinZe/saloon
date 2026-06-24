@@ -11,6 +11,9 @@ class BookingIntent(str, Enum):
     check_available_masters = "check_available_masters"
     service_info = "service_info"
     list_services = "list_services"
+    master_info = "master_info"
+    list_masters = "list_masters"
+    master_service_info = "master_service_info"
     greeting = "greeting"
     unsupported = "unsupported"
     unknown = "unknown"
@@ -87,6 +90,7 @@ class CurrentBookingDraft(BaseModel):
 class BookingIntentExtractionContext(BaseModel):
     today: date
     service_names: list[str] = Field(default_factory=list)
+    master_names: list[str] = Field(default_factory=list)
     user_message: str
     conversation_messages: list[BookingConversationMessage] = Field(default_factory=list)
     current_booking_draft: CurrentBookingDraft | None = None
@@ -95,6 +99,7 @@ class BookingIntentExtractionContext(BaseModel):
 class ExtractedBookingIntent(BaseModel):
     intent: BookingIntent
     service_query: str | None = None
+    master_query: str | None = None
     date: str | None = None
     time_preference: str | None = None
     time_preference_type: BookingIntentTimePreferenceType | None = None
@@ -105,6 +110,7 @@ class ExtractedBookingIntent(BaseModel):
 
     @field_validator(
         "service_query",
+        "master_query",
         "date",
         "time_preference",
         "time_preference_type",

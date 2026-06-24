@@ -73,6 +73,7 @@ async def test_booking_intent_returns_schema_with_mocked_provider(
     assert response.json() == {
         "intent": "find_booking_slot",
         "service_query": "haircut",
+        "master_query": None,
         "date": date.today().isoformat(),
         "time_preference": "after 15:00",
         "time_preference_type": "after",
@@ -96,10 +97,12 @@ async def test_booking_intent_returns_schema_with_mocked_provider(
         "available_options": [],
         "nearest_options": [],
         "services": [],
+        "masters": [],
         "actions": [],
     }
     assert captured["user_message"] == "I want a haircut tomorrow after 3pm"
     assert captured["service_names"] == ["Classic Cut"]
+    assert captured["master_names"] == ["Alex Barber"]
     assert captured["today"] == date.today()
     assert captured["conversation_messages"] == []
 

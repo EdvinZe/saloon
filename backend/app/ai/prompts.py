@@ -3,6 +3,7 @@ from app.ai.schemas import BookingIntentExtractionContext
 
 def build_booking_intent_prompt(context: BookingIntentExtractionContext) -> str:
     service_lines = "\n".join(f"- {name}" for name in context.service_names) or "- none"
+    master_lines = "\n".join(f"- {name}" for name in context.master_names) or "- none"
     conversation_lines = "\n".join(
         f"{message.role.value}: {message.content}"
         for message in context.conversation_messages
@@ -21,7 +22,7 @@ def build_booking_intent_prompt(context: BookingIntentExtractionContext) -> str:
 
     return f"""
 You are an AI booking assistant for a barbershop/salon.
-Your job is only to extract booking or public service-information intent from a user message.
+Your job is only to extract booking, public service-information, or public master-information intent from a user message.
 You do not create bookings.
 You do not create payments, refunds, admin changes, or database mutations.
 You do not promise that a slot is available.
@@ -33,10 +34,16 @@ Use only the provided services list.
 For service questions, extract intent and optional service_query only. Do not invent service names, prices, durations, or descriptions; the backend will provide real service data.
 If the user asks what services are offered, what can be booked, or whether the shop has services generally, use intent "list_services".
 If the user asks about the price, duration, description, or availability of a named service without giving a booking date/time, use intent "service_info" and set service_query to the user's service wording.
+For master questions, extract intent and optional master_query and service_query only. Do not invent master names, roles, bios, skills, schedules, or service capability; the backend will provide real public master data.
+If the user asks who the masters/barbers/stylists are, use intent "list_masters".
+If the user asks about a named master without asking about a specific service, use intent "master_info" and set master_query to the user's master wording.
+If the user asks who can perform a service, use intent "master_service_info" and set service_query.
+If the user asks whether a named master can perform a service, use intent "master_service_info" and set both master_query and service_query.
 Use the recent conversation context to combine details across turns.
 If the user provided service, date, time, or master in previous conversation context, reuse it.
 If current booking draft has service, date, time, or master and the user says "yes", "so", "that", "this time", "same", or "the haircut", preserve the draft details.
-If the user asks what master can do the service, who is available, or asks about availability, use intent "check_available_masters".
+If the user asks what master can do a service without a booking date/time, use intent "master_service_info".
+If the user asks what master is available for a specific booking date/time, who is available, or asks about live availability, use intent "check_available_masters".
 If service, date, or time is missing for a booking-slot search, put the missing field name in missing_fields.
 If a requested service is not in the services list, set service_query to the user's wording and include "service" in missing_fields.
 Use 24-hour time format only.
@@ -48,8 +55,9 @@ For broad preferences like morning, afternoon, or evening, set time_preference_t
 If a value is unknown, use an empty string "" for string fields.
 Return only valid JSON matching this flat schema:
 {{
-  "intent": "find_booking_slot" | "ask_booking_question" | "check_available_masters" | "service_info" | "list_services" | "greeting" | "unknown" | "unsupported",
+  "intent": "find_booking_slot" | "ask_booking_question" | "check_available_masters" | "service_info" | "list_services" | "master_info" | "list_masters" | "master_service_info" | "greeting" | "unknown" | "unsupported",
   "service_query": "string",
+  "master_query": "string",
   "date": "YYYY-MM-DD or empty string",
   "time_preference": "at HH:mm | after HH:mm | before HH:mm | morning | afternoon | evening | empty string",
   "time_preference_type": "at" | "after" | "before" | "morning" | "afternoon" | "evening" | "unknown" | "",
@@ -58,11 +66,14 @@ Return only valid JSON matching this flat schema:
   "missing_fields": ["service" | "date" | "time"],
   "assistant_message": "short helpful message for the user"
 }}
-Allowed intent values are "greeting", "find_booking_slot", "ask_booking_question", "check_available_masters", "service_info", "list_services", "unknown", and "unsupported".
+Allowed intent values are "greeting", "find_booking_slot", "ask_booking_question", "check_available_masters", "service_info", "list_services", "master_info", "list_masters", "master_service_info", "unknown", and "unsupported".
 
 Current date: {context.today.isoformat()}
 Active public services:
 {service_lines}
+
+Active public masters:
+{master_lines}
 
 Recent conversation:
 {conversation_lines}

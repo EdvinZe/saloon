@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from app.modules.masters.models import Master, MasterService
 from app.modules.services.models import Service
 
 
@@ -72,4 +73,61 @@ def seed_ai_services(db_session):
         "beard": beard,
         "combo": combo,
         "inactive": inactive,
+    }
+
+
+def seed_ai_masters(db_session):
+    services = seed_ai_services(db_session)
+    alex = Master(
+        first_name="Alex",
+        last_name="Kravtsov",
+        role="Senior Barber",
+        bio="Sharp fades and classic cuts.",
+        initials="AK",
+        is_active=True,
+        sort_order=1,
+    )
+    maria = Master(
+        first_name="Maria",
+        last_name="Stone",
+        role="Hair Stylist",
+        bio="",
+        initials="MS",
+        is_active=True,
+        sort_order=2,
+    )
+    john = Master(
+        first_name="John",
+        last_name="Reed",
+        role="Barber",
+        bio="",
+        initials="JR",
+        is_active=True,
+        sort_order=3,
+    )
+    inactive = Master(
+        first_name="Hidden",
+        last_name="Master",
+        role="Admin Only",
+        bio="Private",
+        initials="HM",
+        is_active=False,
+        sort_order=4,
+    )
+    db_session.add_all([alex, maria, john, inactive])
+    db_session.flush()
+    db_session.add_all([
+        MasterService(master_id=alex.id, service_id=services["haircut"].id),
+        MasterService(master_id=alex.id, service_id=services["beard"].id),
+        MasterService(master_id=maria.id, service_id=services["haircut"].id),
+        MasterService(master_id=john.id, service_id=services["beard"].id),
+        MasterService(master_id=inactive.id, service_id=services["haircut"].id),
+    ])
+    db_session.commit()
+    return {
+        **services,
+        "alex": alex,
+        "maria": maria,
+        "john": john,
+        "inactive_master": inactive,
     }

@@ -44,6 +44,7 @@ class AIClient:
         user_message: str,
         today: date,
         service_names: list[str],
+        master_names: list[str] | None = None,
         conversation_messages: list[BookingConversationMessage] | None = None,
         current_booking_draft: CurrentBookingDraft | None = None,
     ) -> ExtractedBookingIntent:
@@ -55,6 +56,7 @@ class AIClient:
         context = BookingIntentExtractionContext(
             today=today,
             service_names=service_names,
+            master_names=master_names or [],
             user_message=user_message,
             conversation_messages=conversation_messages or [],
             current_booking_draft=current_booking_draft,

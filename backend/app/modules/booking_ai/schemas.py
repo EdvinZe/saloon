@@ -39,6 +39,7 @@ class BookingIntentRequest(BaseModel):
 class BookingIntentResponse(BaseModel):
     intent: BookingIntent
     service_query: str | None = None
+    master_query: str | None = None
     date: str | None = None
     time_preference: str | None = None
     time_preference_type: BookingIntentTimePreferenceType | None = None
@@ -52,6 +53,7 @@ class BookingIntentResponse(BaseModel):
     available_options: list["BookingAvailabilityOption"] = Field(default_factory=list)
     nearest_options: list["BookingNearestAvailabilityOption"] = Field(default_factory=list)
     services: list["BookingAssistantService"] = Field(default_factory=list)
+    masters: list["BookingAssistantMaster"] = Field(default_factory=list)
     actions: list["BookingAssistantAction"] = Field(default_factory=list)
 
 
@@ -61,6 +63,13 @@ class BookingAssistantService(BaseModel):
     description: str = ""
     duration_minutes: int
     price: str
+
+
+class BookingAssistantMaster(BaseModel):
+    id: int
+    name: str
+    role: str
+    bio: str = ""
 
 
 class BookingAvailabilityOption(BaseModel):

@@ -45,6 +45,7 @@ from app.modules.booking_ai.response_messages import (
     format_service_price,
 )
 from app.modules.booking_ai.schemas import BookingIntentResponse
+from app.modules.booking_ai.master_info import build_master_info_response
 from app.modules.booking_ai.service_matching import (
     is_service_name_match,
     match_public_services_by_name,
@@ -52,6 +53,7 @@ from app.modules.booking_ai.service_matching import (
     normalize_text,
     resolve_service_query,
 )
+from app.modules.masters.service import list_public_masters
 from app.modules.services.service import list_public_services
 
 
@@ -70,12 +72,19 @@ def extract_booking_intent(
 
     services = list_public_services(db)
     service_names = [service.name for service in services if service.name]
+    masters = list_public_masters(db)
+    master_names = [
+        f"{master.first_name} {master.last_name}".strip()
+        for master in masters
+        if master.first_name or master.last_name
+    ]
 
     try:
         result = ai_client.extract_booking_intent(
             user_message=normalized_message,
             today=date.today(),
             service_names=service_names,
+            master_names=master_names,
             conversation_messages=conversation_messages or [],
             current_booking_draft=current_booking_draft,
         )
@@ -111,6 +120,12 @@ def build_booking_intent_response(
 ) -> BookingIntentResponse:
     if extracted.intent in {BookingIntent.list_services, BookingIntent.service_info}:
         return build_service_info_response(db, extracted)
+    if extracted.intent in {
+        BookingIntent.list_masters,
+        BookingIntent.master_info,
+        BookingIntent.master_service_info,
+    }:
+        return build_master_info_response(db, extracted)
 
     booking_draft = merge_booking_draft(current_draft, extracted)
     missing_fields = get_missing_fields(booking_draft, extracted.intent)
