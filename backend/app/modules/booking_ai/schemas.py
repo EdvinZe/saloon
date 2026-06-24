@@ -41,9 +41,15 @@ class BookingIntentResponse(BaseModel):
     service_query: str | None = None
     master_query: str | None = None
     date: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    date_range_type: str | None = None
+    weekdays: list[str] | None = None
     time_preference: str | None = None
     time_preference_type: BookingIntentTimePreferenceType | None = None
     time: str | None = None
+    end_time: str | None = None
+    daypart: str | None = None
     master_preference: str | None = None
     booking_draft: CurrentBookingDraft = Field(default_factory=CurrentBookingDraft)
     missing_fields: list[str] = Field(default_factory=list)

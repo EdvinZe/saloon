@@ -35,6 +35,7 @@ from app.modules.booking_ai.draft import (
     is_useful_value,
     merge_booking_draft,
 )
+from app.modules.booking_ai.flexible_availability import build_flexible_availability_response
 from app.modules.booking_ai.response_actions import build_prefill_actions
 from app.modules.booking_ai.response_messages import (
     build_assistant_message,
@@ -128,6 +129,9 @@ def build_booking_intent_response(
         return build_master_info_response(db, extracted)
 
     booking_draft = merge_booking_draft(current_draft, extracted)
+    if should_route_to_flexible_availability(extracted, current_draft, booking_draft):
+        return build_flexible_availability_response(db, booking_draft)
+
     missing_fields = get_missing_fields(booking_draft, extracted.intent)
     next_action = get_next_action(booking_draft, extracted.intent, missing_fields)
     availability_result = None
@@ -153,10 +157,17 @@ def build_booking_intent_response(
     return BookingIntentResponse(
         intent=extracted.intent,
         service_query=booking_draft.service_query,
+        master_query=booking_draft.master_query,
         date=booking_draft.date,
+        start_date=booking_draft.start_date,
+        end_date=booking_draft.end_date,
+        date_range_type=booking_draft.date_range_type,
+        weekdays=booking_draft.weekdays,
         time_preference=booking_draft.time_preference,
         time_preference_type=booking_draft.time_preference_type,
         time=booking_draft.time,
+        end_time=booking_draft.end_time,
+        daypart=booking_draft.daypart,
         master_preference=booking_draft.master_preference,
         booking_draft=booking_draft,
         missing_fields=missing_fields,
@@ -166,6 +177,30 @@ def build_booking_intent_response(
         available_options=availability_result.available_options if availability_result else [],
         nearest_options=availability_result.nearest_options if availability_result else [],
         actions=availability_result.actions if availability_result else [],
+    )
+
+
+def should_route_to_flexible_availability(
+    extracted: ExtractedBookingIntent,
+    current_draft: CurrentBookingDraft | None,
+    booking_draft: CurrentBookingDraft,
+) -> bool:
+    if extracted.intent == BookingIntent.flexible_availability_search:
+        return True
+    if current_draft is None:
+        return False
+    if not has_flexible_search_details(current_draft):
+        return False
+    return bool(booking_draft.service_query)
+
+
+def has_flexible_search_details(draft: CurrentBookingDraft) -> bool:
+    return bool(
+        draft.date_range_type
+        or draft.start_date
+        or draft.end_date
+        or draft.weekdays
+        or draft.daypart
     )
 
 

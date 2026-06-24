@@ -17,10 +17,18 @@ def merge_booking_draft(
     for field_name in (
         "service_query",
         "service_id",
+        "master_query",
         "date",
+        "start_date",
+        "end_date",
+        "date_range_type",
+        "weekdays",
         "time",
+        "end_time",
         "time_preference",
         "time_preference_type",
+        "daypart",
+        "limit",
         "master_preference",
         "master_id",
         "master_name",
@@ -42,6 +50,8 @@ def is_useful_value(value: object) -> bool:
         return False
     if isinstance(value, str):
         return bool(value.strip()) and value.strip().lower() != "unknown"
+    if isinstance(value, list):
+        return bool(value)
     return True
 
 

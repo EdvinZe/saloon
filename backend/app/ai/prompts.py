@@ -39,6 +39,12 @@ If the user asks who the masters/barbers/stylists are, use intent "list_masters"
 If the user asks about a named master without asking about a specific service, use intent "master_info" and set master_query to the user's master wording.
 If the user asks who can perform a service, use intent "master_service_info" and set service_query.
 If the user asks whether a named master can perform a service, use intent "master_service_info" and set both master_query and service_query.
+For flexible availability questions, use intent "flexible_availability_search". Extract service_query, optional master_query, date/date range, weekdays, time condition, and daypart. Do not invent available slots; the backend will check real availability.
+Use date_range_type "nearest" for nearest/soonest/first available slot requests.
+Use date_range_type "this_week", "next_week", "weekend", "weekdays", "single_day", "today", "tomorrow", or "date_range" when applicable.
+For "Monday to Friday", set date_range_type "weekdays" and weekdays ["monday","tuesday","wednesday","thursday","friday"].
+For "today" or "tomorrow", set both date_range_type and date to the concrete YYYY-MM-DD date.
+For dayparts, set daypart to "morning", "afternoon", or "evening".
 Use the recent conversation context to combine details across turns.
 If the user provided service, date, time, or master in previous conversation context, reuse it.
 If current booking draft has service, date, time, or master and the user says "yes", "so", "that", "this time", "same", or "the haircut", preserve the draft details.
@@ -55,18 +61,25 @@ For broad preferences like morning, afternoon, or evening, set time_preference_t
 If a value is unknown, use an empty string "" for string fields.
 Return only valid JSON matching this flat schema:
 {{
-  "intent": "find_booking_slot" | "ask_booking_question" | "check_available_masters" | "service_info" | "list_services" | "master_info" | "list_masters" | "master_service_info" | "greeting" | "unknown" | "unsupported",
+  "intent": "find_booking_slot" | "ask_booking_question" | "check_available_masters" | "flexible_availability_search" | "service_info" | "list_services" | "master_info" | "list_masters" | "master_service_info" | "greeting" | "unknown" | "unsupported",
   "service_query": "string",
   "master_query": "string",
   "date": "YYYY-MM-DD or empty string",
+  "start_date": "YYYY-MM-DD or empty string",
+  "end_date": "YYYY-MM-DD or empty string",
+  "date_range_type": "single_day | today | tomorrow | this_week | next_week | weekend | weekdays | date_range | nearest | empty string",
+  "weekdays": ["monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday"],
   "time_preference": "at HH:mm | after HH:mm | before HH:mm | morning | afternoon | evening | empty string",
-  "time_preference_type": "at" | "after" | "before" | "morning" | "afternoon" | "evening" | "unknown" | "",
+  "time_preference_type": "at" | "exact" | "after" | "before" | "between" | "any" | "morning" | "afternoon" | "evening" | "unknown" | "",
   "time": "HH:mm or empty string",
+  "end_time": "HH:mm or empty string",
+  "daypart": "morning | afternoon | evening | empty string",
+  "limit": 1-5 or null,
   "master_preference": "string",
   "missing_fields": ["service" | "date" | "time"],
   "assistant_message": "short helpful message for the user"
 }}
-Allowed intent values are "greeting", "find_booking_slot", "ask_booking_question", "check_available_masters", "service_info", "list_services", "master_info", "list_masters", "master_service_info", "unknown", and "unsupported".
+Allowed intent values are "greeting", "find_booking_slot", "ask_booking_question", "check_available_masters", "flexible_availability_search", "service_info", "list_services", "master_info", "list_masters", "master_service_info", "unknown", and "unsupported".
 
 Current date: {context.today.isoformat()}
 Active public services:

@@ -9,6 +9,7 @@ class BookingIntent(str, Enum):
     find_booking_slot = "find_booking_slot"
     ask_booking_question = "ask_booking_question"
     check_available_masters = "check_available_masters"
+    flexible_availability_search = "flexible_availability_search"
     service_info = "service_info"
     list_services = "list_services"
     master_info = "master_info"
@@ -21,8 +22,11 @@ class BookingIntent(str, Enum):
 
 class BookingIntentTimePreferenceType(str, Enum):
     at = "at"
+    exact = "exact"
     after = "after"
     before = "before"
+    between = "between"
+    any = "any"
     morning = "morning"
     afternoon = "afternoon"
     evening = "evening"
@@ -37,6 +41,7 @@ class BookingNextAction(str, Enum):
     ready_to_check_availability = "ready_to_check_availability"
     availability_found = "availability_found"
     availability_alternatives = "availability_alternatives"
+    availability_options_found = "availability_options_found"
     unsupported = "unsupported"
     ai_unavailable = "ai_unavailable"
 
@@ -61,20 +66,34 @@ class BookingConversationMessage(BaseModel):
 class CurrentBookingDraft(BaseModel):
     service_query: str | None = None
     service_id: int | None = None
+    master_query: str | None = None
     date: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    date_range_type: str | None = None
+    weekdays: list[str] | None = None
     time: str | None = None
+    end_time: str | None = None
     time_preference: str | None = None
     time_preference_type: BookingIntentTimePreferenceType | None = None
+    daypart: str | None = None
+    limit: int | None = None
     master_preference: str | None = None
     master_id: int | None = None
     master_name: str | None = None
 
     @field_validator(
         "service_query",
+        "master_query",
         "date",
+        "start_date",
+        "end_date",
+        "date_range_type",
         "time",
+        "end_time",
         "time_preference",
         "time_preference_type",
+        "daypart",
         "master_preference",
         "master_name",
         mode="before",
@@ -101,9 +120,16 @@ class ExtractedBookingIntent(BaseModel):
     service_query: str | None = None
     master_query: str | None = None
     date: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    date_range_type: str | None = None
+    weekdays: list[str] = Field(default_factory=list)
     time_preference: str | None = None
     time_preference_type: BookingIntentTimePreferenceType | None = None
     time: str | None = None
+    end_time: str | None = None
+    daypart: str | None = None
+    limit: int | None = None
     master_preference: str | None = None
     missing_fields: list[str] = Field(default_factory=list)
     assistant_message: str
@@ -112,9 +138,14 @@ class ExtractedBookingIntent(BaseModel):
         "service_query",
         "master_query",
         "date",
+        "start_date",
+        "end_date",
+        "date_range_type",
         "time_preference",
         "time_preference_type",
         "time",
+        "end_time",
+        "daypart",
         "master_preference",
         mode="before",
     )
@@ -131,6 +162,17 @@ class ExtractedBookingIntent(BaseModel):
         if not isinstance(value, list):
             return []
         return [item for item in value if isinstance(item, str) and item.strip()]
+
+    @field_validator("weekdays", mode="before")
+    @classmethod
+    def normalize_weekdays(cls, value: object) -> object:
+        if not isinstance(value, list):
+            return []
+        return [
+            item.strip().lower()
+            for item in value
+            if isinstance(item, str) and item.strip()
+        ]
 
     @field_validator("assistant_message", mode="before")
     @classmethod
@@ -154,6 +196,13 @@ class ExtractedBookingIntent(BaseModel):
             return self
 
         preference_type, time_value = normalized
+        if self.time_preference_type in {
+            BookingIntentTimePreferenceType.after,
+            BookingIntentTimePreferenceType.before,
+            BookingIntentTimePreferenceType.between,
+            BookingIntentTimePreferenceType.exact,
+        }:
+            preference_type = self.time_preference_type
         self.time_preference_type = preference_type
         self.time = time_value
         self.time_preference = f"{preference_type.value} {time_value}"
