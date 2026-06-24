@@ -174,13 +174,12 @@ CLIENT_MANAGE_CUTOFF_HOURS=12
 RATE_LIMIT_ENABLED=true
 
 AI_ENABLED=true
-AI_PROVIDER=gemini
-AI_MODEL=gemini-2.5-flash
-AI_MAX_OUTPUT_TOKENS=350
-AI_TEMPERATURE=0.2
-AI_REQUEST_TIMEOUT_SECONDS=20
+AI_PROVIDER=groq
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+GROQ_API_KEY=
+GROQ_MODEL=llama-3.1-8b-instant
 AI_DAILY_REQUEST_LIMIT=50
-GEMINI_API_KEY=your_gemini_api_key
 
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
@@ -219,11 +218,13 @@ BARBER_REMINDER_CHECK_INTERVAL_SECONDS=60
 
 The Stripe webhook secret for a deployed Railway backend is different from the local Stripe CLI webhook secret. Configure each environment with the correct `STRIPE_WEBHOOK_SECRET`.
 
-### AI Booking Intent
+### AI Booking Assistant
 
-The backend includes an internal AI abstraction with Gemini as the first provider. Create a Gemini API key, keep `AI_PROVIDER=gemini`, and set `GEMINI_API_KEY` only in `backend/.env` or backend Railway variables to enable `POST /api/ai/booking-intent`. Never expose `GEMINI_API_KEY` in the frontend root `.env`.
+The backend includes a provider-agnostic AI assistant for the booking chat widget. Supported providers are Groq and Gemini. Set `AI_PROVIDER` to `groq` or `gemini`, configure the matching API key in `backend/.env` or Railway service variables, and leave the other provider's key empty. Never expose AI API keys in the frontend root `.env`.
 
-The endpoint accepts a user message and returns structured booking intent JSON. The AI layer is read-only: it does not create bookings, payments, refunds, admin changes, or database mutations. Only the current date, active public service names, the user message, and extraction rules are sent to the provider.
+The assistant answers service and master questions, extracts booking intent from natural language, searches flexible availability, and returns prefill actions that open the normal booking form. The AI layer is read-only: it does not create bookings, payments, refunds, or admin changes, and does not mutate the database. If the provider is unavailable the booking system continues to work normally.
+
+See `ai_readme_section.md` for the full architecture, request flow, supported inputs, safety boundaries, and environment reference.
 
 ## Local Development Setup
 
@@ -366,13 +367,12 @@ BACKEND_API_URL=https://backend-url
 CLIENT_MANAGE_CUTOFF_HOURS=12
 RATE_LIMIT_ENABLED=true
 AI_ENABLED=true
-AI_PROVIDER=gemini
-AI_MODEL=gemini-2.5-flash
-AI_MAX_OUTPUT_TOKENS=350
-AI_TEMPERATURE=0.2
-AI_REQUEST_TIMEOUT_SECONDS=20
-AI_DAILY_REQUEST_LIMIT=50
+AI_PROVIDER=groq
 GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+GROQ_API_KEY=
+GROQ_MODEL=llama-3.1-8b-instant
+AI_DAILY_REQUEST_LIMIT=50
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 ADMIN_USERNAME=
