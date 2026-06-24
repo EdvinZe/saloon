@@ -146,7 +146,7 @@ class ExtractedBookingIntent(BaseModel):
     limit: int | None = None
     master_preference: str | None = None
     missing_fields: list[str] = Field(default_factory=list)
-    assistant_message: str
+    assistant_message: str = ""
 
     @field_validator(
         "service_query",
