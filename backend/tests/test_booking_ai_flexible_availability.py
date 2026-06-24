@@ -211,7 +211,7 @@ async def test_flexible_availability_weekdays_after_time_returns_real_options(
     assert body["next_action"] == "availability_options_found"
     assert body["available_options"]
     assert all(option["time"] >= "17:00" for option in body["available_options"])
-    assert "I found these Haircut slots after 17:00 weekdays" in body["assistant_message"]
+    assert "I found these Haircut slots on weekdays from 17:00" in body["assistant_message"]
     assert "Invented" not in body["assistant_message"]
 
 
@@ -249,7 +249,7 @@ async def test_flexible_availability_tomorrow_afternoon_filters_by_daypart(
     assert body["available_options"]
     assert body["available_options"][0]["date"] == data["tomorrow"].isoformat()
     assert body["available_options"][0]["time"] == "13:00"
-    assert "afternoon tomorrow" in body["assistant_message"]
+    assert "tomorrow afternoon" in body["assistant_message"]
 
 
 @pytest.mark.anyio
@@ -368,7 +368,7 @@ async def test_flexible_availability_no_results_returns_safe_message(
         "open_booking_form",
         "reset_ai_draft",
     ]
-    assert "I couldn't find Beard Trim slots after 19:30 tomorrow" in body["assistant_message"]
+    assert "I couldn't find Beard Trim slots tomorrow from 19:30" in body["assistant_message"]
     assert "Found one" not in body["assistant_message"]
 
 

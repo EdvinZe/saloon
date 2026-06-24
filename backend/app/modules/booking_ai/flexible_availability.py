@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+import re
 
 from sqlalchemy.orm import Session
 
@@ -46,6 +47,15 @@ WEEKDAYS = {
     "friday": 4,
     "saturday": 5,
     "sunday": 6,
+}
+WEEKDAY_NAMES = tuple(WEEKDAYS.keys())
+WEEKDAY_TYPOS = {
+    "mondau": "monday",
+    "thuesday": "tuesday",
+    "tuseday": "tuesday",
+    "tusday": "tuesday",
+    "thurday": "thursday",
+    "fridy": "friday",
 }
 
 
@@ -180,6 +190,117 @@ def resolve_service(services: list[Service], service_query: str | None) -> Servi
     return None
 
 
+def apply_explicit_flexible_criteria(
+    draft: CurrentBookingDraft,
+    user_message: str,
+) -> CurrentBookingDraft:
+    payload = draft.model_dump()
+    weekday_criteria = extract_weekday_criteria(user_message)
+    if weekday_criteria is not None:
+        range_type, weekdays = weekday_criteria
+        payload["date_range_type"] = range_type
+        payload["weekdays"] = weekdays
+
+    time_criteria = extract_time_criteria(user_message)
+    if time_criteria is not None:
+        preference_type, start_time, end_time = time_criteria
+        payload["time_preference_type"] = preference_type
+        payload["time"] = start_time
+        payload["end_time"] = end_time
+        payload["time_preference"] = (
+            f"{preference_type} {start_time}"
+            if end_time is None
+            else f"{preference_type} {start_time} {end_time}"
+        )
+
+    if weekday_criteria is not None or time_criteria is not None:
+        payload["shown_option_count"] = 0
+        payload["last_available_options"] = []
+        payload["excluded_master_ids"] = []
+
+    return CurrentBookingDraft.model_validate(payload)
+
+
+def extract_weekday_criteria(message: str) -> tuple[str, list[str]] | None:
+    matches = find_weekday_mentions(message)
+    if not matches:
+        if re.search(r"\bweekdays?\b", message.lower()):
+            return "weekdays", ["monday", "tuesday", "wednesday", "thursday", "friday"]
+        return None
+
+    weekdays = [weekday for _, _, weekday in matches]
+    if len(weekdays) == 1:
+        return "selected_weekdays", weekdays
+
+    first_start, _, first_weekday = matches[0]
+    _, last_end, last_weekday = matches[-1]
+    between = message.lower()[first_start:last_end]
+    if re.search(r"\b(to|through|until|till|-)\b", between):
+        expanded = expand_weekday_range(first_weekday, last_weekday)
+        if expanded == ["monday", "tuesday", "wednesday", "thursday", "friday"]:
+            return "weekdays", expanded
+        return "weekday_range", expanded
+
+    return "selected_weekdays", dedupe_preserving_order(weekdays)
+
+
+def find_weekday_mentions(message: str) -> list[tuple[int, int, str]]:
+    names = [*WEEKDAY_NAMES, *WEEKDAY_TYPOS.keys()]
+    pattern = r"\b(" + "|".join(re.escape(name) for name in names) + r")\b"
+    mentions = []
+    for match in re.finditer(pattern, message.lower()):
+        raw = match.group(1)
+        mentions.append((match.start(), match.end(), WEEKDAY_TYPOS.get(raw, raw)))
+    return mentions
+
+
+def expand_weekday_range(start: str, end: str) -> list[str]:
+    start_index = WEEKDAYS[start]
+    end_index = WEEKDAYS[end]
+    if end_index < start_index:
+        end_index += 7
+    ordered = list(WEEKDAY_NAMES)
+    return [
+        ordered[index % 7]
+        for index in range(start_index, end_index + 1)
+    ]
+
+
+def dedupe_preserving_order(values: list[str]) -> list[str]:
+    result = []
+    for value in values:
+        if value not in result:
+            result.append(value)
+    return result
+
+
+def extract_time_criteria(message: str) -> tuple[str, str, str | None] | None:
+    lowered = message.lower()
+    between = re.search(
+        r"\bbetween\s+(\d{1,2}(?::|\.)\d{2})\s+(?:and|to|-)\s+(\d{1,2}(?::|\.)\d{2})\b",
+        lowered,
+    )
+    if between:
+        return "between", normalize_time_text(between.group(1)), normalize_time_text(between.group(2))
+
+    for preference_type, words in (
+        ("after", ("from", "after")),
+        ("before", ("before",)),
+        ("at", ("at",)),
+    ):
+        word_pattern = "|".join(words)
+        match = re.search(rf"\b(?:{word_pattern})\s+(\d{{1,2}}(?::|\.)\d{{2}})\b", lowered)
+        if match:
+            return preference_type, normalize_time_text(match.group(1)), None
+
+    return None
+
+
+def normalize_time_text(value: str) -> str:
+    hour, minute = re.split(r"[:.]", value, maxsplit=1)
+    return f"{int(hour):02d}:{minute}"
+
+
 def build_search_dates(draft: CurrentBookingDraft, *, today: date) -> list[date]:
     range_type = (draft.date_range_type or "").strip().lower()
     if range_type in {"today", "single_day"} and draft.date:
@@ -203,7 +324,7 @@ def build_search_dates(draft: CurrentBookingDraft, *, today: date) -> list[date]
             return [today]
         saturday = today + timedelta(days=(5 - today.weekday()) % 7)
         return [saturday, saturday + timedelta(days=1)]
-    if range_type == "weekdays":
+    if range_type in {"weekdays", "selected_weekdays", "weekday_range"}:
         return build_weekday_dates(draft, today=today)
     if range_type == "date_range":
         start = parse_iso_date(draft.start_date)
@@ -448,10 +569,10 @@ def describe_flexible_criteria(draft: CurrentBookingDraft) -> str:
     parts = []
     time_text = describe_time_filter(draft)
     date_text = describe_date_filter(draft)
-    if time_text:
-        parts.append(time_text)
     if date_text:
         parts.append(date_text)
+    if time_text:
+        parts.append(time_text)
     if draft.master_query:
         parts.append(f"with {draft.master_query}")
     return f" {' '.join(parts)}" if parts else ""
@@ -461,7 +582,7 @@ def describe_time_filter(draft: CurrentBookingDraft) -> str:
     if draft.daypart:
         return draft.daypart
     if draft.time_preference_type == "after" and draft.time:
-        return f"after {draft.time}"
+        return f"from {draft.time}"
     if draft.time_preference_type == "before" and draft.time:
         return f"before {draft.time}"
     if draft.time_preference_type == "between" and draft.time and draft.end_time:
@@ -473,13 +594,32 @@ def describe_time_filter(draft: CurrentBookingDraft) -> str:
 
 def describe_date_filter(draft: CurrentBookingDraft) -> str:
     range_type = draft.date_range_type
-    if range_type in {"today", "tomorrow", "this_week", "next_week", "weekend", "weekdays", "nearest"}:
+    if range_type == "selected_weekdays" and draft.weekdays:
+        return f"on {format_weekday_list(draft.weekdays)}"
+    if range_type == "weekday_range" and draft.weekdays:
+        return f"from {format_weekday(draft.weekdays[0])} to {format_weekday(draft.weekdays[-1])}"
+    if range_type == "weekdays":
+        return "on weekdays"
+    if range_type == "weekend":
+        return "this weekend"
+    if range_type in {"today", "tomorrow", "this_week", "next_week", "nearest"}:
         return range_type.replace("_", " ")
     if draft.date:
-        return f"on {draft.date}"
+        return f"on {format_option_date(draft.date)}"
     if draft.start_date and draft.end_date:
         return f"from {draft.start_date} to {draft.end_date}"
     return ""
+
+
+def format_weekday_list(weekdays: list[str]) -> str:
+    formatted = [format_weekday(weekday) for weekday in weekdays]
+    if len(formatted) == 1:
+        return formatted[0]
+    return f"{', '.join(formatted[:-1])} and {formatted[-1]}"
+
+
+def format_weekday(value: str) -> str:
+    return value.capitalize()
 
 
 def format_option_date(value: str) -> str:

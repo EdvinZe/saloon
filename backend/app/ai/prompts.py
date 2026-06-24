@@ -67,7 +67,7 @@ Return only valid JSON matching this flat schema:
   "date": "YYYY-MM-DD or empty string",
   "start_date": "YYYY-MM-DD or empty string",
   "end_date": "YYYY-MM-DD or empty string",
-  "date_range_type": "single_day | today | tomorrow | this_week | next_week | weekend | weekdays | date_range | nearest | empty string",
+  "date_range_type": "single_day | today | tomorrow | this_week | next_week | weekend | weekdays | selected_weekdays | weekday_range | date_range | nearest | empty string",
   "weekdays": ["monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday"],
   "time_preference": "at HH:mm | after HH:mm | before HH:mm | morning | afternoon | evening | empty string",
   "time_preference_type": "at" | "exact" | "after" | "before" | "between" | "any" | "morning" | "afternoon" | "evening" | "unknown" | "",

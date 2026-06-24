@@ -35,7 +35,10 @@ from app.modules.booking_ai.draft import (
     is_useful_value,
     merge_booking_draft,
 )
-from app.modules.booking_ai.flexible_availability import build_flexible_availability_response
+from app.modules.booking_ai.flexible_availability import (
+    apply_explicit_flexible_criteria,
+    build_flexible_availability_response,
+)
 from app.modules.booking_ai.followups import build_followup_response
 from app.modules.booking_ai.response_actions import build_prefill_actions
 from app.modules.booking_ai.response_messages import (
@@ -198,6 +201,8 @@ def build_booking_intent_response(
         return followup_response
 
     booking_draft = merge_booking_draft(current_draft, extracted)
+    if extracted.intent == BookingIntent.flexible_availability_search:
+        booking_draft = apply_explicit_flexible_criteria(booking_draft, user_message)
     if should_route_to_flexible_availability(extracted, current_draft, booking_draft):
         return build_flexible_availability_response(db, booking_draft)
 
