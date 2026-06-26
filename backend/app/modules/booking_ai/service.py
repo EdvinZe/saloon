@@ -207,7 +207,7 @@ def build_booking_intent_response(
         return build_flexible_availability_response(db, booking_draft)
 
     if extracted.intent in {BookingIntent.list_services, BookingIntent.service_info}:
-        return build_service_info_response(db, extracted)
+        return build_service_info_response(db, extracted, booking_draft)
     if extracted.intent in {
         BookingIntent.list_masters,
         BookingIntent.master_info,
@@ -290,6 +290,7 @@ def has_flexible_search_details(draft: CurrentBookingDraft) -> bool:
 def build_service_info_response(
     db: Session,
     extracted: ExtractedBookingIntent,
+    current_draft: CurrentBookingDraft | None = None,
 ) -> BookingIntentResponse:
     services = list_public_services(db)
     service_query = extracted.service_query
@@ -307,9 +308,16 @@ def build_service_info_response(
     matches = match_public_services_by_name(services, service_query)
     if len(matches) == 1:
         service = matches[0]
+        updated_draft = CurrentBookingDraft.model_validate({
+            **(current_draft.model_dump() if current_draft else {}),
+            "service_query": service.name,
+            "service_id": service.id,
+            "last_intent": BookingIntent.service_info.value,
+        })
         return BookingIntentResponse(
             intent=BookingIntent.service_info,
             service_query=service.name,
+            booking_draft=updated_draft,
             assistant_message=build_single_service_message(service),
             services=build_assistant_services([service]),
             actions=[],

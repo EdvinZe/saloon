@@ -12,11 +12,16 @@ def build_booking_intent_prompt(context: BookingIntentExtractionContext) -> str:
     draft_lines = "\n".join(
         line for line in [
             f"service_query: {draft.service_query}" if draft and draft.service_query else "",
+            f"service_id: {draft.service_id}" if draft and draft.service_id else "",
+            f"master_query: {draft.master_query}" if draft and draft.master_query else "",
             f"date: {draft.date}" if draft and draft.date else "",
             f"time: {draft.time}" if draft and draft.time else "",
             f"time_preference: {draft.time_preference}" if draft and draft.time_preference else "",
             f"time_preference_type: {draft.time_preference_type.value}" if draft and draft.time_preference_type else "",
             f"master_preference: {draft.master_preference}" if draft and draft.master_preference else "",
+            f"master_id: {draft.master_id}" if draft and draft.master_id else "",
+            f"master_name: {draft.master_name}" if draft and draft.master_name else "",
+            f"last_intent: {draft.last_intent}" if draft and draft.last_intent else "",
         ] if line
     ) or "none"
 
@@ -48,6 +53,7 @@ For dayparts, set daypart to "morning", "afternoon", or "evening".
 Use the recent conversation context to combine details across turns.
 If the user provided service, date, time, or master in previous conversation context, reuse it.
 If current booking draft has service, date, time, or master and the user says "yes", "so", "that", "this time", "same", or "the haircut", preserve the draft details.
+If current booking draft has service_query and the user asks to book or reserve it, this, that, or otherwise refers to the previous thing, preserve the draft service and return intent "find_booking_slot" with missing date/time when date/time are missing.
 If the user asks what master can do a service without a booking date/time, use intent "master_service_info".
 If the user asks what master is available for a specific booking date/time, who is available, or asks about live availability, use intent "check_available_masters".
 If service, date, or time is missing for a booking-slot search, put the missing field name in missing_fields.

@@ -1,6 +1,13 @@
+from datetime import date
+
 import pytest
 
-from app.ai.schemas import ExtractedBookingIntent
+from app.ai.prompts import build_booking_intent_prompt
+from app.ai.schemas import (
+    BookingIntentExtractionContext,
+    CurrentBookingDraft,
+    ExtractedBookingIntent,
+)
 from app.modules.booking_ai.service_matching import match_public_services_by_name
 from tests.booking_ai_helpers import seed_ai_services
 
@@ -113,7 +120,7 @@ async def test_booking_intent_service_info_returns_real_price_and_duration(
     db_session,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    seed_ai_services(db_session)
+    services_by_name = seed_ai_services(db_session)
 
     def fake_extract_booking_intent(**kwargs):
         return ExtractedBookingIntent(
@@ -141,6 +148,101 @@ async def test_booking_intent_service_info_returns_real_price_and_duration(
     assert "takes about 30 minutes" in body["assistant_message"]
     assert "free" not in body["assistant_message"]
     assert "5 minutes" not in body["assistant_message"]
+    assert body["booking_draft"]["service_query"] == "Haircut"
+    assert body["booking_draft"]["service_id"] == services_by_name["haircut"].id
+    assert body["booking_draft"]["last_intent"] == "service_info"
+
+
+@pytest.mark.anyio
+async def test_booking_intent_reserve_it_uses_service_info_draft(
+    client,
+    db_session,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    services_by_name = seed_ai_services(db_session)
+    captured_draft = {}
+
+    def fake_extract_booking_intent(**kwargs):
+        current_draft = kwargs["current_booking_draft"]
+        if current_draft is None:
+            return ExtractedBookingIntent(
+                intent="service_info",
+                service_query="haircut",
+                missing_fields=[],
+                assistant_message="Haircut info.",
+            )
+
+        captured_draft["service_query"] = current_draft.service_query
+        captured_draft["service_id"] = current_draft.service_id
+        captured_draft["last_intent"] = current_draft.last_intent
+        return ExtractedBookingIntent(
+            intent="find_booking_slot",
+            service_query=None,
+            date=None,
+            time=None,
+            time_preference=None,
+            missing_fields=["date", "time"],
+            assistant_message="What day and time would you prefer?",
+        )
+
+    monkeypatch.setattr(
+        "app.modules.booking_ai.service.ai_client.extract_booking_intent",
+        fake_extract_booking_intent,
+    )
+
+    first = await client.post(
+        "/api/ai/booking-intent",
+        json={"message": "how much is haircut?"},
+    )
+    assert first.status_code == 200
+
+    second = await client.post(
+        "/api/ai/booking-intent",
+        json={
+            "message": "Rezerv it",
+            "current_booking_draft": first.json()["booking_draft"],
+        },
+    )
+
+    assert second.status_code == 200
+    body = second.json()
+    assert captured_draft == {
+        "service_query": "Haircut",
+        "service_id": services_by_name["haircut"].id,
+        "last_intent": "service_info",
+    }
+    assert body["intent"] == "find_booking_slot"
+    assert body["booking_draft"]["service_query"] == "Haircut"
+    assert body["booking_draft"]["service_id"] == services_by_name["haircut"].id
+    assert body["missing_fields"] == ["date", "time"]
+    assert "What service are you looking for?" not in body["assistant_message"]
+
+
+def test_booking_intent_prompt_includes_existing_draft_memory_fields():
+    prompt = build_booking_intent_prompt(
+        BookingIntentExtractionContext(
+            today=date(2026, 6, 26),
+            service_names=["Haircut"],
+            master_names=["Alex Barber"],
+            user_message="Rezerv it",
+            current_booking_draft=CurrentBookingDraft(
+                service_query="Haircut",
+                service_id=1,
+                master_query="Alex",
+                master_id=2,
+                master_name="Alex Barber",
+                last_intent="service_info",
+            ),
+        )
+    )
+
+    assert "service_query: Haircut" in prompt
+    assert "service_id: 1" in prompt
+    assert "master_query: Alex" in prompt
+    assert "master_id: 2" in prompt
+    assert "master_name: Alex Barber" in prompt
+    assert "last_intent: service_info" in prompt
+    assert 'return intent "find_booking_slot"' in prompt
 
 
 @pytest.mark.anyio
