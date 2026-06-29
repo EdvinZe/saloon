@@ -11,6 +11,7 @@ logger = logging.getLogger("app.ai.booking_debug")
 
 _EMAIL_PATTERN = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 _PHONE_PATTERN = re.compile(r"(?<!\w)(?:\+?\d[\d\s().-]{7,}\d)(?!\w)")
+_ISO_DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
 _NAME_PHRASE_PATTERN = re.compile(
     r"\b(my name is|name is|i am|i'm)\s+[A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,2}",
     re.IGNORECASE,
@@ -93,8 +94,15 @@ def _to_plain_value(value: Any) -> Any:
 
 def _mask_text(value: str) -> str:
     masked = _EMAIL_PATTERN.sub("<redacted-email>", value)
-    masked = _PHONE_PATTERN.sub("<redacted-phone>", masked)
+    masked = _PHONE_PATTERN.sub(_mask_phone_match, masked)
     return _NAME_PHRASE_PATTERN.sub(lambda match: f"{match.group(1)} <redacted-name>", masked)
+
+
+def _mask_phone_match(match: re.Match[str]) -> str:
+    text = match.group(0)
+    if _ISO_DATE_PATTERN.fullmatch(text):
+        return text
+    return "<redacted-phone>"
 
 
 def _is_sensitive_key(key: str) -> bool:

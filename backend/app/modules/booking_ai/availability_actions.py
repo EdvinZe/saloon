@@ -43,9 +43,12 @@ def should_check_availability(
     intent: BookingIntent,
     user_message: str,
     missing_fields: list[str],
+    force_check: bool = False,
 ) -> bool:
     if missing_fields or not has_complete_booking_details(booking_draft):
         return False
+    if force_check:
+        return True
     if intent == BookingIntent.check_available_masters:
         return True
 

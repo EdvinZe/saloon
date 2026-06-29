@@ -287,6 +287,8 @@ async def test_booking_intent_debug_logs_request_and_parsed_intent(
     assert "conversation_messages_count: 2" in caplog.text
     assert "incoming_draft:" in caplog.text
     assert "service: Haircut" in caplog.text
+    assert f"date: {date.today().isoformat()}" in caplog.text
+    assert "<redacted-phone>" not in caplog.text
     assert "PARSED MODEL OUTPUT" in caplog.text
     assert "intent: find_booking_slot" in caplog.text
     assert "time: 18:00" in caplog.text
@@ -494,6 +496,123 @@ async def test_booking_intent_missing_fields_can_use_safe_model_wording(
     assert body["missing_fields"] == ["date", "time"]
     assert body["next_action"] == "ask_date"
     assert body["booking_draft"]["service_query"] == "Haircut"
+
+
+@pytest.mark.anyio
+async def test_booking_intent_relative_tomorrow_is_stored_as_concrete_date(
+    client,
+    seeded_salon,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    class FrozenDate(date):
+        @classmethod
+        def today(cls):
+            return cls(2026, 6, 30)
+
+    def fake_extract_booking_intent(**kwargs):
+        assert kwargs["today"] == FrozenDate(2026, 6, 30)
+        return ExtractedBookingIntent(
+            intent="find_booking_slot",
+            service_query="Haircut",
+            date="",
+            date_range_type="tomorrow",
+            assistant_message="Please specify the time you'd like to book your Haircut for tomorrow.",
+        )
+
+    monkeypatch.setattr("app.modules.booking_ai.service.date", FrozenDate)
+    monkeypatch.setattr(
+        "app.modules.booking_ai.service.ai_client.extract_booking_intent",
+        fake_extract_booking_intent,
+    )
+
+    response = await client.post(
+        "/api/ai/booking-intent",
+        json={"message": "tomorow"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["booking_draft"]["service_query"] == "Haircut"
+    assert body["booking_draft"]["date"] == "2026-07-01"
+    assert body["booking_draft"]["date_range_type"] == "tomorrow"
+    assert "date" not in body["missing_fields"]
+    assert body["missing_fields"] == ["time"]
+    assert body["next_action"] == "ask_time"
+
+
+@pytest.mark.anyio
+async def test_booking_intent_time_only_followup_after_tomorrow_checks_availability(
+    client,
+    seeded_salon,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    def fake_extract_booking_intent(**kwargs):
+        return ExtractedBookingIntent(
+            intent="find_booking_slot",
+            service_query="haircut",
+            time="10:00",
+            assistant_message="Please confirm your preferred time for tomorrow's Haircut.",
+        )
+
+    monkeypatch.setattr(
+        "app.modules.booking_ai.service.ai_client.extract_booking_intent",
+        fake_extract_booking_intent,
+    )
+
+    selected_date = seeded_salon["date"].isoformat()
+    response = await client.post(
+        "/api/ai/booking-intent",
+        json={
+            "message": "10:00",
+            "current_booking_draft": booking_draft_payload(
+                service_query="haircut",
+                service_id=seeded_salon["service"].id,
+                selected_date=selected_date,
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["booking_draft"]["date"] == selected_date
+    assert body["booking_draft"]["time"] == "10:00"
+    assert body["booking_draft"]["time_preference"] == "at 10:00"
+    assert body["booking_draft"]["time_preference_type"] == "at"
+    assert body["next_action"] == "availability_found"
+    assert body["requested_time_available"] is True
+    assert body["available_options"]
+    assert "Please confirm your preferred time" not in body["assistant_message"]
+    assert "Good news" in body["assistant_message"]
+
+
+@pytest.mark.anyio
+async def test_booking_intent_model_message_cannot_imply_missing_date_is_known(
+    client,
+    seeded_salon,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    def fake_extract_booking_intent(**kwargs):
+        return ExtractedBookingIntent(
+            intent="find_booking_slot",
+            service_query="Haircut",
+            assistant_message="Please confirm your preferred time for tomorrow's Haircut.",
+        )
+
+    monkeypatch.setattr(
+        "app.modules.booking_ai.service.ai_client.extract_booking_intent",
+        fake_extract_booking_intent,
+    )
+
+    response = await client.post(
+        "/api/ai/booking-intent",
+        json={"message": "book a haircut"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["missing_fields"] == ["date", "time"]
+    assert body["next_action"] == "ask_date"
+    assert body["assistant_message"] == "What date would you like to book?"
 
 
 @pytest.mark.anyio

@@ -37,6 +37,7 @@ from app.modules.booking_ai.draft import (
     has_complete_booking_details,
     is_useful_value,
     merge_booking_draft,
+    normalize_relative_booking_dates,
 )
 from app.modules.booking_ai.flexible_availability import (
     apply_explicit_flexible_criteria,
@@ -112,10 +113,11 @@ def extract_booking_intent(
         )
         return log_and_return_response(trace_id, local_response)
 
+    request_today = date.today()
     try:
         result = ai_client.extract_booking_intent(
             user_message=normalized_message,
-            today=date.today(),
+            today=request_today,
             service_names=service_names,
             master_names=master_names,
             conversation_messages=conversation_messages or [],
@@ -140,6 +142,7 @@ def extract_booking_intent(
         result,
         current_booking_draft,
         normalized_message,
+        today=request_today,
         request_id=trace_id,
     )
 
@@ -293,9 +296,11 @@ def build_booking_intent_response(
     extracted: ExtractedBookingIntent,
     current_draft: CurrentBookingDraft | None,
     user_message: str,
+    today: date | None = None,
     request_id: str | None = None,
 ) -> BookingIntentResponse:
     trace_id = request_id or uuid4().hex
+    request_today = today or date.today()
     followup_response = build_followup_response(
         db,
         user_message=user_message,
@@ -310,6 +315,7 @@ def build_booking_intent_response(
         return log_and_return_response(trace_id, followup_response)
 
     booking_draft = merge_booking_draft(current_draft, extracted)
+    booking_draft = normalize_relative_booking_dates(booking_draft, today=request_today)
     log_ai_debug(
         "ai_booking_draft_merge",
         trace_id,
@@ -363,6 +369,10 @@ def build_booking_intent_response(
         intent=extracted.intent,
         user_message=user_message,
         missing_fields=missing_fields,
+        force_check=time_followup_completed_pending_booking(
+            current_draft=current_draft,
+            booking_draft=booking_draft,
+        ),
     ):
         availability_result = check_booking_draft_availability(db, booking_draft)
         booking_draft = availability_result.booking_draft
@@ -443,14 +453,21 @@ def choose_final_assistant_message(
         missing_fields=missing_fields,
         next_action=next_action,
     ):
-        if is_safe_model_conversational_message(extracted.assistant_message):
+        if (
+            is_safe_model_conversational_message(extracted.assistant_message)
+            and is_model_message_consistent_with_backend_state(
+                extracted.assistant_message,
+                missing_fields=missing_fields,
+                next_action=next_action,
+            )
+        ):
             return (
                 extracted.assistant_message.strip(),
                 "used safe model assistant_message for generic conversational response",
             )
         return (
             backend_message,
-            "model assistant_message empty or unsafe, used backend fallback",
+            "model assistant_message empty, unsafe, or inconsistent with backend state; used backend fallback",
         )
     return (
         backend_message,
@@ -525,6 +542,46 @@ def is_safe_model_conversational_message(message: str | None) -> bool:
     if "€" in normalized:
         return False
     return True
+
+
+def is_model_message_consistent_with_backend_state(
+    message: str | None,
+    *,
+    missing_fields: list[str],
+    next_action: BookingNextAction,
+) -> bool:
+    if not message:
+        return False
+
+    lowered = " ".join(message.lower().split())
+    if "date" in missing_fields or next_action == BookingNextAction.ask_date:
+        if not any(token in lowered for token in ("date", "day", "when")):
+            return False
+    if "time" in missing_fields or next_action == BookingNextAction.ask_time:
+        if "time" not in lowered and "hour" not in lowered:
+            return False
+    return True
+
+
+def time_followup_completed_pending_booking(
+    *,
+    current_draft: CurrentBookingDraft | None,
+    booking_draft: CurrentBookingDraft,
+) -> bool:
+    if current_draft is None:
+        return False
+
+    had_pending_date_and_service = bool(
+        current_draft.service_query
+        and current_draft.date
+        and not current_draft.time
+        and not current_draft.time_preference
+    )
+    has_exact_time = bool(
+        booking_draft.time
+        and booking_draft.time_preference_type in {"at", "exact"}
+    )
+    return had_pending_date_and_service and has_exact_time
 
 
 def should_route_to_flexible_availability(

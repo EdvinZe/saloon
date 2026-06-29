@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from app.ai.schemas import (
     BookingIntent,
     BookingNextAction,
@@ -47,6 +49,33 @@ def merge_booking_draft(
         draft.time_preference_type = "at"
 
     return CurrentBookingDraft.model_validate(draft.model_dump())
+
+
+def normalize_relative_booking_dates(
+    draft: CurrentBookingDraft,
+    *,
+    today: date,
+) -> CurrentBookingDraft:
+    payload = draft.model_dump()
+    date_value_is_relative = relative_single_day_value(draft.date)
+    range_type_is_relative = relative_single_day_value(draft.date_range_type)
+    relative_date = date_value_is_relative or range_type_is_relative
+    if relative_date is None:
+        return CurrentBookingDraft.model_validate(payload)
+
+    selected_date = today if relative_date == "today" else today + timedelta(days=1)
+    payload["date"] = selected_date.isoformat()
+    payload["date_range_type"] = range_type_is_relative or "single_day"
+    return CurrentBookingDraft.model_validate(payload)
+
+
+def relative_single_day_value(value: str | None) -> str | None:
+    if not value:
+        return None
+    normalized = value.strip().lower()
+    if normalized in {"today", "tomorrow"}:
+        return normalized
+    return None
 
 
 def is_useful_value(value: object) -> bool:
