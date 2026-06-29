@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from app.ai.client import AIDisabledError, AIProviderError, AIProviderQuotaError
+from app.ai.debug import log_ai_debug
 from app.ai.prompts import build_booking_intent_prompt
 from app.ai.providers.common import (
     TRANSIENT_RETRY_DELAYS_SECONDS,
@@ -70,6 +71,12 @@ class GroqProvider:
         if not text:
             raise AIProviderError("AI provider returned an empty response")
 
+        if context.request_id:
+            log_ai_debug(
+                "ai_booking_raw_model_output",
+                context.request_id,
+                {"raw_output": text},
+            )
         return parse_json_object(text)
 
     def _build_client(self) -> Any:

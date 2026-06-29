@@ -1,8 +1,10 @@
 from datetime import date
+from uuid import uuid4
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.ai.debug import log_ai_debug
 from app.ai.client import (
     AIDisabledError,
     AIProviderError,
@@ -13,6 +15,7 @@ from app.ai.client import (
 from app.ai.schemas import (
     BookingConversationMessage,
     BookingIntent,
+    BookingNextAction,
     CurrentBookingDraft,
     ExtractedBookingIntent,
 )
@@ -67,13 +70,25 @@ def extract_booking_intent(
     message: str,
     conversation_messages: list[BookingConversationMessage] | None = None,
     current_booking_draft: CurrentBookingDraft | None = None,
+    request_id: str | None = None,
 ) -> BookingIntentResponse:
+    trace_id = request_id or uuid4().hex
     normalized_message = message.strip()
     if not normalized_message:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Message must not be empty",
         )
+
+    log_ai_debug(
+        "ai_booking_request",
+        trace_id,
+        {
+            "message": normalized_message,
+            "conversation_messages_count": len(conversation_messages or []),
+            "current_booking_draft": current_booking_draft,
+        },
+    )
 
     services = list_public_services(db)
     service_names = [service.name for service in services if service.name]
@@ -90,7 +105,12 @@ def extract_booking_intent(
         current_draft=current_booking_draft,
     )
     if local_response is not None:
-        return local_response
+        log_backend_decision(
+            trace_id,
+            "build_local_pre_ai_response",
+            "local pre-AI response matched incoming message or draft",
+        )
+        return log_and_return_response(trace_id, local_response)
 
     try:
         result = ai_client.extract_booking_intent(
@@ -100,11 +120,28 @@ def extract_booking_intent(
             master_names=master_names,
             conversation_messages=conversation_messages or [],
             current_booking_draft=current_booking_draft,
+            request_id=trace_id,
         )
     except (AIDisabledError, AIRateLimitError, AIProviderQuotaError, AIProviderError):
-        return build_ai_unavailable_response()
+        log_backend_decision(
+            trace_id,
+            "build_ai_unavailable_response",
+            "AI provider unavailable, disabled, rate-limited, or returned an error",
+        )
+        return log_and_return_response(trace_id, build_ai_unavailable_response())
 
-    return build_booking_intent_response(db, result, current_booking_draft, normalized_message)
+    log_ai_debug(
+        "ai_booking_parsed_intent",
+        trace_id,
+        extracted_intent_debug_payload(result),
+    )
+    return build_booking_intent_response(
+        db,
+        result,
+        current_booking_draft,
+        normalized_message,
+        request_id=trace_id,
+    )
 
 
 def build_local_pre_ai_response(
@@ -186,34 +223,136 @@ def build_ai_unavailable_response() -> BookingIntentResponse:
     )
 
 
+def extracted_intent_debug_payload(extracted: ExtractedBookingIntent) -> dict[str, object]:
+    return {
+        "intent": extracted.intent,
+        "service_query": extracted.service_query,
+        "master_query": extracted.master_query,
+        "date": extracted.date,
+        "start_date": extracted.start_date,
+        "end_date": extracted.end_date,
+        "date_range_type": extracted.date_range_type,
+        "weekdays": extracted.weekdays,
+        "time": extracted.time,
+        "end_time": extracted.end_time,
+        "time_preference": extracted.time_preference,
+        "time_preference_type": extracted.time_preference_type,
+        "daypart": extracted.daypart,
+        "master_preference": extracted.master_preference,
+        "missing_fields": extracted.missing_fields,
+        "assistant_message": extracted.assistant_message,
+    }
+
+
+def log_backend_decision(request_id: str, handler: str, reason: str) -> None:
+    log_ai_debug(
+        "ai_booking_backend_decision",
+        request_id,
+        {
+            "handler": handler,
+            "reason": reason,
+        },
+    )
+
+
+def log_and_return_response(
+    request_id: str,
+    response: BookingIntentResponse,
+) -> BookingIntentResponse:
+    log_ai_debug(
+        "ai_booking_response",
+        request_id,
+        {
+            "intent": response.intent,
+            "assistant_message": response.assistant_message,
+            "next_action": response.next_action,
+            "missing_fields": response.missing_fields,
+            "booking_draft": response.booking_draft,
+            "actions_count": len(response.actions),
+            "available_options_count": len(response.available_options),
+        },
+    )
+    return response
+
+
+def backend_decision_reason(
+    *,
+    availability_result: AvailabilityCheckResult | None,
+    missing_fields: list[str],
+    next_action: object,
+) -> str:
+    if availability_result is not None:
+        return "availability check completed for known booking details"
+    if missing_fields:
+        return f"missing required booking fields: {', '.join(missing_fields)}"
+    return f"default booking response branch selected with next_action={next_action}"
+
+
 def build_booking_intent_response(
     db: Session,
     extracted: ExtractedBookingIntent,
     current_draft: CurrentBookingDraft | None,
     user_message: str,
+    request_id: str | None = None,
 ) -> BookingIntentResponse:
+    trace_id = request_id or uuid4().hex
     followup_response = build_followup_response(
         db,
         user_message=user_message,
         current_draft=current_draft,
     )
     if followup_response is not None:
-        return followup_response
+        log_backend_decision(
+            trace_id,
+            "build_followup_response",
+            "post-AI followup command matched current draft",
+        )
+        return log_and_return_response(trace_id, followup_response)
 
     booking_draft = merge_booking_draft(current_draft, extracted)
+    log_ai_debug(
+        "ai_booking_draft_merge",
+        trace_id,
+        {
+            "draft_before": current_draft,
+            "extracted": extracted_intent_debug_payload(extracted),
+            "draft_after": booking_draft,
+        },
+    )
     if extracted.intent == BookingIntent.flexible_availability_search:
         booking_draft = apply_explicit_flexible_criteria(booking_draft, user_message)
     if should_route_to_flexible_availability(extracted, current_draft, booking_draft):
-        return build_flexible_availability_response(db, booking_draft)
+        log_backend_decision(
+            trace_id,
+            "build_flexible_availability_response",
+            "flexible availability intent or flexible draft details after merge",
+        )
+        return log_and_return_response(
+            trace_id,
+            build_flexible_availability_response(db, booking_draft),
+        )
 
     if extracted.intent in {BookingIntent.list_services, BookingIntent.service_info}:
-        return build_service_info_response(db, extracted, booking_draft)
+        log_backend_decision(
+            trace_id,
+            "build_service_info_response",
+            "service information intent selected",
+        )
+        return log_and_return_response(
+            trace_id,
+            build_service_info_response(db, extracted, booking_draft),
+        )
     if extracted.intent in {
         BookingIntent.list_masters,
         BookingIntent.master_info,
         BookingIntent.master_service_info,
     }:
-        return build_master_info_response(db, extracted)
+        log_backend_decision(
+            trace_id,
+            "build_master_info_response",
+            "master information intent selected",
+        )
+        return log_and_return_response(trace_id, build_master_info_response(db, extracted))
 
     missing_fields = get_missing_fields(booking_draft, extracted.intent)
     next_action = get_next_action(booking_draft, extracted.intent, missing_fields)
@@ -229,15 +368,22 @@ def build_booking_intent_response(
         booking_draft = availability_result.booking_draft
         next_action = availability_result.next_action
 
-    assistant_message = build_assistant_message(
+    backend_message = build_assistant_message(
         booking_draft=booking_draft,
         intent=extracted.intent,
         missing_fields=missing_fields,
         user_message=user_message,
         availability_result=availability_result,
     )
+    assistant_message, message_reason = choose_final_assistant_message(
+        extracted=extracted,
+        backend_message=backend_message,
+        missing_fields=missing_fields,
+        next_action=next_action,
+        availability_result=availability_result,
+    )
 
-    return BookingIntentResponse(
+    response = BookingIntentResponse(
         intent=extracted.intent,
         service_query=booking_draft.service_query,
         master_query=booking_draft.master_query,
@@ -261,6 +407,124 @@ def build_booking_intent_response(
         nearest_options=availability_result.nearest_options if availability_result else [],
         actions=availability_result.actions if availability_result else [],
     )
+    log_backend_decision(
+        trace_id,
+        "build_booking_intent_response",
+        message_reason
+        or backend_decision_reason(
+            availability_result=availability_result,
+            missing_fields=missing_fields,
+            next_action=next_action,
+        ),
+    )
+    return log_and_return_response(trace_id, response)
+
+
+def choose_final_assistant_message(
+    *,
+    extracted: ExtractedBookingIntent,
+    backend_message: str,
+    missing_fields: list[str],
+    next_action: BookingNextAction,
+    availability_result: AvailabilityCheckResult | None,
+) -> tuple[str, str]:
+    if availability_result is not None:
+        return (
+            backend_message,
+            "backend factual/safety message overrides model text",
+        )
+    if extracted.intent == BookingIntent.unsupported:
+        return (
+            backend_message,
+            "backend factual/safety message overrides model text",
+        )
+    if should_prefer_model_conversational_message(
+        extracted=extracted,
+        missing_fields=missing_fields,
+        next_action=next_action,
+    ):
+        if is_safe_model_conversational_message(extracted.assistant_message):
+            return (
+                extracted.assistant_message.strip(),
+                "used safe model assistant_message for generic conversational response",
+            )
+        return (
+            backend_message,
+            "model assistant_message empty or unsafe, used backend fallback",
+        )
+    return (
+        backend_message,
+        backend_decision_reason(
+            availability_result=availability_result,
+            missing_fields=missing_fields,
+            next_action=next_action,
+        ),
+    )
+
+
+def should_prefer_model_conversational_message(
+    *,
+    extracted: ExtractedBookingIntent,
+    missing_fields: list[str],
+    next_action: BookingNextAction,
+) -> bool:
+    if extracted.intent == BookingIntent.unknown:
+        return True
+    if next_action == BookingNextAction.none:
+        return True
+    if missing_fields and extracted.intent in {
+        BookingIntent.find_booking_slot,
+        BookingIntent.ask_booking_question,
+        BookingIntent.check_available_masters,
+    }:
+        return True
+    return False
+
+
+def is_safe_model_conversational_message(message: str | None) -> bool:
+    if not message:
+        return False
+
+    normalized = " ".join(message.strip().split())
+    if not normalized or len(normalized) > 400:
+        return False
+
+    lowered = normalized.lower()
+    unsafe_fragments = (
+        "booked",
+        "booking was created",
+        "booking is created",
+        "confirmed",
+        "paid",
+        "charged",
+        "refunded",
+        "create a payment",
+        "payment created",
+        "refund issued",
+        "admin",
+        "webhook",
+        "token",
+        "secret",
+        "private data",
+        "i changed your booking",
+        "i cancelled your booking",
+        "slot is available",
+        "slot is unavailable",
+        "i found availability",
+        "available slot",
+        "available at",
+        "not available",
+        "costs €",
+        "costs eur",
+        "price is",
+    )
+    if any(fragment in lowered for fragment in unsafe_fragments):
+        return False
+    if "takes " in lowered and " minute" in lowered:
+        return False
+    if "€" in normalized:
+        return False
+    return True
 
 
 def should_route_to_flexible_availability(

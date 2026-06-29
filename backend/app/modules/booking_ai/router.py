@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -18,4 +20,5 @@ def create_booking_intent(
         data.message,
         data.messages,
         data.current_booking_draft,
+        request_id=uuid4().hex,
     )

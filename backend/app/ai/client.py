@@ -6,6 +6,7 @@ from app.ai.schemas import (
     CurrentBookingDraft,
     ExtractedBookingIntent,
 )
+from app.ai.debug import log_ai_debug
 from app.core.config import (
     get_ai_daily_request_limit,
     get_ai_provider,
@@ -47,6 +48,7 @@ class AIClient:
         master_names: list[str] | None = None,
         conversation_messages: list[BookingConversationMessage] | None = None,
         current_booking_draft: CurrentBookingDraft | None = None,
+        request_id: str | None = None,
     ) -> ExtractedBookingIntent:
         if not is_ai_enabled():
             raise AIDisabledError("AI is disabled")
@@ -60,7 +62,21 @@ class AIClient:
             user_message=user_message,
             conversation_messages=conversation_messages or [],
             current_booking_draft=current_booking_draft,
+            request_id=request_id,
         )
+        if request_id:
+            log_ai_debug(
+                "ai_booking_prompt_context",
+                request_id,
+                {
+                    "today": today.isoformat(),
+                    "services": service_names,
+                    "masters": master_names or [],
+                    "draft_context": current_booking_draft,
+                    "draft_lines": _build_draft_debug_lines(current_booking_draft),
+                    "recent_conversation_lines_count": len(conversation_messages or []),
+                },
+            )
         result = provider.extract_booking_intent(context)
         self._daily_count += 1
         return result
@@ -91,3 +107,14 @@ class AIClient:
 
 
 ai_client = AIClient()
+
+
+def _build_draft_debug_lines(draft: CurrentBookingDraft | None) -> list[str]:
+    if draft is None:
+        return []
+    payload = draft.model_dump(mode="json")
+    return [
+        f"{key}: {value}"
+        for key, value in payload.items()
+        if value not in (None, "", [], {})
+    ]

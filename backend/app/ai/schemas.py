@@ -127,6 +127,7 @@ class BookingIntentExtractionContext(BaseModel):
     user_message: str
     conversation_messages: list[BookingConversationMessage] = Field(default_factory=list)
     current_booking_draft: CurrentBookingDraft | None = None
+    request_id: str | None = None
 
 
 class ExtractedBookingIntent(BaseModel):

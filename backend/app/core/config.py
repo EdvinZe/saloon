@@ -64,6 +64,7 @@ CLIENT_MANAGE_CUTOFF_HOURS = max(
 )
 RATE_LIMIT_ENABLED = _parse_bool(os.getenv("RATE_LIMIT_ENABLED"), True)
 AI_ENABLED = _parse_bool(os.getenv("AI_ENABLED"), True)
+AI_DEBUG = _parse_bool(os.getenv("AI_DEBUG"), True)
 AI_PROVIDER = os.getenv("AI_PROVIDER", "groq").strip().lower() or "groq"
 AI_MODEL = os.getenv("AI_MODEL", "").strip()
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "").strip()
@@ -123,6 +124,10 @@ def get_client_manage_cutoff_hours() -> int:
 
 def is_ai_enabled() -> bool:
     return AI_ENABLED
+
+
+def is_ai_debug_enabled() -> bool:
+    return AI_DEBUG
 
 
 def get_ai_provider() -> str:
